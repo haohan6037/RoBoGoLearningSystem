@@ -1,0 +1,8 @@
+data/
+node_modules/
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.venv311/
+.DS_Store

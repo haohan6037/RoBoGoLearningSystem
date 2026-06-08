@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RoBoGo Learning Portal</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1c2430;
+        --muted: #607083;
+        --line: #d8dee6;
+        --panel: rgba(255, 255, 255, 0.92);
+        --page: #eef3f8;
+        --brand: #1b6f8f;
+        --brand-dark: #14546d;
+        --accent: #d64f2f;
+        --ok: #1b7f55;
+        --shadow: 0 20px 55px rgba(17, 27, 37, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(27, 111, 143, 0.14), transparent 32%),
+          radial-gradient(circle at bottom right, rgba(214, 79, 47, 0.12), transparent 28%),
+          linear-gradient(160deg, #f8fbfd 0%, var(--page) 100%);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+      }
+
+      .login-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.05fr);
+      }
+
+      .brand-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(28px, 5vw, 64px);
+        background:
+          linear-gradient(180deg, rgba(11, 22, 33, 0.92), rgba(22, 50, 66, 0.95)),
+          #15212c;
+        color: #fff;
+      }
+
+      .brand-mark {
+        font-size: clamp(34px, 6vw, 62px);
+        line-height: 0.95;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      .brand-panel p {
+        max-width: 520px;
+        margin: 18px 0 0;
+        color: #c8d7e2;
+        font-size: clamp(17px, 2vw, 21px);
+        line-height: 1.55;
+      }
+
+      .login-panel {
+        display: grid;
+        place-items: center;
+        padding: 28px;
+      }
+
+      .login-card,
+      .surface,
+      .form-card,
+      .list-card {
+        border: 1px solid rgba(216, 222, 230, 0.9);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      .login-card {
+        width: min(100%, 460px);
+        padding: 30px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        font-size: clamp(30px, 4vw, 48px);
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin-bottom: 10px;
+        font-size: 24px;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      label {
+        display: block;
+        margin: 16px 0 8px;
+        color: #344254;
+        font-weight: 700;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid #b9c5d1;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.96);
+        color: var(--ink);
+      }
+
+      textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: 3px solid rgba(27, 111, 143, 0.18);
+        border-color: var(--brand);
+      }
+
+      .button-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+      }
+
+      .button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 6px;
+        padding: 10px 14px;
+        background: var(--brand);
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .button:hover {
+        background: var(--brand-dark);
+      }
+
+      .button.secondary {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--brand-dark);
+      }
+
+      .button.secondary:hover {
+        background: #f0f5f8;
+      }
+
+      .button.danger {
+        background: #fbe9e5;
+        color: #9b2b16;
+      }
+
+      .button.danger:hover {
+        background: #f5dbd4;
+      }
+
+      .error {
+        margin: 16px 0 0;
+        color: #9b2b16;
+        font-weight: 700;
+      }
+
+      .portal-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 252px 1fr;
+      }
+
+      .sidebar {
+        padding: 24px;
+        border-right: 1px solid rgba(216, 222, 230, 0.9);
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(14px);
+      }
+
+      .sidebar-title {
+        margin-bottom: 22px;
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .nav-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav-item {
+        padding: 11px 12px;
+        border-radius: 6px;
+        color: #263443;
+        text-decoration: none;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .nav-item.active {
+        background: #e7f3f7;
+        color: var(--brand-dark);
+      }
+
+      .content {
+        padding: clamp(22px, 4vw, 44px);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: #edf8f3;
+        color: var(--ok);
+        font-weight: 800;
+      }
+
+      .surface {
+        padding: 22px;
+      }
+
+      .status-grid,
+      .teacher-grid,
+      .metrics-grid,
+      .form-grid,
+      .list-grid,
+      .student-cards,
+      .class-cards,
+      .session-cards {
+        display: grid;
+        gap: 14px;
+      }
+
+      .status-grid,
+      .metrics-grid {
+        grid-template-columns: repeat(3, minmax(160px, 1fr));
+      }
+
+      .teacher-grid {
+        margin-top: 20px;
+      }
+
+      .form-grid,
+      .list-grid {
+        grid-template-columns: repeat(2, minmax(280px, 1fr));
+      }
+
+      .form-card,
+      .list-card {
+        padding: 20px;
+      }
+
+      .metric-card,
+      .status-card,
+      .student-card,
+      .class-card,
+      .session-card {
+        min-height: 110px;
+        padding: 18px;
+        border: 1px solid rgba(216, 222, 230, 0.9);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .metric-value {
+        display: block;
+        font-size: 34px;
+        font-weight: 800;
+        color: var(--brand-dark);
+      }
+
+      .inline-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+        gap: 12px;
+      }
+
+      .pill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #eaf4f8;
+        color: #285165;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .section-copy {
+        margin-bottom: 18px;
+      }
+
+      .empty-state {
+        padding: 18px;
+        border: 1px dashed #b7c7d4;
+        border-radius: 8px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .session-card header,
+      .class-card header,
+      .student-card header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+
+      .session-meta,
+      .class-meta,
+      .student-meta {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .banner {
+        margin-top: 16px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-weight: 700;
+      }
+
+      .banner.error {
+        background: #fde9e5;
+        color: #9b2b16;
+      }
+
+      .banner.success {
+        background: #eaf6ef;
+        color: #226845;
+      }
+
+      @media (max-width: 920px) {
+        .portal-shell,
+        .login-shell,
+        .form-grid,
+        .list-grid,
+        .status-grid,
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="app"></div>
+
+    <script>
+      const app = document.querySelector("#app");
+      const state = {
+        token: localStorage.getItem("robogo-token"),
+        user: null,
+        flash: ""
+      };
+
+      const teacherSeed = {
+        email: "teacher@robogo.local",
+        password: "Teacher123!"
+      };
+      const studentSeed = {
+        email: "student@robogo.local",
+        password: "Student123!"
+      };
+      const weekdayOptions = [
+        { value: 0, label: "Monday" },
+        { value: 1, label: "Tuesday" },
+        { value: 2, label: "Wednesday" },
+        { value: 3, label: "Thursday" },
+        { value: 4, label: "Friday" },
+        { value: 5, label: "Saturday" },
+        { value: 6, label: "Sunday" }
+      ];
+
+      async function api(path, options = {}) {
+        const response = await fetch(path, {
+          ...options,
+          headers: {
+            "Content-Type": "application/json",
+            ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+            ...(options.headers || {})
+          }
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || payload.detail || "Request failed.");
+        }
+        return payload;
+      }
+
+      function routeTo(path) {
+        window.history.pushState({}, "", path);
+        render();
+      }
+
+      function signOut() {
+        localStorage.removeItem("robogo-token");
+        state.token = null;
+        state.user = null;
+        state.flash = "";
+        routeTo("/");
+      }
+
+      async function login(email, password) {
+        const payload = await api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password })
+        });
+        state.token = payload.token;
+        state.user = payload.user;
+        localStorage.setItem("robogo-token", state.token);
+        routeTo(payload.user.role === "Teacher" ? "/teacher" : "/student");
+      }
+
+      function renderLogin(message = "") {
+        app.innerHTML = `
+          <main class="login-shell">
+            <section class="brand-panel">
+              <div>
+                <div class="brand-mark">RoBoGo</div>
+                <p>Build a steady classroom rhythm for VEX IQ sessions, lesson access, and attendance-ready learning workflows.</p>
+              </div>
+              <p>Teacher Dashboard now includes student, class, and session setup for the next MVP step.</p>
+            </section>
+            <section class="login-panel">
+              <form id="login-form" class="login-card">
+                <h1>RoBoGo Learning Portal</h1>
+                <p class="muted">Sign in to continue.</p>
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" autocomplete="email" required />
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required />
+                <div class="button-row">
+                  <button class="button" type="submit">Sign in</button>
+                  <button class="button secondary" type="button" id="teacher-demo">Teacher demo</button>
+                  <button class="button secondary" type="button" id="student-demo">Student demo</button>
+                </div>
+                ${message ? `<p class="error">${message}</p>` : ""}
+              </form>
+            </section>
+          </main>
+        `;
+
+        document.querySelector("#login-form").addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const form = new FormData(event.currentTarget);
+          try {
+            await login(form.get("email"), form.get("password"));
+          } catch (error) {
+            renderLogin(error.message);
+          }
+        });
+        document.querySelector("#teacher-demo").addEventListener("click", () => {
+          document.querySelector("#email").value = teacherSeed.email;
+          document.querySelector("#password").value = teacherSeed.password;
+        });
+        document.querySelector("#student-demo").addEventListener("click", () => {
+          document.querySelector("#email").value = studentSeed.email;
+          document.querySelector("#password").value = studentSeed.password;
+        });
+      }
+
+      function bannerMarkup() {
+        if (!state.flash) return "";
+        return `<div class="banner success">${state.flash}</div>`;
+      }
+
+      function renderStudentPortal(data) {
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Student Portal</div>
+              <nav class="nav-list">
+                <a class="nav-item active" href="#">Current Lesson</a>
+                <a class="nav-item" href="#">Review</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>${data.title}</h1>
+                  <p class="muted">${data.welcome || data.status}</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              <section class="surface">
+                <div class="status-grid">
+                  ${["Current Lesson", "Attendance", "Review"].map(
+                    (item) => `
+                      <article class="status-card">
+                        <strong>${item}</strong>
+                        <p class="muted">Available after teacher assigns materials.</p>
+                      </article>
+                    `
+                  ).join("")}
+                </div>
+              </section>
+            </section>
+          </main>
+        `;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+      }
+
+      function renderTeacherPortal(data) {
+        const studentOptions = data.students.map(
+          (student) => `<option value="${student.id}">${student.displayName}</option>`
+        ).join("");
+        const classOptions = data.classes.map(
+          (item) => `<option value="${item.id}">${item.name}</option>`
+        ).join("");
+
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item active" href="#">Overview</a>
+                <a class="nav-item" href="#">Students</a>
+                <a class="nav-item" href="#">Classes</a>
+                <a class="nav-item" href="#">Sessions</a>
+                <a class="nav-item" href="#">Material Library</a>
+                <a class="nav-item" href="#">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>${data.title}</h1>
+                  <p class="muted">${data.welcome}</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              <section class="surface">
+                <div class="section-copy">
+                  <h2>Step 2 Teacher Setup</h2>
+                  <p class="muted">Create students, create classes, add class membership, then generate term sessions from the weekly schedule.</p>
+                  ${bannerMarkup()}
+                </div>
+                <div class="metrics-grid">
+                  <article class="metric-card">
+                    <strong>Students</strong>
+                    <span class="metric-value">${data.summary.studentCount}</span>
+                    <p class="muted">Registered student profiles ready for class assignment.</p>
+                  </article>
+                  <article class="metric-card">
+                    <strong>Classes</strong>
+                    <span class="metric-value">${data.summary.classCount}</span>
+                    <p class="muted">Long-running teaching groups with a weekly schedule.</p>
+                  </article>
+                  <article class="metric-card">
+                    <strong>Sessions</strong>
+                    <span class="metric-value">${data.summary.sessionCount}</span>
+                    <p class="muted">Concrete lesson occurrences generated from each class plan.</p>
+                  </article>
+                </div>
+                <div class="teacher-grid">
+                  <div class="form-grid">
+                    <section class="form-card">
+                      <h3>Create Student</h3>
+                      <p class="muted">Adds the login user and the student profile together.</p>
+                      <form id="student-form">
+                        <label for="student-name">Student name</label>
+                        <input id="student-name" name="display_name" type="text" required />
+                        <label for="student-email">Student email</label>
+                        <input id="student-email" name="email" type="email" required />
+                        <label for="parent-name">Parent name</label>
+                        <input id="parent-name" name="parent_name" type="text" />
+                        <div class="button-row">
+                          <button class="button" type="submit">Add student</button>
+                        </div>
+                      </form>
+                    </section>
+                    <section class="form-card">
+                      <h3>Create Class</h3>
+                      <p class="muted">Define the weekly schedule first, then generate sessions from it.</p>
+                      <form id="class-form">
+                        <label for="class-name">Class name</label>
+                        <input id="class-name" name="name" type="text" required />
+                        <label for="class-description">Description</label>
+                        <textarea id="class-description" name="description"></textarea>
+                        <div class="inline-fields">
+                          <div>
+                            <label for="class-weekday">Weekday</label>
+                            <select id="class-weekday" name="weekday">
+                              ${weekdayOptions.map((option) => `<option value="${option.value}">${option.label}</option>`).join("")}
+                            </select>
+                          </div>
+                          <div>
+                            <label for="class-start-time">Start time</label>
+                            <input id="class-start-time" name="start_time" type="time" required value="10:00" />
+                          </div>
+                        </div>
+                        <label for="class-end-time">End time</label>
+                        <input id="class-end-time" name="end_time" type="time" required value="11:30" />
+                        <div class="button-row">
+                          <button class="button" type="submit">Create class</button>
+                        </div>
+                      </form>
+                    </section>
+                    <section class="form-card">
+                      <h3>Add Student to Class</h3>
+                      <p class="muted">This creates the active membership used by session and attendance logic later.</p>
+                      <form id="membership-form">
+                        <label for="membership-class">Class</label>
+                        <select id="membership-class" name="class_id" ${data.classes.length ? "" : "disabled"}>
+                          <option value="">Select class</option>
+                          ${classOptions}
+                        </select>
+                        <label for="membership-student">Student</label>
+                        <select id="membership-student" name="student_id" ${data.students.length ? "" : "disabled"}>
+                          <option value="">Select student</option>
+                          ${studentOptions}
+                        </select>
+                        <div class="button-row">
+                          <button class="button" type="submit" ${data.classes.length && data.students.length ? "" : "disabled"}>Add membership</button>
+                        </div>
+                      </form>
+                    </section>
+                    <section class="form-card">
+                      <h3>Generate Term Sessions</h3>
+                      <p class="muted">Sessions follow the class weekday and time, starting from the first matching date.</p>
+                      <form id="sessions-form">
+                        <label for="session-class">Class</label>
+                        <select id="session-class" name="class_id" ${data.classes.length ? "" : "disabled"}>
+                          <option value="">Select class</option>
+                          ${classOptions}
+                        </select>
+                        <div class="inline-fields">
+                          <div>
+                            <label for="term-start-date">Term start date</label>
+                            <input id="term-start-date" name="term_start_date" type="date" required />
+                          </div>
+                          <div>
+                            <label for="session-count">Number of sessions</label>
+                            <input id="session-count" name="session_count" type="number" min="1" max="30" value="10" required />
+                          </div>
+                        </div>
+                        <div class="button-row">
+                          <button class="button" type="submit" ${data.classes.length ? "" : "disabled"}>Generate sessions</button>
+                        </div>
+                      </form>
+                    </section>
+                  </div>
+                  <div class="list-grid">
+                    <section class="list-card">
+                      <h3>Students</h3>
+                      <p class="muted">Students must exist before they can be added to a class.</p>
+                      <div class="student-cards">
+                        ${data.students.length ? data.students.map((student) => `
+                          <article class="student-card">
+                            <header>
+                              <div>
+                                <strong>${student.displayName}</strong>
+                                <div class="student-meta">${student.email}</div>
+                              </div>
+                              <span class="pill">${student.classNames.length} classes</span>
+                            </header>
+                            <div class="pill-list">
+                              ${(student.classNames.length ? student.classNames : ["Unassigned"]).map((name) => `<span class="pill">${name}</span>`).join("")}
+                            </div>
+                          </article>
+                        `).join("") : `<div class="empty-state">No students yet. Start by creating the first student profile.</div>`}
+                      </div>
+                    </section>
+                    <section class="list-card">
+                      <h3>Classes</h3>
+                      <p class="muted">Each class stores the weekly schedule that later drives session generation.</p>
+                      <div class="class-cards">
+                        ${data.classes.length ? data.classes.map((item) => `
+                          <article class="class-card">
+                            <header>
+                              <div>
+                                <strong>${item.name}</strong>
+                                <div class="class-meta">${item.weekdayLabel} • ${item.startTime}-${item.endTime}</div>
+                              </div>
+                              <span class="pill">${item.memberCount} students</span>
+                            </header>
+                            <p class="muted">${item.description || "No class description yet."}</p>
+                            <div class="pill-list">
+                              ${(item.memberNames.length ? item.memberNames : ["No members yet"]).map((name) => `<span class="pill">${name}</span>`).join("")}
+                            </div>
+                          </article>
+                        `).join("") : `<div class="empty-state">No classes yet. Create the first teaching group and weekly schedule.</div>`}
+                      </div>
+                    </section>
+                    <section class="list-card" style="grid-column: 1 / -1;">
+                      <h3>Sessions</h3>
+                      <p class="muted">Generated sessions are concrete lesson occurrences. You can delete a cancelled session here.</p>
+                      <div class="session-cards">
+                        ${data.sessions.length ? data.sessions.map((session) => `
+                          <article class="session-card">
+                            <header>
+                              <div>
+                                <strong>${session.className}</strong>
+                                <div class="session-meta">${session.sessionDate} • ${session.startTime}-${session.endTime}</div>
+                              </div>
+                              <div class="button-row" style="margin-top: 0;">
+                                <span class="pill">${session.status}</span>
+                                <button class="button danger session-delete" type="button" data-session-id="${session.id}">Delete</button>
+                              </div>
+                            </header>
+                            <p class="muted">${session.title || "Generated class session"}</p>
+                          </article>
+                        `).join("") : `<div class="empty-state">No sessions yet. Generate a term plan after the first class is created.</div>`}
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              </section>
+            </section>
+          </main>
+        `;
+
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelector("#student-form").addEventListener("submit", handleStudentCreate);
+        document.querySelector("#class-form").addEventListener("submit", handleClassCreate);
+        document.querySelector("#membership-form").addEventListener("submit", handleMembershipCreate);
+        document.querySelector("#sessions-form").addEventListener("submit", handleGenerateSessions);
+        document.querySelectorAll(".session-delete").forEach((button) => {
+          button.addEventListener("click", () => handleDeleteSession(button.dataset.sessionId));
+        });
+      }
+
+      async function loadTeacherDashboard() {
+        return api("/api/teacher/dashboard");
+      }
+
+      async function rerenderTeacherWithMessage(message) {
+        state.flash = message;
+        const data = await loadTeacherDashboard();
+        renderTeacherPortal(data);
+      }
+
+      async function handleStudentCreate(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          await api("/api/teacher/students", {
+            method: "POST",
+            body: JSON.stringify({
+              display_name: form.get("display_name"),
+              email: form.get("email"),
+              parent_name: form.get("parent_name") || ""
+            })
+          });
+          await rerenderTeacherWithMessage("Student created.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleClassCreate(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          await api("/api/teacher/classes", {
+            method: "POST",
+            body: JSON.stringify({
+              name: form.get("name"),
+              description: form.get("description") || "",
+              weekday: Number(form.get("weekday")),
+              start_time: form.get("start_time"),
+              end_time: form.get("end_time")
+            })
+          });
+          await rerenderTeacherWithMessage("Class created.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleMembershipCreate(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          await api(`/api/teacher/classes/${form.get("class_id")}/memberships`, {
+            method: "POST",
+            body: JSON.stringify({ student_id: form.get("student_id") })
+          });
+          await rerenderTeacherWithMessage("Student added to class.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleGenerateSessions(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          await api(`/api/teacher/classes/${form.get("class_id")}/generate-sessions`, {
+            method: "POST",
+            body: JSON.stringify({
+              term_start_date: form.get("term_start_date"),
+              session_count: Number(form.get("session_count"))
+            })
+          });
+          await rerenderTeacherWithMessage("Sessions generated.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleDeleteSession(sessionId) {
+        try {
+          await api(`/api/teacher/sessions/${sessionId}`, { method: "DELETE" });
+          await rerenderTeacherWithMessage("Session deleted.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function hydrateUser() {
+        if (!state.token || state.user) return state.user;
+        try {
+          const payload = await api("/api/me");
+          state.user = payload.user;
+          return state.user;
+        } catch {
+          localStorage.removeItem("robogo-token");
+          state.token = null;
+          return null;
+        }
+      }
+
+      async function render() {
+        const user = await hydrateUser();
+        const path = window.location.pathname;
+
+        if (!user) {
+          renderLogin();
+          return;
+        }
+
+        if (path.startsWith("/teacher")) {
+          if (user.role !== "Teacher") {
+            routeTo("/student");
+            return;
+          }
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          return;
+        }
+
+        if (path.startsWith("/student")) {
+          if (user.role !== "Student") {
+            routeTo("/teacher");
+            return;
+          }
+          const data = await api("/api/student/current-lesson");
+          renderStudentPortal(data);
+          return;
+        }
+
+        routeTo(user.role === "Teacher" ? "/teacher" : "/student");
+      }
+
+      window.addEventListener("popstate", render);
+      render();
+    </script>
+  </body>
+</html>
