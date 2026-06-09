@@ -6,10 +6,10 @@ MVP foundation for the RoBoGo classroom learning portal.
 
 - Frontend: static HTML/CSS/JavaScript in `public/index.html`
 - Backend: FastAPI in `backend/app`
-- Local persistence: SQLite in `data/robogo-learning-portal.sqlite3`
+- Local persistence: PostgreSQL database `RoBoGoLearningSystemDB`
 - Preview runtime: local Python 3.11 virtual environment in `.venv311`
 
-The original Node prototype is still present in `server.mjs`, but the active preview stack now uses FastAPI plus SQLite-backed local persistence.
+The original Node prototype is still present in `server.mjs`, but the active preview stack now uses FastAPI plus PostgreSQL-backed local persistence.
 
 ## Local Database Configuration
 
@@ -22,12 +22,16 @@ cp .env.example .env
 Default local values:
 
 ```text
-ROBOGO_DATABASE_PROVIDER=sqlite
-ROBOGO_SQLITE_PATH=data/robogo-learning-portal.sqlite3
+ROBOGO_DATABASE_PROVIDER=postgresql
+ROBOGO_DB_HOST=127.0.0.1
+ROBOGO_DB_PORT=5432
+ROBOGO_DB_NAME=RoBoGoLearningSystemDB
+ROBOGO_DB_USER=postgres
+ROBOGO_DB_PASSWORD=
 ROBOGO_PORT=3001
 ```
 
-The config file still keeps SQL Server fields for a future migration path, but the current app persists teacher dashboard data to SQLite.
+The app can still be pointed at SQLite for local fallback by setting `ROBOGO_DATABASE_PROVIDER=sqlite`, but the current default is local PostgreSQL.
 
 ## Run the FastAPI Backend
 
@@ -59,13 +63,18 @@ student@robogo.local / Student123!
 
 ## Current Scope
 
-Teacher Dashboard Step 2 currently supports:
+The current MVP supports:
 
 - create students
 - create classes
 - add students to classes
 - generate term sessions
 - delete sessions
+- create material metadata records
+- assign material to a class session
+- assign material to an individual student
+- show students their current lesson materials during an active session
+- show students historical review materials after sessions end
 
 ## Database Endpoints
 

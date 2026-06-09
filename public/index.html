@@ -137,12 +137,18 @@
       select,
       textarea {
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
         min-height: 44px;
         padding: 10px 12px;
         border: 1px solid #b9c5d1;
         border-radius: 6px;
         background: rgba(255, 255, 255, 0.96);
         color: var(--ink);
+      }
+
+      select {
+        text-overflow: ellipsis;
       }
 
       textarea {
@@ -274,7 +280,8 @@
       .list-grid,
       .student-cards,
       .class-cards,
-      .session-cards {
+      .session-cards,
+      .material-cards {
         display: grid;
         gap: 14px;
       }
@@ -295,6 +302,7 @@
 
       .form-card,
       .list-card {
+        min-width: 0;
         padding: 20px;
       }
 
@@ -302,7 +310,8 @@
       .status-card,
       .student-card,
       .class-card,
-      .session-card {
+      .session-card,
+      .material-card {
         min-height: 110px;
         padding: 18px;
         border: 1px solid rgba(216, 222, 230, 0.9);
@@ -356,7 +365,8 @@
 
       .session-card header,
       .class-card header,
-      .student-card header {
+      .student-card header,
+      .material-card header {
         display: flex;
         justify-content: space-between;
         gap: 12px;
@@ -366,7 +376,8 @@
 
       .session-meta,
       .class-meta,
-      .student-meta {
+      .student-meta,
+      .material-meta {
         color: var(--muted);
         font-size: 14px;
         line-height: 1.45;
@@ -528,7 +539,31 @@
         return `<div class="banner success">${state.flash}</div>`;
       }
 
+      function materialLink(material) {
+        const label = material.fileUrl.startsWith("http") ? "Open" : "View path";
+        return material.fileUrl.startsWith("http")
+          ? `<a class="button secondary" href="${material.fileUrl}" target="_blank" rel="noreferrer">${label}</a>`
+          : `<span class="pill">${material.fileUrl}</span>`;
+      }
+
+      function studentMaterialCards(materials, emptyMessage) {
+        return materials.length ? materials.map((material) => `
+          <article class="material-card">
+            <header>
+              <div>
+                <strong>${material.title}</strong>
+                <div class="material-meta">${material.className} • ${material.sessionDate} • ${material.startTime}-${material.endTime}</div>
+              </div>
+              <span class="pill">${material.assignmentScope === "student" ? "Personal" : "Class"}</span>
+            </header>
+            <p class="muted">${material.description || "No material description yet."}</p>
+            <div class="button-row">${materialLink(material)}</div>
+          </article>
+        `).join("") : `<div class="empty-state">${emptyMessage}</div>`;
+      }
+
       function renderStudentPortal(data) {
+        const currentSession = data.currentSession;
         app.innerHTML = `
           <main class="portal-shell">
             <aside class="sidebar">
@@ -542,7 +577,7 @@
               <div class="topbar">
                 <div>
                   <h1>${data.title}</h1>
-                  <p class="muted">${data.welcome || data.status}</p>
+                  <p class="muted">${data.welcome}</p>
                 </div>
                 <div class="button-row">
                   <span class="badge">${state.user.role}</span>
@@ -550,15 +585,41 @@
                 </div>
               </div>
               <section class="surface">
+                <div class="section-copy">
+                  <h2>${currentSession ? currentSession.className : "No Current Session"}</h2>
+                  <p class="muted">${data.status}</p>
+                </div>
                 <div class="status-grid">
-                  ${["Current Lesson", "Attendance", "Review"].map(
-                    (item) => `
-                      <article class="status-card">
-                        <strong>${item}</strong>
-                        <p class="muted">Available after teacher assigns materials.</p>
-                      </article>
-                    `
-                  ).join("")}
+                  <article class="status-card">
+                    <strong>Current Materials</strong>
+                    <span class="metric-value">${data.currentMaterials.length}</span>
+                    <p class="muted">${currentSession ? `${currentSession.sessionDate} • ${currentSession.startTime}-${currentSession.endTime}` : "Outside scheduled class time."}</p>
+                  </article>
+                  <article class="status-card">
+                    <strong>Review Items</strong>
+                    <span class="metric-value">${data.reviewMaterials.length}</span>
+                    <p class="muted">Previously assigned materials in reverse session order.</p>
+                  </article>
+                  <article class="status-card">
+                    <strong>Attendance</strong>
+                    <p class="muted">Location verification comes in the next attendance step.</p>
+                  </article>
+                </div>
+                <div class="list-grid" style="margin-top: 18px;">
+                  <section class="list-card">
+                    <h3>Current Lesson</h3>
+                    <p class="muted">Materials here are visible only when your class session is currently active.</p>
+                    <div class="material-cards">
+                      ${studentMaterialCards(data.currentMaterials, "No current lesson material is available right now.")}
+                    </div>
+                  </section>
+                  <section class="list-card">
+                    <h3>Review</h3>
+                    <p class="muted">Historical materials remain available after their class session has ended.</p>
+                    <div class="material-cards">
+                      ${studentMaterialCards(data.reviewMaterials, "No review materials yet.")}
+                    </div>
+                  </section>
                 </div>
               </section>
             </section>
@@ -573,6 +634,12 @@
         ).join("");
         const classOptions = data.classes.map(
           (item) => `<option value="${item.id}">${item.name}</option>`
+        ).join("");
+        const sessionOptions = data.sessions.map(
+          (session) => `<option value="${session.id}">${session.className} - ${session.sessionDate} ${session.startTime}</option>`
+        ).join("");
+        const materialOptions = data.materials.map(
+          (material) => `<option value="${material.id}">${material.title}</option>`
         ).join("");
 
         app.innerHTML = `
@@ -601,8 +668,8 @@
               </div>
               <section class="surface">
                 <div class="section-copy">
-                  <h2>Step 2 Teacher Setup</h2>
-                  <p class="muted">Create students, create classes, add class membership, then generate term sessions from the weekly schedule.</p>
+                  <h2>Teacher Setup + Material Assignment</h2>
+                  <p class="muted">Create the class structure, add material metadata, then assign materials to a full class session or one student.</p>
                   ${bannerMarkup()}
                 </div>
                 <div class="metrics-grid">
@@ -620,6 +687,16 @@
                     <strong>Sessions</strong>
                     <span class="metric-value">${data.summary.sessionCount}</span>
                     <p class="muted">Concrete lesson occurrences generated from each class plan.</p>
+                  </article>
+                  <article class="metric-card">
+                    <strong>Materials</strong>
+                    <span class="metric-value">${data.summary.materialCount}</span>
+                    <p class="muted">Reusable PDFs, slides, images, videos, or external links.</p>
+                  </article>
+                  <article class="metric-card">
+                    <strong>Assignments</strong>
+                    <span class="metric-value">${data.summary.assignmentCount}</span>
+                    <p class="muted">Materials connected to class sessions or individual students.</p>
                   </article>
                 </div>
                 <div class="teacher-grid">
@@ -709,6 +786,58 @@
                         </div>
                       </form>
                     </section>
+                    <section class="form-card">
+                      <h3>Add Material</h3>
+                      <p class="muted">Stores material metadata now; real file upload storage can be added after the workflow is stable.</p>
+                      <form id="material-form">
+                        <label for="material-title">Material title</label>
+                        <input id="material-title" name="title" type="text" required />
+                        <label for="material-type">File type</label>
+                        <select id="material-type" name="file_type">
+                          <option value="pdf">PDF</option>
+                          <option value="ppt">PPT / PPTX</option>
+                          <option value="image">Image</option>
+                          <option value="video">Video</option>
+                          <option value="other">Other</option>
+                        </select>
+                        <label for="material-url">File path or URL</label>
+                        <input id="material-url" name="file_url" type="text" placeholder="/materials/lesson-1.pdf" required />
+                        <label for="material-description">Description</label>
+                        <textarea id="material-description" name="description"></textarea>
+                        <div class="button-row">
+                          <button class="button" type="submit">Add material</button>
+                        </div>
+                      </form>
+                    </section>
+                    <section class="form-card">
+                      <h3>Assign Material</h3>
+                      <p class="muted">Class assignments go to everyone; personal assignments target one active class member.</p>
+                      <form id="assignment-form">
+                        <label for="assignment-session">Session</label>
+                        <select id="assignment-session" name="session_id" ${data.sessions.length ? "" : "disabled"}>
+                          <option value="">Select session</option>
+                          ${sessionOptions}
+                        </select>
+                        <label for="assignment-material">Material</label>
+                        <select id="assignment-material" name="material_id" ${data.materials.length ? "" : "disabled"}>
+                          <option value="">Select material</option>
+                          ${materialOptions}
+                        </select>
+                        <label for="assignment-type">Assign to</label>
+                        <select id="assignment-type" name="assigned_to_type">
+                          <option value="class">Whole class</option>
+                          <option value="student">Individual student</option>
+                        </select>
+                        <label for="assignment-student">Student</label>
+                        <select id="assignment-student" name="assigned_to_student_id" ${data.students.length ? "" : "disabled"}>
+                          <option value="">Only needed for individual assignment</option>
+                          ${studentOptions}
+                        </select>
+                        <div class="button-row">
+                          <button class="button" type="submit" ${data.sessions.length && data.materials.length ? "" : "disabled"}>Assign material</button>
+                        </div>
+                      </form>
+                    </section>
                   </div>
                   <div class="list-grid">
                     <section class="list-card">
@@ -754,7 +883,7 @@
                     </section>
                     <section class="list-card" style="grid-column: 1 / -1;">
                       <h3>Sessions</h3>
-                      <p class="muted">Generated sessions are concrete lesson occurrences. You can delete a cancelled session here.</p>
+                      <p class="muted">Generated sessions are concrete lesson occurrences. Assigned materials appear on each session.</p>
                       <div class="session-cards">
                         ${data.sessions.length ? data.sessions.map((session) => `
                           <article class="session-card">
@@ -765,12 +894,36 @@
                               </div>
                               <div class="button-row" style="margin-top: 0;">
                                 <span class="pill">${session.status}</span>
+                                <span class="pill">${session.assignmentCount} materials</span>
                                 <button class="button danger session-delete" type="button" data-session-id="${session.id}">Delete</button>
                               </div>
                             </header>
                             <p class="muted">${session.title || "Generated class session"}</p>
+                            <div class="pill-list">
+                              ${(session.assignments.length ? session.assignments : [{ materialTitle: "No material assigned", assignedToType: "class" }]).map((assignment) => `
+                                <span class="pill">${assignment.materialTitle}${assignment.assignedToStudentName ? ` - ${assignment.assignedToStudentName}` : ""}</span>
+                              `).join("")}
+                            </div>
                           </article>
                         `).join("") : `<div class="empty-state">No sessions yet. Generate a term plan after the first class is created.</div>`}
+                      </div>
+                    </section>
+                    <section class="list-card" style="grid-column: 1 / -1;">
+                      <h3>Material Library</h3>
+                      <p class="muted">Materials can be reused across sessions and later become real uploaded files.</p>
+                      <div class="material-cards">
+                        ${data.materials.length ? data.materials.map((material) => `
+                          <article class="material-card">
+                            <header>
+                              <div>
+                                <strong>${material.title}</strong>
+                                <div class="material-meta">${material.fileType.toUpperCase()} • ${material.fileUrl}</div>
+                              </div>
+                              <span class="pill">${material.fileType}</span>
+                            </header>
+                            <p class="muted">${material.description || "No material description yet."}</p>
+                          </article>
+                        `).join("") : `<div class="empty-state">No materials yet. Add the first lesson material before assigning a session.</div>`}
                       </div>
                     </section>
                   </div>
@@ -785,6 +938,8 @@
         document.querySelector("#class-form").addEventListener("submit", handleClassCreate);
         document.querySelector("#membership-form").addEventListener("submit", handleMembershipCreate);
         document.querySelector("#sessions-form").addEventListener("submit", handleGenerateSessions);
+        document.querySelector("#material-form").addEventListener("submit", handleMaterialCreate);
+        document.querySelector("#assignment-form").addEventListener("submit", handleMaterialAssignment);
         document.querySelectorAll(".session-delete").forEach((button) => {
           button.addEventListener("click", () => handleDeleteSession(button.dataset.sessionId));
         });
@@ -885,6 +1040,51 @@
         try {
           await api(`/api/teacher/sessions/${sessionId}`, { method: "DELETE" });
           await rerenderTeacherWithMessage("Session deleted.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleMaterialCreate(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          await api("/api/teacher/materials", {
+            method: "POST",
+            body: JSON.stringify({
+              title: form.get("title"),
+              description: form.get("description") || "",
+              file_type: form.get("file_type"),
+              file_url: form.get("file_url"),
+              file_size: 0
+            })
+          });
+          await rerenderTeacherWithMessage("Material added.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleMaterialAssignment(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const assignedToType = form.get("assigned_to_type");
+        try {
+          await api(`/api/teacher/sessions/${form.get("session_id")}/assign-material`, {
+            method: "POST",
+            body: JSON.stringify({
+              material_id: form.get("material_id"),
+              assigned_to_type: assignedToType,
+              assigned_to_student_id: assignedToType === "student" ? form.get("assigned_to_student_id") : null
+            })
+          });
+          await rerenderTeacherWithMessage("Material assigned.");
         } catch (error) {
           state.flash = "";
           const data = await loadTeacherDashboard();

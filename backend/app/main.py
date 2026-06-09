@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import date, datetime, time, timedelta, timezone
 from secrets import token_urlsafe
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -11,6 +11,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .config import Settings, get_settings
+
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:  # pragma: no cover - exercised only when the optional driver is missing.
+    psycopg = None
+    dict_row = None
 
 
 class User(BaseModel):
@@ -60,6 +67,27 @@ class ClassSession(BaseModel):
     created_at: datetime
 
 
+class Material(BaseModel):
+    id: str
+    title: str
+    description: str = ""
+    file_type: Literal["pdf", "ppt", "image", "video", "other"]
+    file_url: str
+    file_size: int = 0
+    uploaded_by: str
+    created_at: datetime
+
+
+class SessionMaterialAssignment(BaseModel):
+    id: str
+    class_session_id: str
+    material_id: str
+    assigned_to_type: Literal["class", "student"]
+    assigned_to_student_id: Optional[str] = None
+    assigned_by: str
+    created_at: datetime
+
+
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -86,6 +114,20 @@ class MembershipCreateRequest(BaseModel):
 class GenerateSessionsRequest(BaseModel):
     term_start_date: date
     session_count: int = Field(ge=1, le=30)
+
+
+class MaterialCreateRequest(BaseModel):
+    title: str
+    description: str = ""
+    file_type: Literal["pdf", "ppt", "image", "video", "other"]
+    file_url: str
+    file_size: int = Field(default=0, ge=0)
+
+
+class AssignmentCreateRequest(BaseModel):
+    material_id: str
+    assigned_to_type: Literal["class", "student"] = "class"
+    assigned_to_student_id: Optional[str] = None
 
 
 class SessionDeleteResponse(BaseModel):
@@ -140,11 +182,51 @@ def ensure_database_parent() -> None:
     settings.sqlite_file.parent.mkdir(parents=True, exist_ok=True)
 
 
-def get_connection() -> sqlite3.Connection:
-    ensure_database_parent()
-    connection = sqlite3.connect(settings.sqlite_file)
-    connection.row_factory = sqlite3.Row
-    return connection
+class DatabaseConnection:
+    def __init__(self, connection: Any, provider: str):
+        self.connection = connection
+        self.provider = provider
+
+    def __enter__(self) -> "DatabaseConnection":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        if exc_type is None:
+            self.connection.commit()
+        else:
+            self.connection.rollback()
+        self.connection.close()
+
+    def execute(self, statement: str, parameters: tuple = ()):
+        return self.connection.execute(self.prepare(statement), parameters)
+
+    def executescript(self, script: str) -> None:
+        for statement in script.split(";"):
+            normalized = statement.strip()
+            if normalized:
+                self.execute(normalized)
+
+    def prepare(self, statement: str) -> str:
+        if self.provider == "postgresql":
+            return statement.replace("?", "%s")
+        return statement
+
+
+def get_connection() -> DatabaseConnection:
+    provider = settings.database_provider.lower()
+    if provider == "sqlite":
+        ensure_database_parent()
+        connection = sqlite3.connect(settings.sqlite_file)
+        connection.row_factory = sqlite3.Row
+        return DatabaseConnection(connection, provider)
+
+    if provider == "postgresql":
+        if psycopg is None or dict_row is None:
+            raise RuntimeError("PostgreSQL support requires installing psycopg. Run pip install -r backend/requirements.txt.")
+        connection = psycopg.connect(settings.postgresql_connection_url, row_factory=dict_row)
+        return DatabaseConnection(connection, provider)
+
+    raise RuntimeError(f"Unsupported database provider: {settings.database_provider}")
 
 
 def init_database() -> None:
@@ -198,6 +280,27 @@ def init_database() -> None:
                 created_at TEXT NOT NULL,
                 UNIQUE(class_group_id, session_date)
             );
+
+            CREATE TABLE IF NOT EXISTS materials (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                file_type TEXT NOT NULL,
+                file_url TEXT NOT NULL,
+                file_size INTEGER NOT NULL DEFAULT 0,
+                uploaded_by TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS session_material_assignments (
+                id TEXT PRIMARY KEY,
+                class_session_id TEXT NOT NULL,
+                material_id TEXT NOT NULL,
+                assigned_to_type TEXT NOT NULL,
+                assigned_to_student_id TEXT,
+                assigned_by TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
             """
         )
 
@@ -242,10 +345,14 @@ def first_weekday_on_or_after(start_date: date, weekday: int) -> date:
 
 
 def parse_datetime_value(raw: str) -> datetime:
+    if isinstance(raw, datetime):
+        return raw
     return datetime.fromisoformat(raw)
 
 
 def parse_date_value(raw: str) -> date:
+    if isinstance(raw, date):
+        return raw
     return date.fromisoformat(raw)
 
 
@@ -304,6 +411,31 @@ def row_to_class_session(row: sqlite3.Row) -> ClassSession:
     )
 
 
+def row_to_material(row: sqlite3.Row) -> Material:
+    return Material(
+        id=row["id"],
+        title=row["title"],
+        description=row["description"],
+        file_type=row["file_type"],
+        file_url=row["file_url"],
+        file_size=row["file_size"],
+        uploaded_by=row["uploaded_by"],
+        created_at=parse_datetime_value(row["created_at"]),
+    )
+
+
+def row_to_assignment(row: sqlite3.Row) -> SessionMaterialAssignment:
+    return SessionMaterialAssignment(
+        id=row["id"],
+        class_session_id=row["class_session_id"],
+        material_id=row["material_id"],
+        assigned_to_type=row["assigned_to_type"],
+        assigned_to_student_id=row["assigned_to_student_id"],
+        assigned_by=row["assigned_by"],
+        created_at=parse_datetime_value(row["created_at"]),
+    )
+
+
 def find_user_by_email(email: str) -> Optional[User]:
     normalized = email.strip().lower()
     with get_connection() as connection:
@@ -329,6 +461,21 @@ def get_student_profile(student_id: str) -> StudentProfile:
     return row_to_student_profile(row)
 
 
+def get_student_profile_for_user(user_id: str) -> StudentProfile:
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT id, user_id, display_name, parent_name, notes, created_at
+            FROM student_profiles
+            WHERE user_id = ?
+            """,
+            (user_id,),
+        ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Student profile not found.")
+    return row_to_student_profile(row)
+
+
 def get_class_group(class_id: str) -> ClassGroup:
     with get_connection() as connection:
         row = connection.execute(
@@ -342,6 +489,36 @@ def get_class_group(class_id: str) -> ClassGroup:
     if row is None:
         raise HTTPException(status_code=404, detail="Class not found.")
     return row_to_class_group(row)
+
+
+def get_class_session(session_id: str) -> ClassSession:
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT id, class_group_id, session_date, start_datetime, end_datetime, status, title, created_at
+            FROM class_sessions
+            WHERE id = ?
+            """,
+            (session_id,),
+        ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    return row_to_class_session(row)
+
+
+def get_material(material_id: str) -> Material:
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, created_at
+            FROM materials
+            WHERE id = ?
+            """,
+            (material_id,),
+        ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    return row_to_material(row)
 
 
 def get_current_user(authorization: str = Header(default="")) -> User:
@@ -404,22 +581,43 @@ def build_teacher_dashboard_payload(user: User) -> dict:
             ORDER BY session_date, start_datetime
             """
         ).fetchall()
+        material_rows = connection.execute(
+            """
+            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, created_at
+            FROM materials
+            ORDER BY created_at DESC
+            """
+        ).fetchall()
+        assignment_rows = connection.execute(
+            """
+            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
+            FROM session_material_assignments
+            ORDER BY created_at DESC
+            """
+        ).fetchall()
 
     users = [row_to_user(row) for row in user_rows]
     student_profiles = [row_to_student_profile(row) for row in student_rows]
     class_groups = [row_to_class_group(row) for row in class_rows]
     class_memberships = [row_to_class_membership(row) for row in membership_rows]
     class_sessions = [row_to_class_session(row) for row in session_rows]
+    materials = [row_to_material(row) for row in material_rows]
+    assignments = [row_to_assignment(row) for row in assignment_rows]
 
     class_lookup = {group.id: group for group in class_groups}
     user_lookup = {user_item.id: user_item for user_item in users}
     student_lookup = {profile.id: profile for profile in student_profiles}
+    material_lookup = {material.id: material for material in materials}
     memberships_by_student: dict[str, list[ClassMembership]] = {}
     memberships_by_class: dict[str, list[ClassMembership]] = {}
+    assignments_by_session: dict[str, list[SessionMaterialAssignment]] = {}
 
     for membership in class_memberships:
         memberships_by_student.setdefault(membership.student_id, []).append(membership)
         memberships_by_class.setdefault(membership.class_group_id, []).append(membership)
+
+    for assignment in assignments:
+        assignments_by_session.setdefault(assignment.class_session_id, []).append(assignment)
 
     students_payload = []
     for profile in student_profiles:
@@ -470,6 +668,7 @@ def build_teacher_dashboard_payload(user: User) -> dict:
     sessions_payload = []
     for session in class_sessions:
         group = class_lookup.get(session.class_group_id)
+        session_assignments = assignments_by_session.get(session.id, [])
         sessions_payload.append(
             {
                 "id": session.id,
@@ -480,8 +679,55 @@ def build_teacher_dashboard_payload(user: User) -> dict:
                 "endTime": session.end_datetime.strftime("%H:%M"),
                 "status": session.status,
                 "title": session.title,
+                "assignmentCount": len(session_assignments),
+                "assignments": [
+                    {
+                        "id": assignment.id,
+                        "materialId": assignment.material_id,
+                        "materialTitle": material_lookup[assignment.material_id].title
+                        if assignment.material_id in material_lookup
+                        else "Unknown material",
+                        "assignedToType": assignment.assigned_to_type,
+                        "assignedToStudentId": assignment.assigned_to_student_id,
+                        "assignedToStudentName": student_lookup[assignment.assigned_to_student_id].display_name
+                        if assignment.assigned_to_student_id in student_lookup
+                        else "",
+                    }
+                    for assignment in session_assignments
+                ],
             }
         )
+
+    materials_payload = [
+        {
+            "id": material.id,
+            "title": material.title,
+            "description": material.description,
+            "fileType": material.file_type,
+            "fileUrl": material.file_url,
+            "fileSize": material.file_size,
+            "createdAt": material.created_at.isoformat(),
+        }
+        for material in materials
+    ]
+
+    assignments_payload = [
+        {
+            "id": assignment.id,
+            "classSessionId": assignment.class_session_id,
+            "materialId": assignment.material_id,
+            "materialTitle": material_lookup[assignment.material_id].title
+            if assignment.material_id in material_lookup
+            else "Unknown material",
+            "assignedToType": assignment.assigned_to_type,
+            "assignedToStudentId": assignment.assigned_to_student_id,
+            "assignedToStudentName": student_lookup[assignment.assigned_to_student_id].display_name
+            if assignment.assigned_to_student_id in student_lookup
+            else "",
+            "createdAt": assignment.created_at.isoformat(),
+        }
+        for assignment in assignments
+    ]
 
     return {
         "title": "Teacher Dashboard",
@@ -491,10 +737,185 @@ def build_teacher_dashboard_payload(user: User) -> dict:
             "studentCount": len(student_profiles),
             "classCount": len(class_groups),
             "sessionCount": len(class_sessions),
+            "materialCount": len(materials),
+            "assignmentCount": len(assignments),
         },
         "students": students_payload,
         "classes": classes_payload,
         "sessions": sessions_payload,
+        "materials": materials_payload,
+        "assignments": assignments_payload,
+    }
+
+
+def scoped_placeholders(values: list[str]) -> str:
+    return ", ".join("?" for _ in values)
+
+
+def material_for_student_payload(
+    material: Material,
+    session: ClassSession,
+    class_name: str,
+    assignment: SessionMaterialAssignment,
+) -> dict:
+    return {
+        "id": material.id,
+        "title": material.title,
+        "description": material.description,
+        "fileType": material.file_type,
+        "fileUrl": material.file_url,
+        "classSessionId": session.id,
+        "className": class_name,
+        "sessionDate": session.session_date.isoformat(),
+        "startTime": session.start_datetime.strftime("%H:%M"),
+        "endTime": session.end_datetime.strftime("%H:%M"),
+        "assignmentScope": assignment.assigned_to_type,
+    }
+
+
+def build_student_learning_payload(user: User) -> dict:
+    profile = get_student_profile_for_user(user.id)
+    current_time = now_utc()
+
+    with get_connection() as connection:
+        membership_rows = connection.execute(
+            """
+            SELECT id, class_group_id, student_id, status, joined_at
+            FROM class_memberships
+            WHERE student_id = ? AND status = 'active'
+            ORDER BY joined_at
+            """,
+            (profile.id,),
+        ).fetchall()
+
+        class_ids = [row["class_group_id"] for row in membership_rows]
+        if not class_ids:
+            return {
+                "title": "Current Lesson",
+                "welcome": f"Welcome, {profile.display_name}.",
+                "studentName": profile.display_name,
+                "status": "You are not assigned to a class yet.",
+                "currentSession": None,
+                "currentMaterials": [],
+                "reviewMaterials": [],
+            }
+
+        class_placeholders = scoped_placeholders(class_ids)
+        session_rows = connection.execute(
+            f"""
+            SELECT
+                s.id,
+                s.class_group_id,
+                s.session_date,
+                s.start_datetime,
+                s.end_datetime,
+                s.status,
+                s.title,
+                s.created_at,
+                g.name AS class_name
+            FROM class_sessions s
+            JOIN class_groups g ON g.id = s.class_group_id
+            WHERE s.class_group_id IN ({class_placeholders}) AND s.status = 'scheduled'
+            ORDER BY s.start_datetime DESC
+            """,
+            tuple(class_ids),
+        ).fetchall()
+
+        session_ids = [row["id"] for row in session_rows]
+        if not session_ids:
+            return {
+                "title": "Current Lesson",
+                "welcome": f"Welcome, {profile.display_name}.",
+                "studentName": profile.display_name,
+                "status": "No class session has been scheduled yet.",
+                "currentSession": None,
+                "currentMaterials": [],
+                "reviewMaterials": [],
+            }
+
+        session_placeholders = scoped_placeholders(session_ids)
+        assignment_rows = connection.execute(
+            f"""
+            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
+            FROM session_material_assignments
+            WHERE class_session_id IN ({session_placeholders})
+              AND (
+                assigned_to_type = 'class'
+                OR (assigned_to_type = 'student' AND assigned_to_student_id = ?)
+              )
+            ORDER BY created_at
+            """,
+            (*session_ids, profile.id),
+        ).fetchall()
+
+        material_ids = sorted({row["material_id"] for row in assignment_rows})
+        material_rows = []
+        if material_ids:
+            material_placeholders = scoped_placeholders(material_ids)
+            material_rows = connection.execute(
+                f"""
+                SELECT id, title, description, file_type, file_url, file_size, uploaded_by, created_at
+                FROM materials
+                WHERE id IN ({material_placeholders})
+                """,
+                tuple(material_ids),
+            ).fetchall()
+
+    sessions_with_classes = [
+        (row_to_class_session(row), row["class_name"])
+        for row in session_rows
+    ]
+    assignments = [row_to_assignment(row) for row in assignment_rows]
+    materials = {row["id"]: row_to_material(row) for row in material_rows}
+    assignments_by_session: dict[str, list[SessionMaterialAssignment]] = {}
+    for assignment in assignments:
+        assignments_by_session.setdefault(assignment.class_session_id, []).append(assignment)
+
+    current_session_data = None
+    current_materials = []
+    review_materials = []
+
+    for session, class_name in sessions_with_classes:
+        session_assignments = assignments_by_session.get(session.id, [])
+        personal_assignments = [
+            assignment for assignment in session_assignments if assignment.assigned_to_student_id == profile.id
+        ]
+        resolved_assignments = personal_assignments or [
+            assignment for assignment in session_assignments if assignment.assigned_to_type == "class"
+        ]
+        session_materials = [
+            material_for_student_payload(materials[assignment.material_id], session, class_name, assignment)
+            for assignment in resolved_assignments
+            if assignment.material_id in materials
+        ]
+
+        if session.start_datetime <= current_time <= session.end_datetime and current_session_data is None:
+            current_session_data = {
+                "id": session.id,
+                "className": class_name,
+                "sessionDate": session.session_date.isoformat(),
+                "startTime": session.start_datetime.strftime("%H:%M"),
+                "endTime": session.end_datetime.strftime("%H:%M"),
+                "title": session.title,
+            }
+            current_materials = session_materials
+        elif session.end_datetime < current_time:
+            review_materials.extend(session_materials)
+
+    status = "No class is currently in session."
+    if current_session_data and not current_materials:
+        status = "The teacher is preparing the lesson material."
+    elif current_session_data and current_materials:
+        status = "Current lesson material is ready."
+
+    return {
+        "title": "Current Lesson",
+        "welcome": f"Welcome, {profile.display_name}.",
+        "studentName": profile.display_name,
+        "status": status,
+        "currentSession": current_session_data,
+        "currentMaterials": current_materials,
+        "reviewMaterials": review_materials,
     }
 
 
@@ -742,13 +1163,115 @@ def delete_session(session_id: str, _: User = Depends(require_teacher)):
     return SessionDeleteResponse(deleted_session_id=session_id)
 
 
+@app.get("/api/teacher/materials")
+def teacher_materials(user: User = Depends(require_teacher)):
+    return {"materials": build_teacher_dashboard_payload(user)["materials"]}
+
+
+@app.post("/api/teacher/materials")
+def create_material(request: MaterialCreateRequest, user: User = Depends(require_teacher)):
+    normalized_title = request.title.strip()
+    normalized_url = request.file_url.strip()
+    if not normalized_title:
+        raise HTTPException(status_code=422, detail="Material title is required.")
+    if not normalized_url:
+        raise HTTPException(status_code=422, detail="Material URL or path is required.")
+
+    material = Material(
+        id=make_id("material"),
+        title=normalized_title,
+        description=request.description.strip(),
+        file_type=request.file_type,
+        file_url=normalized_url,
+        file_size=request.file_size,
+        uploaded_by=user.id,
+        created_at=now_utc(),
+    )
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO materials (id, title, description, file_type, file_url, file_size, uploaded_by, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                material.id,
+                material.title,
+                material.description,
+                material.file_type,
+                material.file_url,
+                material.file_size,
+                material.uploaded_by,
+                material.created_at.isoformat(),
+            ),
+        )
+    return {"material": material}
+
+
+@app.post("/api/teacher/sessions/{session_id}/assign-material")
+def assign_material_to_session(
+    session_id: str,
+    request: AssignmentCreateRequest,
+    user: User = Depends(require_teacher),
+):
+    class_session = get_class_session(session_id)
+    get_material(request.material_id)
+
+    assigned_to_student_id = request.assigned_to_student_id
+    if request.assigned_to_type == "student":
+        if not assigned_to_student_id:
+            raise HTTPException(status_code=422, detail="Student assignment requires a student.")
+        get_student_profile(assigned_to_student_id)
+        with get_connection() as connection:
+            membership = connection.execute(
+                """
+                SELECT id
+                FROM class_memberships
+                WHERE class_group_id = ? AND student_id = ? AND status = 'active'
+                """,
+                (class_session.class_group_id, assigned_to_student_id),
+            ).fetchone()
+        if membership is None:
+            raise HTTPException(status_code=422, detail="Student must be an active member of this session's class.")
+    else:
+        assigned_to_student_id = None
+
+    assignment = SessionMaterialAssignment(
+        id=make_id("assignment"),
+        class_session_id=session_id,
+        material_id=request.material_id,
+        assigned_to_type=request.assigned_to_type,
+        assigned_to_student_id=assigned_to_student_id,
+        assigned_by=user.id,
+        created_at=now_utc(),
+    )
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO session_material_assignments (
+                id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                assignment.id,
+                assignment.class_session_id,
+                assignment.material_id,
+                assignment.assigned_to_type,
+                assignment.assigned_to_student_id,
+                assignment.assigned_by,
+                assignment.created_at.isoformat(),
+            ),
+        )
+    return {"assignment": assignment}
+
+
 @app.get("/api/student/current-lesson")
 def student_current_lesson(user: User = Depends(require_student)):
-    return {
-        "title": "Current Lesson",
-        "welcome": f"Welcome, {user.name}.",
-        "status": "No lesson material has been assigned yet.",
-    }
+    return build_student_learning_payload(user)
+
+
+@app.get("/api/student/review-materials")
+def student_review_materials(user: User = Depends(require_student)):
+    return {"materials": build_student_learning_payload(user)["reviewMaterials"]}
 
 
 app.mount("/static", StaticFiles(directory="public"), name="static")
