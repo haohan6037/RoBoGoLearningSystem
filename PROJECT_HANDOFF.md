@@ -39,7 +39,8 @@ Implemented and working:
 
 Implemented and working:
 
-- Create material metadata records
+- Upload real material files from the teacher dashboard
+- Auto-store uploaded files under local type-based folders, for example `storage/materials/pdfs/...`
 - List material library items in the teacher dashboard
 - Assign materials to a class session for the whole class
 - Assign materials to an individual student, with backend membership validation
@@ -69,6 +70,8 @@ Current persisted entities:
 - `class_sessions`
 - `materials`
 - `session_material_assignments`
+- `material_view_records`
+- `attendance_records`
 
 Note: session tokens are still runtime memory only, which is acceptable for the current local MVP stage.
 
@@ -134,26 +137,28 @@ Verified during this session:
 - Teacher login/dashboard data can be read from PostgreSQL
 - Teacher material/session assignment write flow works against PostgreSQL
 - Student current lesson and review payloads work against PostgreSQL
+- Material upload writes files into local typed storage paths and returns protected download URLs
+- Student current lesson open records a material view and can create one attendance record per session when location and session timing match
+- Teacher dashboard shows attended and absent counts on session cards
 - Temporary verification records were cleaned after checks
 
 ## Known Limitations
 
-- No file upload flow yet
-- No attendance verification yet
+- No teacher-side file manager yet for browsing folders, replacing files, or deleting materials
+- No teacher-side attendance detail screen yet beyond session summary counts
 - No real database migration framework yet
 - Auth is still local MVP-level and not suitable for production
 - Demo login accounts remain in code for local development
 
 ## Recommended Next Development Steps
 
-### Step 5: Attendance Verification
+### Step 6: Material Management And Attendance Detail
 
 Build next:
-- material open record
-- view history
-- session-time check
-- location-gated attendance creation
-- duplicate attendance prevention
+- teacher material actions: preview, replace, delete, and basic file validation feedback
+- optional folder-style material browser if teachers need to navigate local teaching assets
+- teacher attendance detail panel for each session, including who was verified, who was absent, and why location checks failed
+- retention and cleanup rules for local uploaded files when materials are replaced or removed
 
 ## Suggested Skills
 
@@ -177,4 +182,4 @@ If a fresh Codex session continues this project, these skills are the best fit:
 
 A strong next-session prompt would be:
 
-"Read `PROJECT_HANDOFF.md`, inspect the current FastAPI + PostgreSQL implementation, and continue with Step 5: attendance verification."
+"Read `PROJECT_HANDOFF.md`, inspect the current FastAPI + PostgreSQL implementation, and continue with Step 6: material management plus attendance detail views."

@@ -6,3 +6,4 @@ __pycache__/
 .pytest_cache/
 .venv311/
 .DS_Store
+storage/materials/

@@ -425,7 +425,8 @@
       const state = {
         token: localStorage.getItem("robogo-token"),
         user: null,
-        flash: ""
+        flash: "",
+        studentNotice: ""
       };
 
       const teacherSeed = {
@@ -447,10 +448,11 @@
       ];
 
       async function api(path, options = {}) {
+        const isFormData = options.body instanceof FormData;
         const response = await fetch(path, {
           ...options,
           headers: {
-            "Content-Type": "application/json",
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
             ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
             ...(options.headers || {})
           }
@@ -460,6 +462,68 @@
           throw new Error(payload.error || payload.detail || "Request failed.");
         }
         return payload;
+      }
+
+      function materialAcceptValue(fileType) {
+        switch (fileType) {
+          case "pdf":
+            return ".pdf,application/pdf";
+          case "ppt":
+            return ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation";
+          case "image":
+            return "image/*";
+          case "video":
+            return "video/*";
+          default:
+            return "";
+        }
+      }
+
+      function syncMaterialFileAccept() {
+        const fileType = document.querySelector("#material-type")?.value || "other";
+        const fileInput = document.querySelector("#material-file");
+        if (fileInput) {
+          fileInput.accept = materialAcceptValue(fileType);
+        }
+      }
+
+      function extractDownloadFilename(headerValue, fallbackName) {
+        if (!headerValue) return fallbackName;
+        const utfMatch = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utfMatch) return decodeURIComponent(utfMatch[1]);
+        const simpleMatch = headerValue.match(/filename=\"?([^\";]+)\"?/i);
+        if (simpleMatch) return simpleMatch[1];
+        return fallbackName;
+      }
+
+      async function downloadProtectedFile(downloadUrl, fallbackName) {
+        const response = await fetch(downloadUrl, {
+          headers: {
+            ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+          }
+        });
+
+        if (!response.ok) {
+          let message = "Material download failed.";
+          try {
+            const payload = await response.json();
+            message = payload.error || payload.detail || message;
+          } catch {
+            // Ignore non-JSON error bodies and use the fallback message.
+          }
+          throw new Error(message);
+        }
+
+        const blob = await response.blob();
+        const filename = extractDownloadFilename(response.headers.get("Content-Disposition"), fallbackName);
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       }
 
       function routeTo(path) {
@@ -539,14 +603,12 @@
         return `<div class="banner success">${state.flash}</div>`;
       }
 
-      function materialLink(material) {
-        const label = material.fileUrl.startsWith("http") ? "Open" : "View path";
-        return material.fileUrl.startsWith("http")
-          ? `<a class="button secondary" href="${material.fileUrl}" target="_blank" rel="noreferrer">${label}</a>`
-          : `<span class="pill">${material.fileUrl}</span>`;
+      function studentBannerMarkup() {
+        if (!state.studentNotice) return "";
+        return `<div class="banner success">${state.studentNotice}</div>`;
       }
 
-      function studentMaterialCards(materials, emptyMessage) {
+      function studentMaterialCards(materials, emptyMessage, source) {
         return materials.length ? materials.map((material) => `
           <article class="material-card">
             <header>
@@ -557,7 +619,20 @@
               <span class="pill">${material.assignmentScope === "student" ? "Personal" : "Class"}</span>
             </header>
             <p class="muted">${material.description || "No material description yet."}</p>
-            <div class="button-row">${materialLink(material)}</div>
+            <div class="button-row">
+              <button
+                class="button open-material"
+                type="button"
+                data-material-id="${material.id}"
+                data-material-title="${material.title}"
+                data-source="${source}"
+                data-session-id="${material.classSessionId || ""}"
+                data-download-url="${material.downloadUrl}"
+              >
+                Open material
+              </button>
+              <span class="pill">${material.fileType}</span>
+            </div>
           </article>
         `).join("") : `<div class="empty-state">${emptyMessage}</div>`;
       }
@@ -588,6 +663,7 @@
                 <div class="section-copy">
                   <h2>${currentSession ? currentSession.className : "No Current Session"}</h2>
                   <p class="muted">${data.status}</p>
+                  ${studentBannerMarkup()}
                 </div>
                 <div class="status-grid">
                   <article class="status-card">
@@ -602,7 +678,7 @@
                   </article>
                   <article class="status-card">
                     <strong>Attendance</strong>
-                    <p class="muted">Location verification comes in the next attendance step.</p>
+                    <p class="muted">Opening a current lesson now records a view and may verify attendance from browser location.</p>
                   </article>
                 </div>
                 <div class="list-grid" style="margin-top: 18px;">
@@ -610,14 +686,14 @@
                     <h3>Current Lesson</h3>
                     <p class="muted">Materials here are visible only when your class session is currently active.</p>
                     <div class="material-cards">
-                      ${studentMaterialCards(data.currentMaterials, "No current lesson material is available right now.")}
+                      ${studentMaterialCards(data.currentMaterials, "No current lesson material is available right now.", "current_lesson")}
                     </div>
                   </section>
                   <section class="list-card">
                     <h3>Review</h3>
                     <p class="muted">Historical materials remain available after their class session has ended.</p>
                     <div class="material-cards">
-                      ${studentMaterialCards(data.reviewMaterials, "No review materials yet.")}
+                      ${studentMaterialCards(data.reviewMaterials, "No review materials yet.", "review")}
                     </div>
                   </section>
                 </div>
@@ -626,6 +702,9 @@
           </main>
         `;
         document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll(".open-material").forEach((button) => {
+          button.addEventListener("click", () => handleOpenMaterial(button.dataset));
+        });
       }
 
       function renderTeacherPortal(data) {
@@ -788,7 +867,7 @@
                     </section>
                     <section class="form-card">
                       <h3>Add Material</h3>
-                      <p class="muted">Stores material metadata now; real file upload storage can be added after the workflow is stable.</p>
+                      <p class="muted">Upload the source file here. The system will place it into the correct local folder automatically based on material type.</p>
                       <form id="material-form">
                         <label for="material-title">Material title</label>
                         <input id="material-title" name="title" type="text" required />
@@ -800,8 +879,8 @@
                           <option value="video">Video</option>
                           <option value="other">Other</option>
                         </select>
-                        <label for="material-url">File path or URL</label>
-                        <input id="material-url" name="file_url" type="text" placeholder="/materials/lesson-1.pdf" required />
+                        <label for="material-file">Material file</label>
+                        <input id="material-file" name="file" type="file" required />
                         <label for="material-description">Description</label>
                         <textarea id="material-description" name="description"></textarea>
                         <div class="button-row">
@@ -895,6 +974,8 @@
                               <div class="button-row" style="margin-top: 0;">
                                 <span class="pill">${session.status}</span>
                                 <span class="pill">${session.assignmentCount} materials</span>
+                                <span class="pill">${session.attendanceCount} attended</span>
+                                <span class="pill">${session.absentCount} absent</span>
                                 <button class="button danger session-delete" type="button" data-session-id="${session.id}">Delete</button>
                               </div>
                             </header>
@@ -910,18 +991,28 @@
                     </section>
                     <section class="list-card" style="grid-column: 1 / -1;">
                       <h3>Material Library</h3>
-                      <p class="muted">Materials can be reused across sessions and later become real uploaded files.</p>
+                      <p class="muted">Materials are stored locally by type and can be reused across sessions.</p>
                       <div class="material-cards">
                         ${data.materials.length ? data.materials.map((material) => `
                           <article class="material-card">
                             <header>
                               <div>
                                 <strong>${material.title}</strong>
-                                <div class="material-meta">${material.fileType.toUpperCase()} • ${material.fileUrl}</div>
+                                <div class="material-meta">${material.fileType.toUpperCase()} • ${material.storagePath}</div>
                               </div>
                               <span class="pill">${material.fileType}</span>
                             </header>
                             <p class="muted">${material.description || "No material description yet."}</p>
+                            <div class="button-row">
+                              <button
+                                class="button secondary teacher-open-material"
+                                type="button"
+                                data-download-url="${material.downloadUrl}"
+                                data-material-title="${material.title}"
+                              >
+                                Open file
+                              </button>
+                            </div>
                           </article>
                         `).join("") : `<div class="empty-state">No materials yet. Add the first lesson material before assigning a session.</div>`}
                       </div>
@@ -939,9 +1030,23 @@
         document.querySelector("#membership-form").addEventListener("submit", handleMembershipCreate);
         document.querySelector("#sessions-form").addEventListener("submit", handleGenerateSessions);
         document.querySelector("#material-form").addEventListener("submit", handleMaterialCreate);
+        document.querySelector("#material-type").addEventListener("change", syncMaterialFileAccept);
+        syncMaterialFileAccept();
         document.querySelector("#assignment-form").addEventListener("submit", handleMaterialAssignment);
         document.querySelectorAll(".session-delete").forEach((button) => {
           button.addEventListener("click", () => handleDeleteSession(button.dataset.sessionId));
+        });
+        document.querySelectorAll(".teacher-open-material").forEach((button) => {
+          button.addEventListener("click", async () => {
+            try {
+              await downloadProtectedFile(button.dataset.downloadUrl, button.dataset.materialTitle || "material");
+            } catch (error) {
+              state.flash = "";
+              const data = await loadTeacherDashboard();
+              renderTeacherPortal(data);
+              app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+            }
+          });
         });
       }
 
@@ -1051,16 +1156,14 @@
       async function handleMaterialCreate(event) {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
+        const file = form.get("file");
         try {
+          if (!(file instanceof File) || !file.name) {
+            throw new Error("Please choose a material file before submitting.");
+          }
           await api("/api/teacher/materials", {
             method: "POST",
-            body: JSON.stringify({
-              title: form.get("title"),
-              description: form.get("description") || "",
-              file_type: form.get("file_type"),
-              file_url: form.get("file_url"),
-              file_size: 0
-            })
+            body: form
           });
           await rerenderTeacherWithMessage("Material added.");
         } catch (error) {
@@ -1089,6 +1192,69 @@
           state.flash = "";
           const data = await loadTeacherDashboard();
           renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function getBrowserLocationForAttendance() {
+        if (!("geolocation" in navigator)) {
+          return { location_permission: "unavailable", latitude: null, longitude: null };
+        }
+        return new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => resolve({
+              location_permission: "granted",
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }),
+            (error) => resolve({
+              location_permission: error.code === 1 ? "denied" : "unavailable",
+              latitude: null,
+              longitude: null
+            }),
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          );
+        });
+      }
+
+      async function handleOpenMaterial(dataset) {
+        const source = dataset.source;
+        let location = { location_permission: "not_required", latitude: null, longitude: null };
+        if (source === "current_lesson") {
+          location = await getBrowserLocationForAttendance();
+        }
+
+        try {
+          const result = await api(`/api/materials/${dataset.materialId}/open`, {
+            method: "POST",
+            body: JSON.stringify({
+              source,
+              class_session_id: dataset.sessionId || null,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              location_permission: location.location_permission
+            })
+          });
+          if (source === "current_lesson") {
+            if (result.attendance && result.locationStatus === "valid") {
+              state.studentNotice = "Current lesson opened. Attendance verified for this session.";
+            } else {
+              state.studentNotice = `Current lesson opened. Attendance status: ${result.locationStatus}.`;
+            }
+          } else {
+            state.studentNotice = "Review material opened.";
+          }
+
+          if (dataset.downloadUrl) {
+            await downloadProtectedFile(dataset.downloadUrl, dataset.materialTitle || "material");
+          }
+
+          const data = await api("/api/student/current-lesson");
+          renderStudentPortal(data);
+        } catch (error) {
+          state.studentNotice = "";
+          const data = await api("/api/student/current-lesson");
+          renderStudentPortal(data);
           app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
         }
       }

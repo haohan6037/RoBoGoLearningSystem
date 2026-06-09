@@ -5,6 +5,8 @@ from urllib.parse import quote_plus
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BASE_DIR = Path(__file__).resolve().parents[2]
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="ROBOGO_")
@@ -23,6 +25,11 @@ class Settings(BaseSettings):
     db_password: str = Field(default="", repr=False)
     sqlserver_driver: str = "ODBC Driver 18 for SQL Server"
     trust_server_certificate: bool = True
+    classroom_latitude: float | None = None
+    classroom_longitude: float | None = None
+    allowed_radius_meters: int = 100
+    attendance_grace_period_minutes: int = 10
+    materials_storage_root: str = "storage/materials"
 
     @property
     def is_database_password_configured(self) -> bool:
@@ -31,6 +38,15 @@ class Settings(BaseSettings):
     @property
     def sqlite_file(self) -> Path:
         return Path(self.sqlite_path)
+
+    @property
+    def materials_storage_dir(self) -> Path:
+        storage_path = Path(self.materials_storage_root)
+        return storage_path if storage_path.is_absolute() else BASE_DIR / storage_path
+
+    @property
+    def is_attendance_location_configured(self) -> bool:
+        return self.classroom_latitude is not None and self.classroom_longitude is not None
 
     @property
     def database_url(self) -> str:

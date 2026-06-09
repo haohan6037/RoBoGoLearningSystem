@@ -1,10 +1,13 @@
 import sqlite3
+import re
 from datetime import date, datetime, time, timedelta, timezone
+from math import asin, cos, radians, sin, sqrt
+from pathlib import Path
 from secrets import token_urlsafe
 from typing import Any, Literal, Optional
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,6 +21,31 @@ try:
 except ImportError:  # pragma: no cover - exercised only when the optional driver is missing.
     psycopg = None
     dict_row = None
+
+
+MATERIAL_DIRECTORY_MAP = {
+    "pdf": "pdfs",
+    "ppt": "presentations",
+    "image": "images",
+    "video": "videos",
+    "other": "other",
+}
+
+MATERIAL_ALLOWED_EXTENSIONS = {
+    "pdf": {".pdf"},
+    "ppt": {".ppt", ".pptx"},
+    "image": {".jpg", ".jpeg", ".png", ".gif", ".webp"},
+    "video": {".mp4", ".mov", ".m4v", ".webm"},
+    "other": set(),
+}
+
+MATERIAL_DEFAULT_EXTENSIONS = {
+    "pdf": ".pdf",
+    "ppt": ".pptx",
+    "image": ".png",
+    "video": ".mp4",
+    "other": ".bin",
+}
 
 
 class User(BaseModel):
@@ -88,6 +116,31 @@ class SessionMaterialAssignment(BaseModel):
     created_at: datetime
 
 
+class MaterialViewRecord(BaseModel):
+    id: str
+    student_id: str
+    material_id: str
+    class_session_id: Optional[str] = None
+    view_source: Literal["current_lesson", "review"]
+    opened_at: datetime
+    location_status: Literal["valid", "outside", "denied", "unavailable", "not_required", "not_configured"]
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class AttendanceRecord(BaseModel):
+    id: str
+    student_id: str
+    class_session_id: str
+    material_id: str
+    checked_in_at: datetime
+    method: Literal["auto_location"] = "auto_location"
+    location_status: Literal["valid"] = "valid"
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    created_at: datetime
+
+
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -116,18 +169,18 @@ class GenerateSessionsRequest(BaseModel):
     session_count: int = Field(ge=1, le=30)
 
 
-class MaterialCreateRequest(BaseModel):
-    title: str
-    description: str = ""
-    file_type: Literal["pdf", "ppt", "image", "video", "other"]
-    file_url: str
-    file_size: int = Field(default=0, ge=0)
-
-
 class AssignmentCreateRequest(BaseModel):
     material_id: str
     assigned_to_type: Literal["class", "student"] = "class"
     assigned_to_student_id: Optional[str] = None
+
+
+class MaterialOpenRequest(BaseModel):
+    source: Literal["current_lesson", "review"]
+    class_session_id: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    location_permission: Literal["granted", "denied", "unavailable"] = "unavailable"
 
 
 class SessionDeleteResponse(BaseModel):
@@ -301,6 +354,32 @@ def init_database() -> None:
                 assigned_by TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS material_view_records (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                material_id TEXT NOT NULL,
+                class_session_id TEXT,
+                view_source TEXT NOT NULL,
+                opened_at TEXT NOT NULL,
+                location_status TEXT NOT NULL,
+                latitude DOUBLE PRECISION,
+                longitude DOUBLE PRECISION
+            );
+
+            CREATE TABLE IF NOT EXISTS attendance_records (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                class_session_id TEXT NOT NULL,
+                material_id TEXT NOT NULL,
+                checked_in_at TEXT NOT NULL,
+                method TEXT NOT NULL,
+                location_status TEXT NOT NULL,
+                latitude DOUBLE PRECISION,
+                longitude DOUBLE PRECISION,
+                created_at TEXT NOT NULL,
+                UNIQUE(student_id, class_session_id)
+            );
             """
         )
 
@@ -354,6 +433,48 @@ def parse_date_value(raw: str) -> date:
     if isinstance(raw, date):
         return raw
     return date.fromisoformat(raw)
+
+
+def is_session_active(session: ClassSession, now: datetime) -> bool:
+    grace = timedelta(minutes=settings.attendance_grace_period_minutes)
+    return session.start_datetime - grace <= now <= session.end_datetime + grace
+
+
+def haversine_distance_meters(
+    latitude_a: float,
+    longitude_a: float,
+    latitude_b: float,
+    longitude_b: float,
+) -> float:
+    earth_radius_meters = 6_371_000
+    lat_a = radians(latitude_a)
+    lon_a = radians(longitude_a)
+    lat_b = radians(latitude_b)
+    lon_b = radians(longitude_b)
+    delta_lat = lat_b - lat_a
+    delta_lon = lon_b - lon_a
+    term = sin(delta_lat / 2) ** 2 + cos(lat_a) * cos(lat_b) * sin(delta_lon / 2) ** 2
+    return 2 * earth_radius_meters * asin(sqrt(term))
+
+
+def resolve_location_status(request: MaterialOpenRequest) -> str:
+    if request.source == "review":
+        return "not_required"
+    if request.location_permission == "denied":
+        return "denied"
+    if request.location_permission == "unavailable":
+        return "unavailable"
+    if request.latitude is None or request.longitude is None:
+        return "unavailable"
+    if not settings.is_attendance_location_configured:
+        return "not_configured"
+    distance = haversine_distance_meters(
+        request.latitude,
+        request.longitude,
+        settings.classroom_latitude,
+        settings.classroom_longitude,
+    )
+    return "valid" if distance <= settings.allowed_radius_meters else "outside"
 
 
 def to_public_user(user: User) -> PublicUser:
@@ -434,6 +555,84 @@ def row_to_assignment(row: sqlite3.Row) -> SessionMaterialAssignment:
         assigned_by=row["assigned_by"],
         created_at=parse_datetime_value(row["created_at"]),
     )
+
+
+def row_to_material_view_record(row: sqlite3.Row) -> MaterialViewRecord:
+    return MaterialViewRecord(
+        id=row["id"],
+        student_id=row["student_id"],
+        material_id=row["material_id"],
+        class_session_id=row["class_session_id"],
+        view_source=row["view_source"],
+        opened_at=parse_datetime_value(row["opened_at"]),
+        location_status=row["location_status"],
+        latitude=row["latitude"],
+        longitude=row["longitude"],
+    )
+
+
+def row_to_attendance_record(row: sqlite3.Row) -> AttendanceRecord:
+    return AttendanceRecord(
+        id=row["id"],
+        student_id=row["student_id"],
+        class_session_id=row["class_session_id"],
+        material_id=row["material_id"],
+        checked_in_at=parse_datetime_value(row["checked_in_at"]),
+        method=row["method"],
+        location_status=row["location_status"],
+        latitude=row["latitude"],
+        longitude=row["longitude"],
+        created_at=parse_datetime_value(row["created_at"]),
+    )
+
+
+def slugify_filename_part(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", value.strip().lower())
+    return normalized.strip("-") or "material"
+
+
+def material_storage_path(relative_path: str) -> Path:
+    return settings.materials_storage_dir / relative_path
+
+
+def material_download_url(material_id: str) -> str:
+    return f"/api/materials/{material_id}/download"
+
+
+def material_storage_label(relative_path: str) -> str:
+    return f"/{relative_path.lstrip('/')}"
+
+
+def resolve_material_extension(file_type: str, upload: UploadFile) -> str:
+    original_name = upload.filename or ""
+    extension = Path(original_name).suffix.lower()
+    allowed_extensions = MATERIAL_ALLOWED_EXTENSIONS[file_type]
+
+    if extension:
+        if allowed_extensions and extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Uploaded file does not match the selected {file_type} material type.",
+            )
+        return extension
+
+    return MATERIAL_DEFAULT_EXTENSIONS[file_type]
+
+
+async def store_material_file(material_id: str, file_type: str, title: str, upload: UploadFile) -> tuple[str, int]:
+    extension = resolve_material_extension(file_type, upload)
+    directory = settings.materials_storage_dir / MATERIAL_DIRECTORY_MAP[file_type]
+    directory.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{slugify_filename_part(title)[:40]}-{material_id}{extension}"
+    destination = directory / filename
+    content = await upload.read()
+    if not content:
+        raise HTTPException(status_code=422, detail="Uploaded file is empty.")
+
+    destination.write_bytes(content)
+    relative_path = destination.relative_to(settings.materials_storage_dir).as_posix()
+    return relative_path, len(content)
 
 
 def find_user_by_email(email: str) -> Optional[User]:
@@ -595,6 +794,13 @@ def build_teacher_dashboard_payload(user: User) -> dict:
             ORDER BY created_at DESC
             """
         ).fetchall()
+        attendance_rows = connection.execute(
+            """
+            SELECT id, student_id, class_session_id, material_id, checked_in_at, method, location_status, latitude, longitude, created_at
+            FROM attendance_records
+            ORDER BY created_at DESC
+            """
+        ).fetchall()
 
     users = [row_to_user(row) for row in user_rows]
     student_profiles = [row_to_student_profile(row) for row in student_rows]
@@ -603,6 +809,7 @@ def build_teacher_dashboard_payload(user: User) -> dict:
     class_sessions = [row_to_class_session(row) for row in session_rows]
     materials = [row_to_material(row) for row in material_rows]
     assignments = [row_to_assignment(row) for row in assignment_rows]
+    attendance_records = [row_to_attendance_record(row) for row in attendance_rows]
 
     class_lookup = {group.id: group for group in class_groups}
     user_lookup = {user_item.id: user_item for user_item in users}
@@ -611,6 +818,7 @@ def build_teacher_dashboard_payload(user: User) -> dict:
     memberships_by_student: dict[str, list[ClassMembership]] = {}
     memberships_by_class: dict[str, list[ClassMembership]] = {}
     assignments_by_session: dict[str, list[SessionMaterialAssignment]] = {}
+    attendance_by_session: dict[str, list[AttendanceRecord]] = {}
 
     for membership in class_memberships:
         memberships_by_student.setdefault(membership.student_id, []).append(membership)
@@ -618,6 +826,9 @@ def build_teacher_dashboard_payload(user: User) -> dict:
 
     for assignment in assignments:
         assignments_by_session.setdefault(assignment.class_session_id, []).append(assignment)
+
+    for attendance_record in attendance_records:
+        attendance_by_session.setdefault(attendance_record.class_session_id, []).append(attendance_record)
 
     students_payload = []
     for profile in student_profiles:
@@ -669,6 +880,8 @@ def build_teacher_dashboard_payload(user: User) -> dict:
     for session in class_sessions:
         group = class_lookup.get(session.class_group_id)
         session_assignments = assignments_by_session.get(session.id, [])
+        session_attendance = attendance_by_session.get(session.id, [])
+        total_members = len([m for m in memberships_by_class.get(session.class_group_id, []) if m.status == "active"])
         sessions_payload.append(
             {
                 "id": session.id,
@@ -680,6 +893,8 @@ def build_teacher_dashboard_payload(user: User) -> dict:
                 "status": session.status,
                 "title": session.title,
                 "assignmentCount": len(session_assignments),
+                "attendanceCount": len(session_attendance),
+                "absentCount": max(total_members - len(session_attendance), 0),
                 "assignments": [
                     {
                         "id": assignment.id,
@@ -704,7 +919,9 @@ def build_teacher_dashboard_payload(user: User) -> dict:
             "title": material.title,
             "description": material.description,
             "fileType": material.file_type,
-            "fileUrl": material.file_url,
+            "fileUrl": material_storage_label(material.file_url),
+            "storagePath": material.file_url,
+            "downloadUrl": material_download_url(material.id),
             "fileSize": material.file_size,
             "createdAt": material.created_at.isoformat(),
         }
@@ -763,7 +980,9 @@ def material_for_student_payload(
         "title": material.title,
         "description": material.description,
         "fileType": material.file_type,
-        "fileUrl": material.file_url,
+        "fileUrl": material_storage_label(material.file_url),
+        "storagePath": material.file_url,
+        "downloadUrl": material_download_url(material.id),
         "classSessionId": session.id,
         "className": class_name,
         "sessionDate": session.session_date.isoformat(),
@@ -919,6 +1138,108 @@ def build_student_learning_payload(user: User) -> dict:
     }
 
 
+def find_assignment_for_student_material(
+    profile: StudentProfile,
+    material_id: str,
+    class_session_id: Optional[str],
+) -> Optional[SessionMaterialAssignment]:
+    if class_session_id is None:
+        return None
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
+            FROM session_material_assignments
+            WHERE class_session_id = ?
+              AND material_id = ?
+              AND (
+                assigned_to_type = 'class'
+                OR (assigned_to_type = 'student' AND assigned_to_student_id = ?)
+              )
+            ORDER BY CASE WHEN assigned_to_type = 'student' THEN 0 ELSE 1 END, created_at DESC
+            """,
+            (class_session_id, material_id, profile.id),
+        ).fetchone()
+    return row_to_assignment(row) if row else None
+
+
+def student_can_download_material(profile: StudentProfile, material_id: str) -> bool:
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT sma.id
+            FROM session_material_assignments sma
+            JOIN class_sessions cs ON cs.id = sma.class_session_id
+            JOIN class_memberships cm ON cm.class_group_id = cs.class_group_id
+            WHERE cm.student_id = ?
+              AND cm.status = 'active'
+              AND sma.material_id = ?
+              AND (
+                sma.assigned_to_type = 'class'
+                OR (sma.assigned_to_type = 'student' AND sma.assigned_to_student_id = ?)
+              )
+              AND cs.start_datetime <= ?
+            ORDER BY cs.start_datetime DESC
+            LIMIT 1
+            """,
+            (profile.id, material_id, profile.id, now_utc().isoformat()),
+        ).fetchone()
+    return row is not None
+
+
+def build_session_attendance_payload(session_id: str) -> dict:
+    session = get_class_session(session_id)
+    class_group = get_class_group(session.class_group_id)
+    with get_connection() as connection:
+        membership_rows = connection.execute(
+            """
+            SELECT m.id, m.class_group_id, m.student_id, m.status, m.joined_at, sp.display_name
+            FROM class_memberships m
+            JOIN student_profiles sp ON sp.id = m.student_id
+            WHERE m.class_group_id = ? AND m.status = 'active'
+            ORDER BY sp.display_name
+            """,
+            (session.class_group_id,),
+        ).fetchall()
+        attendance_rows = connection.execute(
+            """
+            SELECT a.id, a.student_id, a.class_session_id, a.material_id, a.checked_in_at, a.method, a.location_status, a.latitude, a.longitude, a.created_at,
+                   sp.display_name
+            FROM attendance_records a
+            JOIN student_profiles sp ON sp.id = a.student_id
+            WHERE a.class_session_id = ?
+            ORDER BY a.checked_in_at
+            """,
+            (session_id,),
+        ).fetchall()
+
+    attendee_ids = {row["student_id"] for row in attendance_rows}
+    return {
+        "sessionId": session.id,
+        "className": class_group.name,
+        "sessionDate": session.session_date.isoformat(),
+        "startTime": session.start_datetime.strftime("%H:%M"),
+        "endTime": session.end_datetime.strftime("%H:%M"),
+        "attendance": [
+            {
+                "studentId": row["student_id"],
+                "studentName": row["display_name"],
+                "checkedInAt": parse_datetime_value(row["checked_in_at"]).isoformat(),
+                "locationStatus": row["location_status"],
+            }
+            for row in attendance_rows
+        ],
+        "absentStudents": [
+            {
+                "studentId": row["student_id"],
+                "studentName": row["display_name"],
+            }
+            for row in membership_rows
+            if row["student_id"] not in attendee_ids
+        ],
+    }
+
+
 @app.get("/api/health")
 def health(settings: Settings = Depends(get_settings)):
     return {
@@ -943,6 +1264,11 @@ def database_config(settings: Settings = Depends(get_settings), _: User = Depend
         "user": settings.db_user,
         "driver": settings.sqlserver_driver,
         "passwordConfigured": settings.is_database_password_configured,
+        "attendanceLocationConfigured": settings.is_attendance_location_configured,
+        "classroomLatitude": settings.classroom_latitude,
+        "classroomLongitude": settings.classroom_longitude,
+        "allowedRadiusMeters": settings.allowed_radius_meters,
+        "attendanceGracePeriodMinutes": settings.attendance_grace_period_minutes,
     }
 
 
@@ -1169,21 +1495,27 @@ def teacher_materials(user: User = Depends(require_teacher)):
 
 
 @app.post("/api/teacher/materials")
-def create_material(request: MaterialCreateRequest, user: User = Depends(require_teacher)):
-    normalized_title = request.title.strip()
-    normalized_url = request.file_url.strip()
+async def create_material(
+    title: str = Form(...),
+    description: str = Form(default=""),
+    file_type: Literal["pdf", "ppt", "image", "video", "other"] = Form(...),
+    file: UploadFile = File(...),
+    user: User = Depends(require_teacher),
+):
+    normalized_title = title.strip()
     if not normalized_title:
         raise HTTPException(status_code=422, detail="Material title is required.")
-    if not normalized_url:
-        raise HTTPException(status_code=422, detail="Material URL or path is required.")
+
+    material_id = make_id("material")
+    stored_path, file_size = await store_material_file(material_id, file_type, normalized_title, file)
 
     material = Material(
-        id=make_id("material"),
+        id=material_id,
         title=normalized_title,
-        description=request.description.strip(),
-        file_type=request.file_type,
-        file_url=normalized_url,
-        file_size=request.file_size,
+        description=description.strip(),
+        file_type=file_type,
+        file_url=stored_path,
+        file_size=file_size,
         uploaded_by=user.id,
         created_at=now_utc(),
     )
@@ -1205,6 +1537,21 @@ def create_material(request: MaterialCreateRequest, user: User = Depends(require
             ),
         )
     return {"material": material}
+
+
+@app.get("/api/materials/{material_id}/download")
+def download_material(material_id: str, user: User = Depends(get_current_user)):
+    material = get_material(material_id)
+    if user.role == "Student":
+        profile = get_student_profile_for_user(user.id)
+        if not student_can_download_material(profile, material_id):
+            raise HTTPException(status_code=403, detail="This material is not available to the student.")
+
+    file_path = material_storage_path(material.file_url)
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Stored material file was not found.")
+
+    return FileResponse(file_path, filename=file_path.name)
 
 
 @app.post("/api/teacher/sessions/{session_id}/assign-material")
@@ -1264,6 +1611,11 @@ def assign_material_to_session(
     return {"assignment": assignment}
 
 
+@app.get("/api/teacher/sessions/{session_id}/attendance")
+def teacher_session_attendance(session_id: str, _: User = Depends(require_teacher)):
+    return build_session_attendance_payload(session_id)
+
+
 @app.get("/api/student/current-lesson")
 def student_current_lesson(user: User = Depends(require_student)):
     return build_student_learning_payload(user)
@@ -1272,6 +1624,124 @@ def student_current_lesson(user: User = Depends(require_student)):
 @app.get("/api/student/review-materials")
 def student_review_materials(user: User = Depends(require_student)):
     return {"materials": build_student_learning_payload(user)["reviewMaterials"]}
+
+
+@app.post("/api/materials/{material_id}/open")
+def open_material(
+    material_id: str,
+    request: MaterialOpenRequest,
+    user: User = Depends(require_student),
+):
+    profile = get_student_profile_for_user(user.id)
+    material = get_material(material_id)
+    location_status = resolve_location_status(request)
+    opened_at = now_utc()
+    current_session = get_class_session(request.class_session_id) if request.class_session_id else None
+
+    if request.source == "current_lesson":
+        if current_session is None:
+            raise HTTPException(status_code=422, detail="Current lesson open requires a class session.")
+        assignment = find_assignment_for_student_material(profile, material_id, current_session.id)
+        if assignment is None:
+            raise HTTPException(status_code=403, detail="This material is not assigned to the student for the current session.")
+        if not is_session_active(current_session, opened_at):
+            location_status = "outside"
+    else:
+        assignment = find_assignment_for_student_material(profile, material_id, request.class_session_id)
+        if assignment is None:
+            raise HTTPException(status_code=403, detail="This material is not available in the student's review history.")
+
+    view_record = MaterialViewRecord(
+        id=make_id("view"),
+        student_id=profile.id,
+        material_id=material.id,
+        class_session_id=current_session.id if current_session else request.class_session_id,
+        view_source=request.source,
+        opened_at=opened_at,
+        location_status=location_status,
+        latitude=request.latitude,
+        longitude=request.longitude,
+    )
+
+    attendance_record = None
+    attendance_created = False
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO material_view_records (
+                id, student_id, material_id, class_session_id, view_source, opened_at, location_status, latitude, longitude
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                view_record.id,
+                view_record.student_id,
+                view_record.material_id,
+                view_record.class_session_id,
+                view_record.view_source,
+                view_record.opened_at.isoformat(),
+                view_record.location_status,
+                view_record.latitude,
+                view_record.longitude,
+            ),
+        )
+
+        if request.source == "current_lesson" and current_session is not None and location_status == "valid":
+            existing_attendance = connection.execute(
+                """
+                SELECT id, student_id, class_session_id, material_id, checked_in_at, method, location_status, latitude, longitude, created_at
+                FROM attendance_records
+                WHERE student_id = ? AND class_session_id = ?
+                """,
+                (profile.id, current_session.id),
+            ).fetchone()
+            if existing_attendance is None:
+                attendance_record = AttendanceRecord(
+                    id=make_id("attendance"),
+                    student_id=profile.id,
+                    class_session_id=current_session.id,
+                    material_id=material.id,
+                    checked_in_at=opened_at,
+                    latitude=request.latitude,
+                    longitude=request.longitude,
+                    created_at=opened_at,
+                )
+                connection.execute(
+                    """
+                    INSERT INTO attendance_records (
+                        id, student_id, class_session_id, material_id, checked_in_at, method, location_status, latitude, longitude, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        attendance_record.id,
+                        attendance_record.student_id,
+                        attendance_record.class_session_id,
+                        attendance_record.material_id,
+                        attendance_record.checked_in_at.isoformat(),
+                        attendance_record.method,
+                        attendance_record.location_status,
+                        attendance_record.latitude,
+                        attendance_record.longitude,
+                        attendance_record.created_at.isoformat(),
+                    ),
+                )
+                attendance_created = True
+            else:
+                attendance_record = row_to_attendance_record(existing_attendance)
+
+    return {
+        "materialId": material.id,
+        "viewRecordId": view_record.id,
+        "locationStatus": location_status,
+        "attendanceRecorded": attendance_created,
+        "attendanceAlreadyExists": attendance_record is not None and not attendance_created,
+        "attendance": {
+            "id": attendance_record.id,
+            "checkedInAt": attendance_record.checked_in_at.isoformat(),
+            "locationStatus": attendance_record.location_status,
+        }
+        if attendance_record
+        else None,
+    }
 
 
 app.mount("/static", StaticFiles(directory="public"), name="static")
