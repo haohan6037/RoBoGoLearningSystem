@@ -415,6 +415,221 @@
           border-bottom: 1px solid var(--line);
         }
       }
+
+      .inline-edit-form {
+        margin-top: 12px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #f9fbfd;
+      }
+
+      .inline-edit-form label {
+        margin-top: 8px;
+      }
+
+      .inline-edit-form label:first-of-type {
+        margin-top: 0;
+      }
+
+      .material-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .replace-file-area {
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px dashed var(--line);
+        border-radius: 6px;
+        background: #fdfdfd;
+      }
+
+      .replace-file-area label {
+        margin-top: 0;
+      }
+
+      .location-valid {
+        color: var(--ok);
+        font-weight: 700;
+      }
+
+      .location-outside {
+        color: #c4820e;
+        font-weight: 700;
+      }
+
+      .location-denied {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .location-unavailable {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .attendance-section {
+        margin-top: 20px;
+      }
+
+      .attendance-section h3 {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .attendance-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 0;
+      }
+
+      .session-selector-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .session-selector-row select {
+        max-width: 380px;
+      }
+
+      .empty-state {
+        padding: 20px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      hr.section-divider {
+        margin: 24px 0 16px;
+        border: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .classroom-header {
+        padding: 24px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #1b4d5e 0%, #1b6f8f 100%);
+        color: #fff;
+        margin-bottom: 20px;
+      }
+
+      .classroom-header h1 {
+        margin-bottom: 6px;
+        font-size: 28px;
+      }
+
+      .classroom-header .session-meta {
+        color: #c8dde6;
+      }
+
+      .phase-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin: 20px 0;
+        padding: 0;
+      }
+
+      .phase-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        position: relative;
+      }
+
+      .phase-dot {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        background: var(--line);
+        color: var(--muted);
+        transition: all 0.3s;
+        flex-shrink: 0;
+      }
+
+      .phase-dot.active {
+        background: var(--brand);
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(27, 111, 143, 0.25);
+      }
+
+      .phase-dot.done {
+        background: var(--ok);
+        color: #fff;
+      }
+
+      .phase-line {
+        flex: 1;
+        height: 3px;
+        background: var(--line);
+        margin: 0 8px;
+        border-radius: 2px;
+        transition: background 0.3s;
+      }
+
+      .phase-line.active {
+        background: var(--brand);
+      }
+
+      .phase-line.done {
+        background: var(--ok);
+      }
+
+      .phase-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      .phase-label.active {
+        color: var(--brand-dark);
+      }
+
+      .classroom-content {
+        min-height: 200px;
+      }
+
+      .classroom-waiting {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+      }
+
+      .classroom-waiting .pulse {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--brand);
+        animation: pulse 1.5s infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.3); }
+      }
+
+      .polling-status {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 16px;
+        text-align: right;
+      }
     </style>
   </head>
   <body>
@@ -426,7 +641,14 @@
         token: localStorage.getItem("robogo-token"),
         user: null,
         flash: "",
-        studentNotice: ""
+        studentNotice: "",
+        studentView: "lesson",
+        teacherView: "overview",
+        editingMaterialId: null,
+        editingStudentId: null,
+        editingClassId: null,
+        attendanceData: null,
+        selectedAttendanceSessionId: null,
       };
 
       const teacherSeed = {
@@ -487,6 +709,21 @@
         }
       }
 
+      function showFileInfo() {
+        const fileInput = document.querySelector("#material-file");
+        const infoEl = document.querySelector("#file-info");
+        if (!fileInput || !infoEl) return;
+        const file = fileInput.files?.[0];
+        if (file) {
+          const size = file.size < 1024 * 1024
+            ? `${(file.size / 1024).toFixed(0)} KB`
+            : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+          infoEl.textContent = `Selected: ${file.name} (${size})`;
+        } else {
+          infoEl.textContent = "";
+        }
+      }
+
       function extractDownloadFilename(headerValue, fallbackName) {
         if (!headerValue) return fallbackName;
         const utfMatch = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
@@ -496,7 +733,11 @@
         return fallbackName;
       }
 
-      async function downloadProtectedFile(downloadUrl, fallbackName) {
+      async function openMaterialFile(downloadUrl, fallbackName, isLink) {
+        if (isLink) {
+          window.open(downloadUrl, "_blank");
+          return;
+        }
         const response = await fetch(downloadUrl, {
           headers: {
             ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
@@ -504,12 +745,12 @@
         });
 
         if (!response.ok) {
-          let message = "Material download failed.";
+          let message = "Material file could not be loaded.";
           try {
             const payload = await response.json();
             message = payload.error || payload.detail || message;
           } catch {
-            // Ignore non-JSON error bodies and use the fallback message.
+            // Ignore non-JSON error bodies.
           }
           throw new Error(message);
         }
@@ -517,13 +758,21 @@
         const blob = await response.blob();
         const filename = extractDownloadFilename(response.headers.get("Content-Disposition"), fallbackName);
         const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+        // Try opening in new tab — browser renders PDF/images/video inline
+        const viewer = window.open(objectUrl, "_blank");
+        if (!viewer) {
+          // Popup blocked — fall back to forced download
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+
+        // Keep the blob URL alive long enough for the new tab to load
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
       }
 
       function routeTo(path) {
@@ -629,7 +878,7 @@
                 data-session-id="${material.classSessionId || ""}"
                 data-download-url="${material.downloadUrl}"
               >
-                Open material
+                ${source === "current_lesson" ? "Open & Check In" : "Open material"}
               </button>
               <span class="pill">${material.fileType}</span>
             </div>
@@ -638,20 +887,235 @@
       }
 
       function renderStudentPortal(data) {
+        if (state.studentView === "schedule") {
+          loadStudentSchedule().then(renderStudentScheduleView).catch(() => {
+            renderStudentScheduleView({ schedule: [], studentName: data.studentName });
+          });
+          return;
+        }
+        if (state.studentView === "attendance") {
+          loadStudentAttendance().then(renderStudentAttendanceView).catch(() => {
+            renderStudentAttendanceView({ attendance: [], studentName: data.studentName });
+          });
+          return;
+        }
+        if (state.studentView === "review") {
+          renderStudentReviewView(data);
+          return;
+        }
+        renderStudentLessonView(data);
+      }
+
+      let classroomPollTimer = null;
+
+      function startClassroomPolling() {
+        stopClassroomPolling();
+        classroomPollTimer = setInterval(async () => {
+          try {
+            const data = await api("/api/student/current-lesson");
+            if (state.studentView === "lesson") {
+              const oldPhase = state._lastClassroomPhase || "";
+              const newPhase = data.classroomPhase || "not_started";
+              if (oldPhase !== newPhase) {
+                state._lastClassroomPhase = newPhase;
+                renderStudentLessonView(data);
+              }
+            }
+          } catch {
+            // Silently ignore polling errors
+          }
+        }, 5000);
+      }
+
+      function stopClassroomPolling() {
+        if (classroomPollTimer) {
+          clearInterval(classroomPollTimer);
+          classroomPollTimer = null;
+        }
+      }
+
+      function renderStudentLessonView(data) {
+        stopClassroomPolling();
         const currentSession = data.currentSession;
+        if (currentSession) {
+          renderClassroomView(data, currentSession);
+          startClassroomPolling();
+        } else {
+          renderNoClassroomView(data);
+        }
+      }
+
+      function renderClassroomView(data, session) {
+        const phase = data.classroomPhase || "not_started";
+        state._lastClassroomPhase = phase;
+        const phaseNames = { not_started: "Waiting", theory: "Theory", building: "Building" };
+        const phaseOrder = ["not_started", "theory", "building"];
+        const currentIdx = phaseOrder.indexOf(phase);
+
         app.innerHTML = `
           <main class="portal-shell">
             <aside class="sidebar">
               <div class="sidebar-title">Student Portal</div>
               <nav class="nav-list">
-                <a class="nav-item active" href="#">Current Lesson</a>
-                <a class="nav-item" href="#">Review</a>
+                <a class="nav-item active" href="#" data-view="lesson">Classroom</a>
+                <a class="nav-item" href="#" data-view="schedule">Schedule</a>
+                <a class="nav-item" href="#" data-view="review">Review</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
               </nav>
+
             </aside>
             <section class="content">
               <div class="topbar">
                 <div>
-                  <h1>${data.title}</h1>
+                  <h1>🏫 Classroom</h1>
+                  <p class="muted">${data.welcome}</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+
+              <div class="classroom-header">
+                <h1>${session.className}</h1>
+                <div class="session-meta">${session.sessionDate} • ${session.startTime}–${session.endTime} ${session.title ? ` • ${session.title}` : ""}</div>
+              </div>
+
+              ${renderPhaseIndicator(currentIdx, phaseOrder)}
+
+              <section class="surface" style="margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                  <strong style="font-size:18px;">${phaseNames[phase]} Phase</strong>
+                  ${data.attendanceCheckedIn
+                    ? `<span class="badge" style="background:#eaf6ef;color:var(--ok);">✅ Checked in</span>`
+                    : (phase !== "not_started"
+                      ? `<span class="badge" style="background:#fbe9e5;color:var(--accent);">⚠️ Not checked in</span>`
+                      : "")}
+                </div>
+                ${studentBannerMarkup()}
+                ${renderPhaseContent(data, phase)}
+              </section>
+
+              <div class="polling-status">Auto-refreshing every 5s</div>
+            </section>
+          </main>
+        `;
+
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            stopClassroomPolling();
+            handleStudentNavClick(item.dataset.view);
+          });
+        });
+        document.querySelectorAll(".open-material").forEach((button) => {
+          button.addEventListener("click", () => handleOpenMaterial(button.dataset));
+        });
+        const pwdForm = document.querySelector("#student-password-form");
+        if (pwdForm) {
+          pwdForm.addEventListener("submit", handleStudentPasswordChange);
+        }
+      }
+
+      function renderPhaseIndicator(currentIdx, phaseOrder) {
+        const labels = ["Waiting", "Theory", "Building"];
+        return `
+          <div class="phase-indicator">
+            ${phaseOrder.map((p, idx) => {
+              let dotClass = "";
+              let lineClass = "";
+              if (idx < currentIdx) { dotClass = "done"; lineClass = "done"; }
+              else if (idx === currentIdx) { dotClass = "active"; lineClass = idx > 0 ? "active" : ""; }
+              const num = idx < currentIdx ? "✓" : (idx + 1);
+              let html = `<div class="phase-step"><span class="phase-dot ${dotClass}">${num}</span>`;
+              if (idx < phaseOrder.length - 1) {
+                html += `<span class="phase-line ${lineClass}"></span>`;
+              }
+              html += `</div>`;
+              return html;
+            }).join("")}
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;padding:0 4px;">
+            ${labels.map((label, idx) => {
+              const labelClass = idx === currentIdx ? "phase-label active" : "phase-label";
+              return `<span class="${labelClass}">${label}</span>`;
+            }).join("")}
+          </div>
+        `;
+      }
+
+      function renderPhaseContent(data, phase) {
+        if (phase === "not_started") {
+          const materials = data.currentMaterials || [];
+          return `
+            <div class="classroom-waiting">
+              <div><span class="pulse"></span> Waiting for the teacher to start the class...</div>
+              <p style="margin-top:16px;">The class will begin when your teacher starts the first phase.</p>
+              ${!data.attendanceCheckedIn ? `<p style="margin-top:12px;font-size:14px;color:var(--accent);">📍 When the class starts, open a material to check in with location verification.</p>` : ""}
+              ${materials.length ? `
+                <div style="margin-top:20px;text-align:left;max-width:480px;margin-left:auto;margin-right:auto;">
+                  <p class="muted" style="margin-bottom:8px;">📋 Today's materials (unlocked when class starts):</p>
+                  ${materials.map((m) => `
+                    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:14px;">
+                      <span style="flex:1;">${m.title}</span>
+                      <span class="pill">${m.fileType}</span>
+                    </div>
+                  `).join("")}
+                </div>
+              ` : ""}
+            </div>
+          `;
+        }
+
+        if (phase === "theory") {
+          return `
+            <div class="classroom-content">
+              <h3>📖 Theory — Teacher's explanation</h3>
+              <p class="muted">Your teacher is presenting the theory. You can follow along on your screen.</p>
+              ${data.currentMaterials.length ? `
+                <div class="material-cards" style="margin-top:14px;">
+                  ${studentMaterialCards(data.currentMaterials, "", "current_lesson")}
+                </div>
+              ` : `<div class="empty-state" style="margin-top:14px;">The teacher hasn't shared theory materials yet.</div>`}
+            </div>
+          `;
+        }
+
+        if (phase === "building") {
+          return `
+            <div class="classroom-content">
+              <h3>🔧 Building — Hands-on instructions</h3>
+              <p class="muted">Follow the building instructions below. Open each material to view the steps.</p>
+              ${data.currentMaterials.length ? `
+                <div class="material-cards" style="margin-top:14px;">
+                  ${studentMaterialCards(data.currentMaterials, "", "current_lesson")}
+                </div>
+              ` : `<div class="empty-state" style="margin-top:14px;">The teacher hasn't shared building materials yet.</div>`}
+            </div>
+          `;
+        }
+
+        return "";
+      }
+
+      function renderNoClassroomView(data) {
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Student Portal</div>
+              <nav class="nav-list">
+                <a class="nav-item active" href="#" data-view="lesson">Classroom</a>
+                <a class="nav-item" href="#" data-view="schedule">Schedule</a>
+                <a class="nav-item" href="#" data-view="review">Review</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>🏫 Classroom</h1>
                   <p class="muted">${data.welcome}</p>
                 </div>
                 <div class="button-row">
@@ -660,54 +1124,232 @@
                 </div>
               </div>
               <section class="surface">
-                <div class="section-copy">
-                  <h2>${currentSession ? currentSession.className : "No Current Session"}</h2>
-                  <p class="muted">${data.status}</p>
-                  ${studentBannerMarkup()}
-                </div>
-                <div class="status-grid">
-                  <article class="status-card">
-                    <strong>Current Materials</strong>
-                    <span class="metric-value">${data.currentMaterials.length}</span>
-                    <p class="muted">${currentSession ? `${currentSession.sessionDate} • ${currentSession.startTime}-${currentSession.endTime}` : "Outside scheduled class time."}</p>
-                  </article>
-                  <article class="status-card">
-                    <strong>Review Items</strong>
-                    <span class="metric-value">${data.reviewMaterials.length}</span>
-                    <p class="muted">Previously assigned materials in reverse session order.</p>
-                  </article>
-                  <article class="status-card">
-                    <strong>Attendance</strong>
-                    <p class="muted">Opening a current lesson now records a view and may verify attendance from browser location.</p>
-                  </article>
-                </div>
-                <div class="list-grid" style="margin-top: 18px;">
-                  <section class="list-card">
-                    <h3>Current Lesson</h3>
-                    <p class="muted">Materials here are visible only when your class session is currently active.</p>
-                    <div class="material-cards">
-                      ${studentMaterialCards(data.currentMaterials, "No current lesson material is available right now.", "current_lesson")}
-                    </div>
-                  </section>
-                  <section class="list-card">
-                    <h3>Review</h3>
-                    <p class="muted">Historical materials remain available after their class session has ended.</p>
-                    <div class="material-cards">
-                      ${studentMaterialCards(data.reviewMaterials, "No review materials yet.", "review")}
-                    </div>
-                  </section>
+                <div class="classroom-waiting">
+                  <h2>No Active Session</h2>
+                  <p style="margin-top:12px;">${data.status}</p>
+                  <p style="margin-top:16px;color:var(--muted);">Check your <strong>Schedule</strong> for upcoming class times.</p>
                 </div>
               </section>
             </section>
           </main>
         `;
         document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            handleStudentNavClick(item.dataset.view);
+          });
+        });
+        const pwdForm = document.querySelector("#student-password-form");
+        if (pwdForm) {
+          pwdForm.addEventListener("submit", handleStudentPasswordChange);
+        }
+      }
+
+      function renderStudentReviewView(data) {
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Student Portal</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="lesson">Current Lesson</a>
+                <a class="nav-item" href="#" data-view="schedule">Schedule</a>
+                <a class="nav-item active" href="#" data-view="review">Review</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Review Materials</h1>
+                  <p class="muted">${data.welcome}</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              <section class="surface">
+                <h2>Past Session Materials</h2>
+                <p class="muted">Materials from completed sessions and past class times.</p>
+                <div class="material-cards">
+                  ${studentMaterialCards(data.reviewMaterials, "No review materials yet. Completed sessions will appear here.", "review")}
+                </div>
+              </section>
+            </section>
+          </main>
+        `;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            handleStudentNavClick(item.dataset.view);
+          });
+        });
         document.querySelectorAll(".open-material").forEach((button) => {
           button.addEventListener("click", () => handleOpenMaterial(button.dataset));
         });
       }
 
+      function renderStudentScheduleView(scheduleData) {
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Student Portal</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="lesson">Current Lesson</a>
+                <a class="nav-item active" href="#" data-view="schedule">Schedule</a>
+                <a class="nav-item" href="#" data-view="review">Review</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Schedule</h1>
+                  <p class="muted">Welcome, ${scheduleData.studentName || ""}.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              <section class="surface">
+                <h2>Upcoming Sessions</h2>
+                <p class="muted">Your scheduled class sessions for the coming weeks.</p>
+                ${scheduleData.schedule && scheduleData.schedule.length ? `
+                  <div class="session-cards" style="margin-top:14px;">
+                    ${scheduleData.schedule.map((session) => `
+                      <article class="session-card">
+                        <header>
+                          <div>
+                            <strong>${session.className}</strong>
+                            <div class="session-meta">${session.sessionDate} • ${session.startTime}–${session.endTime}</div>
+                          </div>
+                          <span class="pill">${session.status}</span>
+                        </header>
+                        <p class="muted">${session.title || "Regular class session"}</p>
+                      </article>
+                    `).join("")}
+                  </div>
+                ` : `<div class="empty-state" style="margin-top:14px;">No upcoming sessions scheduled. Check back later or contact your teacher.</div>`}
+              </section>
+            </section>
+          </main>
+        `;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            handleStudentNavClick(item.dataset.view);
+          });
+        });
+      }
+
+      function renderStudentAttendanceView(attendanceData) {
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Student Portal</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="lesson">Current Lesson</a>
+                <a class="nav-item" href="#" data-view="schedule">Schedule</a>
+                <a class="nav-item" href="#" data-view="review">Review</a>
+                <a class="nav-item active" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Attendance History</h1>
+                  <p class="muted">Welcome, ${attendanceData.studentName || ""}.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              <section class="surface">
+                <h2>Your Check-in Records</h2>
+                <p class="muted">Each record shows when you opened a lesson and your location was verified.</p>
+                ${attendanceData.attendance && attendanceData.attendance.length ? `
+                  <div class="attendance-section">
+                    ${attendanceData.attendance.map((record) => `
+                      <div class="attendance-row" style="padding:8px 0;">
+                        <div style="flex:1;min-width:160px;">
+                          <strong>${record.className}</strong>
+                          <div class="muted">${record.sessionDate} • ${record.startTime}–${record.endTime}</div>
+                        </div>
+                        <span class="pill location-${record.locationStatus}">${record.locationStatus}</span>
+                        <span class="muted">${new Date(record.checkedInAt).toLocaleString()}</span>
+                      </div>
+                    `).join("")}
+                  </div>
+                ` : `<div class="empty-state">No attendance records yet. Open a current lesson during class time to check in.</div>`}
+              </section>
+            </section>
+          </main>
+        `;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            handleStudentNavClick(item.dataset.view);
+          });
+        });
+      }
+
+      function handleStudentNavClick(view) {
+        state.studentView = view;
+        state.studentNotice = "";
+        const lessonData = view === "lesson" || view === "review"
+          ? api("/api/student/current-lesson")
+          : Promise.resolve({ studentName: "" });
+        lessonData.then((data) => {
+          state.studentNotice = "";
+          renderStudentPortal(data);
+        });
+      }
+
+      async function loadStudentSchedule() {
+        return api("/api/student/schedule");
+      }
+
+      async function loadStudentAttendance() {
+        return api("/api/student/attendance");
+      }
+
+      async function handleStudentPasswordChange(event) {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        try {
+          await api("/api/me/password", {
+            method: "PUT",
+            body: JSON.stringify({
+              current_password: form.get("current_password"),
+              new_password: form.get("new_password"),
+            }),
+          });
+          state.studentNotice = "✅ Password updated successfully.";
+          event.target.reset();
+          const data = await api("/api/student/current-lesson");
+          renderStudentPortal(data);
+        } catch (error) {
+          state.studentNotice = "";
+          const data = await api("/api/student/current-lesson");
+          renderStudentPortal(data);
+          const secCopy = app.querySelector(".section-copy");
+          if (secCopy) secCopy.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
       function renderTeacherPortal(data) {
+        if (state.teacherView !== "overview") {
+          renderTeacherViewContent(data);
+          return;
+        }
         const studentOptions = data.students.map(
           (student) => `<option value="${student.id}">${student.displayName}</option>`
         ).join("");
@@ -726,12 +1368,13 @@
             <aside class="sidebar">
               <div class="sidebar-title">Teacher Dashboard</div>
               <nav class="nav-list">
-                <a class="nav-item active" href="#">Overview</a>
-                <a class="nav-item" href="#">Students</a>
-                <a class="nav-item" href="#">Classes</a>
-                <a class="nav-item" href="#">Sessions</a>
-                <a class="nav-item" href="#">Material Library</a>
-                <a class="nav-item" href="#">Attendance</a>
+                <a class="nav-item active" href="#" data-view="overview">Overview</a>
+                <a class="nav-item" href="#" data-view="students">Students</a>
+                <a class="nav-item" href="#" data-view="classes">Classes</a>
+                <a class="nav-item" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
               </nav>
             </aside>
             <section class="content">
@@ -747,8 +1390,8 @@
               </div>
               <section class="surface">
                 <div class="section-copy">
-                  <h2>Teacher Setup + Material Assignment</h2>
-                  <p class="muted">Create the class structure, add material metadata, then assign materials to a full class session or one student.</p>
+                  <h2>Dashboard Overview</h2>
+                  <p class="muted">Use the sidebar to manage students, classes, sessions, materials, and attendance.</p>
                   ${bannerMarkup()}
                 </div>
                 <div class="metrics-grid">
@@ -778,246 +1421,6 @@
                     <p class="muted">Materials connected to class sessions or individual students.</p>
                   </article>
                 </div>
-                <div class="teacher-grid">
-                  <div class="form-grid">
-                    <section class="form-card">
-                      <h3>Create Student</h3>
-                      <p class="muted">Adds the login user and the student profile together.</p>
-                      <form id="student-form">
-                        <label for="student-name">Student name</label>
-                        <input id="student-name" name="display_name" type="text" required />
-                        <label for="student-email">Student email</label>
-                        <input id="student-email" name="email" type="email" required />
-                        <label for="parent-name">Parent name</label>
-                        <input id="parent-name" name="parent_name" type="text" />
-                        <div class="button-row">
-                          <button class="button" type="submit">Add student</button>
-                        </div>
-                      </form>
-                    </section>
-                    <section class="form-card">
-                      <h3>Create Class</h3>
-                      <p class="muted">Define the weekly schedule first, then generate sessions from it.</p>
-                      <form id="class-form">
-                        <label for="class-name">Class name</label>
-                        <input id="class-name" name="name" type="text" required />
-                        <label for="class-description">Description</label>
-                        <textarea id="class-description" name="description"></textarea>
-                        <div class="inline-fields">
-                          <div>
-                            <label for="class-weekday">Weekday</label>
-                            <select id="class-weekday" name="weekday">
-                              ${weekdayOptions.map((option) => `<option value="${option.value}">${option.label}</option>`).join("")}
-                            </select>
-                          </div>
-                          <div>
-                            <label for="class-start-time">Start time</label>
-                            <input id="class-start-time" name="start_time" type="time" required value="10:00" />
-                          </div>
-                        </div>
-                        <label for="class-end-time">End time</label>
-                        <input id="class-end-time" name="end_time" type="time" required value="11:30" />
-                        <div class="button-row">
-                          <button class="button" type="submit">Create class</button>
-                        </div>
-                      </form>
-                    </section>
-                    <section class="form-card">
-                      <h3>Add Student to Class</h3>
-                      <p class="muted">This creates the active membership used by session and attendance logic later.</p>
-                      <form id="membership-form">
-                        <label for="membership-class">Class</label>
-                        <select id="membership-class" name="class_id" ${data.classes.length ? "" : "disabled"}>
-                          <option value="">Select class</option>
-                          ${classOptions}
-                        </select>
-                        <label for="membership-student">Student</label>
-                        <select id="membership-student" name="student_id" ${data.students.length ? "" : "disabled"}>
-                          <option value="">Select student</option>
-                          ${studentOptions}
-                        </select>
-                        <div class="button-row">
-                          <button class="button" type="submit" ${data.classes.length && data.students.length ? "" : "disabled"}>Add membership</button>
-                        </div>
-                      </form>
-                    </section>
-                    <section class="form-card">
-                      <h3>Generate Term Sessions</h3>
-                      <p class="muted">Sessions follow the class weekday and time, starting from the first matching date.</p>
-                      <form id="sessions-form">
-                        <label for="session-class">Class</label>
-                        <select id="session-class" name="class_id" ${data.classes.length ? "" : "disabled"}>
-                          <option value="">Select class</option>
-                          ${classOptions}
-                        </select>
-                        <div class="inline-fields">
-                          <div>
-                            <label for="term-start-date">Term start date</label>
-                            <input id="term-start-date" name="term_start_date" type="date" required />
-                          </div>
-                          <div>
-                            <label for="session-count">Number of sessions</label>
-                            <input id="session-count" name="session_count" type="number" min="1" max="30" value="10" required />
-                          </div>
-                        </div>
-                        <div class="button-row">
-                          <button class="button" type="submit" ${data.classes.length ? "" : "disabled"}>Generate sessions</button>
-                        </div>
-                      </form>
-                    </section>
-                    <section class="form-card">
-                      <h3>Add Material</h3>
-                      <p class="muted">Upload the source file here. The system will place it into the correct local folder automatically based on material type.</p>
-                      <form id="material-form">
-                        <label for="material-title">Material title</label>
-                        <input id="material-title" name="title" type="text" required />
-                        <label for="material-type">File type</label>
-                        <select id="material-type" name="file_type">
-                          <option value="pdf">PDF</option>
-                          <option value="ppt">PPT / PPTX</option>
-                          <option value="image">Image</option>
-                          <option value="video">Video</option>
-                          <option value="other">Other</option>
-                        </select>
-                        <label for="material-file">Material file</label>
-                        <input id="material-file" name="file" type="file" required />
-                        <label for="material-description">Description</label>
-                        <textarea id="material-description" name="description"></textarea>
-                        <div class="button-row">
-                          <button class="button" type="submit">Add material</button>
-                        </div>
-                      </form>
-                    </section>
-                    <section class="form-card">
-                      <h3>Assign Material</h3>
-                      <p class="muted">Class assignments go to everyone; personal assignments target one active class member.</p>
-                      <form id="assignment-form">
-                        <label for="assignment-session">Session</label>
-                        <select id="assignment-session" name="session_id" ${data.sessions.length ? "" : "disabled"}>
-                          <option value="">Select session</option>
-                          ${sessionOptions}
-                        </select>
-                        <label for="assignment-material">Material</label>
-                        <select id="assignment-material" name="material_id" ${data.materials.length ? "" : "disabled"}>
-                          <option value="">Select material</option>
-                          ${materialOptions}
-                        </select>
-                        <label for="assignment-type">Assign to</label>
-                        <select id="assignment-type" name="assigned_to_type">
-                          <option value="class">Whole class</option>
-                          <option value="student">Individual student</option>
-                        </select>
-                        <label for="assignment-student">Student</label>
-                        <select id="assignment-student" name="assigned_to_student_id" ${data.students.length ? "" : "disabled"}>
-                          <option value="">Only needed for individual assignment</option>
-                          ${studentOptions}
-                        </select>
-                        <div class="button-row">
-                          <button class="button" type="submit" ${data.sessions.length && data.materials.length ? "" : "disabled"}>Assign material</button>
-                        </div>
-                      </form>
-                    </section>
-                  </div>
-                  <div class="list-grid">
-                    <section class="list-card">
-                      <h3>Students</h3>
-                      <p class="muted">Students must exist before they can be added to a class.</p>
-                      <div class="student-cards">
-                        ${data.students.length ? data.students.map((student) => `
-                          <article class="student-card">
-                            <header>
-                              <div>
-                                <strong>${student.displayName}</strong>
-                                <div class="student-meta">${student.email}</div>
-                              </div>
-                              <span class="pill">${student.classNames.length} classes</span>
-                            </header>
-                            <div class="pill-list">
-                              ${(student.classNames.length ? student.classNames : ["Unassigned"]).map((name) => `<span class="pill">${name}</span>`).join("")}
-                            </div>
-                          </article>
-                        `).join("") : `<div class="empty-state">No students yet. Start by creating the first student profile.</div>`}
-                      </div>
-                    </section>
-                    <section class="list-card">
-                      <h3>Classes</h3>
-                      <p class="muted">Each class stores the weekly schedule that later drives session generation.</p>
-                      <div class="class-cards">
-                        ${data.classes.length ? data.classes.map((item) => `
-                          <article class="class-card">
-                            <header>
-                              <div>
-                                <strong>${item.name}</strong>
-                                <div class="class-meta">${item.weekdayLabel} • ${item.startTime}-${item.endTime}</div>
-                              </div>
-                              <span class="pill">${item.memberCount} students</span>
-                            </header>
-                            <p class="muted">${item.description || "No class description yet."}</p>
-                            <div class="pill-list">
-                              ${(item.memberNames.length ? item.memberNames : ["No members yet"]).map((name) => `<span class="pill">${name}</span>`).join("")}
-                            </div>
-                          </article>
-                        `).join("") : `<div class="empty-state">No classes yet. Create the first teaching group and weekly schedule.</div>`}
-                      </div>
-                    </section>
-                    <section class="list-card" style="grid-column: 1 / -1;">
-                      <h3>Sessions</h3>
-                      <p class="muted">Generated sessions are concrete lesson occurrences. Assigned materials appear on each session.</p>
-                      <div class="session-cards">
-                        ${data.sessions.length ? data.sessions.map((session) => `
-                          <article class="session-card">
-                            <header>
-                              <div>
-                                <strong>${session.className}</strong>
-                                <div class="session-meta">${session.sessionDate} • ${session.startTime}-${session.endTime}</div>
-                              </div>
-                              <div class="button-row" style="margin-top: 0;">
-                                <span class="pill">${session.status}</span>
-                                <span class="pill">${session.assignmentCount} materials</span>
-                                <span class="pill">${session.attendanceCount} attended</span>
-                                <span class="pill">${session.absentCount} absent</span>
-                                <button class="button danger session-delete" type="button" data-session-id="${session.id}">Delete</button>
-                              </div>
-                            </header>
-                            <p class="muted">${session.title || "Generated class session"}</p>
-                            <div class="pill-list">
-                              ${(session.assignments.length ? session.assignments : [{ materialTitle: "No material assigned", assignedToType: "class" }]).map((assignment) => `
-                                <span class="pill">${assignment.materialTitle}${assignment.assignedToStudentName ? ` - ${assignment.assignedToStudentName}` : ""}</span>
-                              `).join("")}
-                            </div>
-                          </article>
-                        `).join("") : `<div class="empty-state">No sessions yet. Generate a term plan after the first class is created.</div>`}
-                      </div>
-                    </section>
-                    <section class="list-card" style="grid-column: 1 / -1;">
-                      <h3>Material Library</h3>
-                      <p class="muted">Materials are stored locally by type and can be reused across sessions.</p>
-                      <div class="material-cards">
-                        ${data.materials.length ? data.materials.map((material) => `
-                          <article class="material-card">
-                            <header>
-                              <div>
-                                <strong>${material.title}</strong>
-                                <div class="material-meta">${material.fileType.toUpperCase()} • ${material.storagePath}</div>
-                              </div>
-                              <span class="pill">${material.fileType}</span>
-                            </header>
-                            <p class="muted">${material.description || "No material description yet."}</p>
-                            <div class="button-row">
-                              <button
-                                class="button secondary teacher-open-material"
-                                type="button"
-                                data-download-url="${material.downloadUrl}"
-                                data-material-title="${material.title}"
-                              >
-                                Open file
-                              </button>
-                            </div>
-                          </article>
-                        `).join("") : `<div class="empty-state">No materials yet. Add the first lesson material before assigning a session.</div>`}
-                      </div>
-                    </section>
-                  </div>
                 </div>
               </section>
             </section>
@@ -1025,29 +1428,1017 @@
         `;
 
         document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            handleNavClick(item.dataset.view);
+          });
+        });
+      }
+
+      function renderTeacherViewContent(data) {
+        const appEl = app;
+        const studentOptions = data.students.map(
+          (student) => `<option value="${student.id}">${student.displayName}</option>`
+        ).join("");
+        const classOptions = data.classes.map(
+          (item) => `<option value="${item.id}">${item.name}</option>`
+        ).join("");
+        const sessionOptions = data.sessions.map(
+          (session) => `<option value="${session.id}">${session.className} - ${session.sessionDate} ${session.startTime}</option>`
+        ).join("");
+
+        if (state.teacherView === "students") {
+          renderStudentsView(data, classOptions);
+        } else if (state.teacherView === "classes") {
+          renderClassesView(data, studentOptions);
+        } else if (state.teacherView === "sessions") {
+          renderSessionsView(data, classOptions);
+        } else if (state.teacherView === "classroom") {
+          renderTeacherClassroomView(data, sessionOptions);
+        } else if (state.teacherView === "materials") {
+          renderMaterialsView(data, sessionOptions);
+        } else if (state.teacherView === "attendance") {
+          renderAttendanceView(data, sessionOptions);
+        }
+      }
+
+      function renderStudentsView(data, classOptions) {
+        const studentOptions = data.students.map(
+          (student) => `<option value="${student.id}">${student.displayName}</option>`
+        ).join("");
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="overview">Overview</a>
+                <a class="nav-item active" href="#" data-view="students">Students</a>
+                <a class="nav-item" href="#" data-view="classes">Classes</a>
+                <a class="nav-item" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Students</h1>
+                  <p class="muted">Create and manage student profiles.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              ${bannerMarkup()}
+              <section class="surface">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <h2 style="margin:0;">All Students (${data.summary.studentCount})</h2>
+                  <button class="button" type="button" onclick="const s=document.getElementById('student-create-section');s.style.display=s.style.display==='none'?'block':'none';this.textContent=s.style.display==='none'?'＋ New Student':'− Cancel'">＋ New Student</button>
+                </div>
+                <div id="student-create-section" style="display:none;margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:6px;background:#f9fbfd;">
+                  <h3>Create Student</h3>
+                  <form id="student-form">
+                    <label for="student-display-name">Display name</label>
+                    <input id="student-display-name" name="display_name" type="text" required />
+                    <label for="student-email">Email (used for login)</label>
+                    <input id="student-email" name="email" type="email" required />
+                    <label for="student-parent-name">Parent name</label>
+                    <input id="student-parent-name" name="parent_name" type="text" />
+                    <label for="student-password">Password (leave empty to auto-generate)</label>
+                    <input id="student-password" name="password" type="text" placeholder="Auto-generated if empty" />
+                    <div class="button-row">
+                      <button class="button" type="submit">Add student</button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+              <section class="surface" style="margin-top:20px;">
+                <h2 style="margin:0;">Student List</h2>
+                <div class="student-cards">
+                  ${data.students.length ? data.students.map((student) => {
+                    const isEditing = state.editingStudentId === student.id;
+                    return `
+                    <article class="student-card">
+                      <header>
+                        <div>
+                          <strong>${student.displayName}</strong>
+                          <div class="student-meta">${student.email}</div>
+                        </div>
+                        <span class="pill">${student.classNames.length} classes</span>
+                      </header>
+                      <div class="pill-list">
+                        ${(student.classNames.length ? student.classNames : ["Unassigned"]).map((name) => `<span class="pill">${name}</span>`).join("")}
+                      </div>
+                      <div class="button-row" style="margin-top:8px;">
+                        <button class="button secondary student-edit-btn" type="button" data-student-id="${student.id}" style="font-size:13px;">${isEditing ? "Cancel" : "Edit"}</button>
+                      </div>
+                      ${isEditing ? `
+                        <form class="inline-edit-form student-edit-form" data-student-id="${student.id}">
+                          <label for="edit-student-name-${student.id}">Display name</label>
+                          <input id="edit-student-name-${student.id}" name="display_name" value="${student.displayName.replace(/"/g, "&quot;")}" required />
+                          <label for="edit-student-email-${student.id}">Email</label>
+                          <input id="edit-student-email-${student.id}" name="email" type="email" value="${student.email}" required />
+                          <label for="edit-student-parent-${student.id}">Parent name</label>
+                          <input id="edit-student-parent-${student.id}" name="parent_name" value="${(student.parentName || "").replace(/"/g, "&quot;")}" />
+                          <label for="edit-student-pwd-${student.id}">New password (leave empty to keep current)</label>
+                          <input id="edit-student-pwd-${student.id}" name="password" type="text" placeholder="Leave empty to keep current" />
+                          <div class="button-row">
+                            <button class="button" type="submit">Save changes</button>
+                          </div>
+                        </form>
+                      ` : ""}
+                    </article>
+                  `; }).join("") : `<div class="empty-state">No students yet. Create the first one above.</div>`}
+                </div>
+              </section>
+            </section>
+          </main>
+        `;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => { e.preventDefault(); handleNavClick(item.dataset.view); });
+        });
         document.querySelector("#student-form").addEventListener("submit", handleStudentCreate);
+        document.querySelectorAll(".student-edit-btn").forEach((btn) => {
+          btn.addEventListener("click", () => toggleStudentEdit(btn.dataset.studentId));
+        });
+        document.querySelectorAll(".student-edit-form").forEach((form) => {
+          form.addEventListener("submit", (e) => handleStudentEdit(e, form.dataset.studentId));
+        });
+      }
+
+      function renderClassesView(data, studentOptions) {
+        const classOptions = data.classes.map(
+          (item) => `<option value="${item.id}">${item.name}</option>`
+        ).join("");
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="overview">Overview</a>
+                <a class="nav-item" href="#" data-view="students">Students</a>
+                <a class="nav-item active" href="#" data-view="classes">Classes</a>
+                <a class="nav-item" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Classes</h1>
+                  <p class="muted">Create teaching groups and assign students.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              ${bannerMarkup()}
+              <section class="surface" style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <h2 style="margin:0;">All Classes (${data.summary.classCount})</h2>
+                  <button class="button" type="button" onclick="const s=document.getElementById('class-create-section');s.style.display=s.style.display==='none'?'block':'none';this.textContent=s.style.display==='none'?'＋ New Class':'− Cancel'">＋ New Class</button>
+                </div>
+                <div id="class-create-section" style="display:none;margin-top:16px;">
+                  <div class="form-grid">
+                    <section class="form-card">
+                      <h3>Create Class</h3>
+                      <form id="class-form">
+                    <label for="class-name">Class name</label>
+                    <input id="class-name" name="name" type="text" required />
+                    <label for="class-description">Description</label>
+                    <textarea id="class-description" name="description"></textarea>
+                    <div class="inline-fields">
+                      <div>
+                        <label for="class-weekday">Weekday</label>
+                        <select id="class-weekday" name="weekday">
+                          ${weekdayOptions.map((option) => `<option value="${option.value}">${option.label}</option>`).join("")}
+                        </select>
+                      </div>
+                      <div>
+                        <label for="class-start-time">Start time</label>
+                        <input id="class-start-time" name="start_time" type="time" required value="10:00" />
+                      </div>
+                    </div>
+                    <label for="class-end-time">End time</label>
+                    <input id="class-end-time" name="end_time" type="time" required value="11:30" />
+                    <div class="button-row">
+                      <button class="button" type="submit">Create class</button>
+                    </div>
+                  </form>
+                </section>
+                <section class="form-card">
+                  <h3>Add Student to Class</h3>
+                  <form id="membership-form">
+                    <label for="membership-class">Class</label>
+                    <select id="membership-class" name="class_id" ${data.classes.length ? "" : "disabled"}>
+                      <option value="">Select class</option>
+                      ${classOptions}
+                    </select>
+                    <label for="membership-student">Student</label>
+                    <select id="membership-student" name="student_id" ${data.students.length ? "" : "disabled"}>
+                      <option value="">Select student</option>
+                      ${studentOptions}
+                    </select>
+                    <div class="button-row">
+                      <button class="button" type="submit" ${data.classes.length && data.students.length ? "" : "disabled"}>Add membership</button>
+                    </div>
+                  </form>
+                </section>
+              </div>
+                </div>
+              </section>
+              <section class="surface">
+                <h2 style="margin:0;">Class List</h2>
+                <div class="class-cards">
+                  ${data.classes.length ? data.classes.map((item) => {
+                    const isEditing = state.editingClassId === item.id;
+                    return `
+                    <article class="class-card">
+                      <header>
+                        <div>
+                          <strong>${item.name}</strong>
+                          <div class="class-meta">${item.weekdayLabel} • ${item.startTime}-${item.endTime}</div>
+                        </div>
+                        <span class="pill">${item.memberCount} students</span>
+                      </header>
+                      <p class="muted">${item.description || "No description."}</p>
+                      <div class="pill-list">
+                        ${(item.memberNames.length ? item.memberNames : ["No members yet"]).map((name) => `<span class="pill">${name}</span>`).join("")}
+                      </div>
+                      <div class="button-row" style="margin-top:8px;">
+                        <button class="button secondary class-edit-btn" type="button" data-class-id="${item.id}" style="font-size:13px;">${isEditing ? "Cancel" : "Edit"}</button>
+                      </div>
+                      ${isEditing ? `
+                        <form class="inline-edit-form class-edit-form" data-class-id="${item.id}">
+                          <label for="edit-class-name-${item.id}">Class name</label>
+                          <input id="edit-class-name-${item.id}" name="name" value="${item.name.replace(/"/g, "&quot;")}" required />
+                          <label for="edit-class-desc-${item.id}">Description</label>
+                          <textarea id="edit-class-desc-${item.id}" name="description">${(item.description || "").replace(/"/g, "&quot;")}</textarea>
+                          <div class="inline-fields">
+                            <div>
+                              <label for="edit-class-weekday-${item.id}">Weekday</label>
+                              <select id="edit-class-weekday-${item.id}" name="weekday">
+                                ${weekdayOptions.map((o) => `<option value="${o.value}" ${o.value === item.weekday ? "selected" : ""}>${o.label}</option>`).join("")}
+                              </select>
+                            </div>
+                            <div>
+                              <label for="edit-class-start-${item.id}">Start time</label>
+                              <input id="edit-class-start-${item.id}" name="start_time" type="time" value="${item.startTime}" required />
+                            </div>
+                          </div>
+                          <label for="edit-class-end-${item.id}">End time</label>
+                          <input id="edit-class-end-${item.id}" name="end_time" type="time" value="${item.endTime}" required />
+                          <div class="button-row">
+                            <button class="button" type="submit">Save changes</button>
+                          </div>
+                        </form>
+                      ` : ""}
+                    </article>
+                  `; }).join("") : `<div class="empty-state">No classes yet. Create one above.</div>`}
+                </div>
+              </section>
+            </section>
+          </main>
+        `;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => { e.preventDefault(); handleNavClick(item.dataset.view); });
+        });
         document.querySelector("#class-form").addEventListener("submit", handleClassCreate);
         document.querySelector("#membership-form").addEventListener("submit", handleMembershipCreate);
+        document.querySelectorAll(".class-edit-btn").forEach((btn) => {
+          btn.addEventListener("click", () => toggleClassEdit(btn.dataset.classId));
+        });
+        document.querySelectorAll(".class-edit-form").forEach((form) => {
+          form.addEventListener("submit", (e) => handleClassEdit(e, form.dataset.classId));
+        });
+      }
+
+      function renderSessionsView(data, classOptions) {
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="overview">Overview</a>
+                <a class="nav-item" href="#" data-view="students">Students</a>
+                <a class="nav-item" href="#" data-view="classes">Classes</a>
+                <a class="nav-item active" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Sessions</h1>
+                  <p class="muted">Generate and manage class sessions.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              ${bannerMarkup()}
+              <section class="surface" style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <h2 style="margin:0;">All Sessions (${data.summary.sessionCount})</h2>
+                  <button class="button" type="button" onclick="const s=document.getElementById('sessions-generate-section');s.style.display=s.style.display==='none'?'block':'none';this.textContent=s.style.display==='none'?'＋ Generate Sessions':'− Cancel'">＋ Generate Sessions</button>
+                </div>
+                <div id="sessions-generate-section" style="display:none;margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:6px;background:#f9fbfd;">
+                  <h3>Generate Sessions</h3>
+                  <form id="sessions-form">
+                  <label for="session-class">Class</label>
+                  <select id="session-class" name="class_id" ${data.classes.length ? "" : "disabled"}>
+                    <option value="">Select class</option>
+                    ${classOptions}
+                  </select>
+                  <div class="inline-fields">
+                    <div>
+                      <label for="term-start-date">Term start date</label>
+                      <input id="term-start-date" name="term_start_date" type="date" required />
+                    </div>
+                    <div>
+                      <label for="session-count">Number of sessions</label>
+                      <input id="session-count" name="session_count" type="number" min="1" max="30" value="10" required />
+                    </div>
+                  </div>
+                  <div class="button-row">
+                    <button class="button" type="submit" ${data.classes.length ? "" : "disabled"}>Generate sessions</button>
+                  </div>
+                </form>
+                </div>
+              </section>
+              <section class="surface" style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <h2 style="margin:0;">Assign Material</h2>
+                  <button class="button secondary" type="button" onclick="const s=document.getElementById('assign-section');s.style.display=s.style.display==='none'?'block':'none';this.textContent=s.style.display==='none'?'＋ Expand':'− Collapse'">＋ Expand</button>
+                </div>
+                <div id="assign-section" style="display:none;margin-top:16px;">
+                  <form id="assignment-form">
+                    <label for="assignment-session">Session</label>
+                    <select id="assignment-session" name="session_id" ${data.sessions.length ? "" : "disabled"}>
+                      <option value="">Select session</option>
+                      ${data.sessions.map((s) => `<option value="${s.id}">${s.className} - ${s.sessionDate} ${s.startTime}</option>`).join("")}
+                    </select>
+                    <label for="assignment-material">Material</label>
+                    <select id="assignment-material" name="material_id" ${data.materials.length ? "" : "disabled"}>
+                      <option value="">Select material</option>
+                      ${data.materials.map((m) => `<option value="${m.id}">${m.title}</option>`).join("")}
+                    </select>
+                    <label for="assignment-type">Assign to</label>
+                    <select id="assignment-type" name="assigned_to_type">
+                      <option value="class">Whole class</option>
+                      <option value="student">Individual student</option>
+                    </select>
+                    <label for="assignment-student">Student</label>
+                    <select id="assignment-student" name="assigned_to_student_id" ${data.students.length ? "" : "disabled"}>
+                      <option value="">Only needed for individual</option>
+                      ${data.students.map((s) => `<option value="${s.id}">${s.displayName}</option>`).join("")}
+                    </select>
+                    <label for="assignment-phase">Phase</label>
+                    <select id="assignment-phase" name="phase_tag">
+                      <option value="both">Both (Theory + Building)</option>
+                      <option value="theory">Theory only</option>
+                      <option value="building">Building only</option>
+                    </select>
+                    <div class="button-row">
+                      <button class="button" type="submit" ${data.sessions.length && data.materials.length ? "" : "disabled"}>Assign material</button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+              <section class="surface">
+                <h2 style="margin:0;">Session List</h2>
+                <div class="session-cards">
+                  ${data.sessions.length ? data.sessions.map((session) => `
+                    <article class="session-card">
+                      <header>
+                        <div>
+                          <strong>${session.className}</strong>
+                          <div class="session-meta">${session.sessionDate} • ${session.startTime}-${session.endTime}</div>
+                        </div>
+                        <div class="button-row" style="margin-top: 0;">
+                          <span class="pill">${session.status}</span>
+                          <span class="pill">${session.assignmentCount} materials</span>
+                          <span class="pill">${session.attendanceCount} attended</span>
+                          <span class="pill">${session.absentCount} absent</span>
+                        </div>
+                      </header>
+                      <div class="button-row" style="margin-top: 0;">
+                        <span class="pill">📌 ${session.phase || "not_started"}</span>
+                      </div>
+                      ${session.status === "scheduled" ? `
+                        <div class="button-row">
+                          <button class="button session-phase-btn" type="button" data-session-id="${session.id}" data-phase="theory">Start Theory</button>
+                          <button class="button session-phase-btn" type="button" data-session-id="${session.id}" data-phase="building">Start Building</button>
+                          <button class="button session-complete" type="button" data-session-id="${session.id}">Complete</button>
+                          <button class="button danger session-cancel" type="button" data-session-id="${session.id}">Cancel</button>
+                          <button class="button danger session-delete" type="button" data-session-id="${session.id}">Delete</button>
+                        </div>
+                      ` : ""}
+                      <p class="muted">${session.title || "Generated class session"}</p>
+                      <div class="pill-list">
+                        ${(session.assignments.length ? session.assignments : [{ materialTitle: "No material assigned", assignedToType: "class" }]).map((assignment) => `
+                          <span class="pill">${assignment.materialTitle}${assignment.assignedToStudentName ? ` - ${assignment.assignedToStudentName}` : ""}</span>
+                        `).join("")}
+                      </div>
+                    </article>
+                  `).join("") : `<div class="empty-state">No sessions yet. Generate a term plan after creating a class.</div>`}
+                </div>
+              </section>
+            </section>
+          </main>
+        `;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => { e.preventDefault(); handleNavClick(item.dataset.view); });
+        });
         document.querySelector("#sessions-form").addEventListener("submit", handleGenerateSessions);
-        document.querySelector("#material-form").addEventListener("submit", handleMaterialCreate);
-        document.querySelector("#material-type").addEventListener("change", syncMaterialFileAccept);
-        syncMaterialFileAccept();
         document.querySelector("#assignment-form").addEventListener("submit", handleMaterialAssignment);
         document.querySelectorAll(".session-delete").forEach((button) => {
           button.addEventListener("click", () => handleDeleteSession(button.dataset.sessionId));
         });
+        document.querySelectorAll(".session-complete").forEach((button) => {
+          button.addEventListener("click", () => handleUpdateSessionStatus(button.dataset.sessionId, "completed"));
+        });
+        document.querySelectorAll(".session-cancel").forEach((button) => {
+          button.addEventListener("click", () => handleUpdateSessionStatus(button.dataset.sessionId, "cancelled"));
+        });
+        document.querySelectorAll(".session-phase-btn").forEach((button) => {
+          button.addEventListener("click", () => handleUpdateSessionPhase(button.dataset.sessionId, button.dataset.phase));
+        });
+      }
+
+      function renderTeacherClassroomView(data, sessionOptions) {
+        const selectedId = state.selectedAttendanceSessionId;
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="overview">Overview</a>
+                <a class="nav-item" href="#" data-view="students">Students</a>
+                <a class="nav-item" href="#" data-view="classes">Classes</a>
+                <a class="nav-item" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item active" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>🏫 Classroom</h1>
+                  <p class="muted">Monitor the live class session, control phases, and track attendance.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              <section class="surface">
+                <h2>Select Session</h2>
+                <div class="session-selector-row">
+                  <select id="classroom-session-select">
+                    <option value="">Choose a session...</option>
+                    ${sessionOptions}
+                  </select>
+                </div>
+                <div id="classroom-detail"></div>
+              </section>
+            </section>
+          </main>
+        `;
+
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => { e.preventDefault(); handleNavClick(item.dataset.view); });
+        });
+        const sel = document.querySelector("#classroom-session-select");
+        if (sel) {
+          if (selectedId) sel.value = selectedId;
+          sel.addEventListener("change", handleClassroomSessionSelect);
+          if (selectedId) {
+            loadClassroomDetail(selectedId);
+          }
+        }
+      }
+
+      async function handleClassroomSessionSelect(event) {
+        const sessionId = event.target.value;
+        state.selectedAttendanceSessionId = sessionId;
+        if (sessionId) {
+          await loadClassroomDetail(sessionId);
+        } else {
+          document.querySelector("#classroom-detail").innerHTML = "";
+        }
+      }
+
+      let classroomRefreshTimer = null;
+
+      async function loadClassroomDetail(sessionId) {
+        const detailEl = document.querySelector("#classroom-detail");
+        if (!detailEl) return;
+        if (!detailEl.dataset.loading) {
+          detailEl.innerHTML = `<div class="classroom-waiting"><span class="pulse"></span> Loading classroom...</div>`;
+        }
+        detailEl.dataset.loading = "true";
+        try {
+          const room = await api(`/api/teacher/sessions/${sessionId}/classroom`);
+          detailEl.innerHTML = renderClassroomDetailHTML(room);
+
+          document.querySelectorAll(".classroom-phase-btn").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const phase = btn.dataset.phase;
+              const fd = new FormData(); fd.append("phase", phase);
+              await api(`/api/teacher/sessions/${sessionId}/phase`, { method: "PUT", body: fd });
+              await loadClassroomDetail(sessionId);
+            });
+          });
+          document.querySelectorAll(".manual-checkin-btn").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              try {
+                await api(`/api/teacher/sessions/${sessionId}/students/${btn.dataset.studentId}/check-in`, { method: "POST" });
+                await loadClassroomDetail(sessionId);
+              } catch (error) {
+                const detailEl = document.querySelector("#classroom-detail");
+                if (detailEl) detailEl.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+              }
+            });
+          });
+          document.querySelectorAll(".teacher-open-material").forEach((button) => {
+            button.addEventListener("click", async () => {
+              try {
+                await openMaterialFile(button.dataset.downloadUrl, button.dataset.materialTitle || "material");
+              } catch (error) {
+                const detailEl = document.querySelector("#classroom-detail");
+                if (detailEl) detailEl.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+              }
+            });
+          });
+          delete detailEl.dataset.loading;
+          startClassroomRefresh(sessionId);
+        } catch (error) {
+          detailEl.innerHTML = `<div class="banner error">${error.message}</div>`;
+          delete detailEl.dataset.loading;
+        }
+      }
+
+      function startClassroomRefresh(sessionId) {
+        if (classroomRefreshTimer) clearInterval(classroomRefreshTimer);
+        classroomRefreshTimer = setInterval(() => {
+          const detailEl = document.querySelector("#classroom-detail");
+          if (!detailEl || state.teacherView !== "classroom") {
+            clearInterval(classroomRefreshTimer);
+            return;
+          }
+          loadClassroomDetail(sessionId);
+        }, 8000);
+      }
+
+      function renderClassroomDetailHTML(room) {
+        const phaseNames = { not_started: "Waiting", theory: "Theory", building: "Building" };
+        const phaseOrder = ["not_started", "theory", "building"];
+        const currentIdx = phaseOrder.indexOf(room.phase);
+        const att = room.attendance || {};
+
+        return `
+          <div class="classroom-header" style="margin-top:20px;">
+            <h1>${room.className}</h1>
+            <div class="session-meta">${room.sessionDate} • ${room.startTime}–${room.endTime} ${room.title ? ' • ' + room.title : ''}</div>
+          </div>
+          ${(function() {
+            const labels = ["Waiting", "Theory", "Building"];
+            let html = `<div class="phase-indicator">`;
+            phaseOrder.forEach((p, idx) => {
+              let dotClass = idx < currentIdx ? "done" : idx === currentIdx ? "active" : "";
+              let lineClass = idx < currentIdx ? "done" : idx === currentIdx-1 ? "active" : "";
+              html += `<div class="phase-step"><span class="phase-dot ${dotClass}">${idx < currentIdx ? '✓' : idx+1}</span>`;
+              if (idx < 2) html += `<span class="phase-line ${lineClass}"></span>`;
+              html += `</div>`;
+            });
+            html += `</div><div style="display:flex;justify-content:space-between;margin-top:4px;padding:0 4px;">`;
+            labels.forEach((l, i) => html += `<span class="phase-label${i===currentIdx?' active':''}">${l}</span>`);
+            html += `</div>`;
+            return html;
+          })()}
+          <div class="button-row" style="margin-top:12px;">
+            ${room.status === "scheduled" ? `
+              <button class="button classroom-phase-btn" type="button" data-phase="theory" ${room.phase === "theory" ? "disabled" : ""}>Start Theory</button>
+              <button class="button classroom-phase-btn" type="button" data-phase="building" ${room.phase === "building" ? "disabled" : ""}>Start Building</button>
+            ` : `<span class="badge">Session ${room.status}</span>`}
+            <span class="badge">📌 ${phaseNames[room.phase] || room.phase}</span>
+          </div>
+
+          ${room.status === "completed" && room.summary ? `
+            <section class="surface" style="margin-top:20px;background:#eaf6ef;border-color:#b8d9c8;">
+              <h3>📊 Session Summary</h3>
+              <div class="metrics-grid" style="margin-top:8px;">
+                <article class="metric-card" style="min-height:80px;"><strong>Students</strong><span class="metric-value">${room.summary.totalStudents}</span></article>
+                <article class="metric-card" style="min-height:80px;"><strong>Checked In</strong><span class="metric-value" style="color:var(--ok);">${room.summary.checkedIn}</span></article>
+                <article class="metric-card" style="min-height:80px;"><strong>Absent</strong><span class="metric-value" style="color:var(--accent);">${room.summary.absent}</span></article>
+                <article class="metric-card" style="min-height:80px;"><strong>Materials</strong><span class="metric-value">${room.summary.totalMaterials}</span></article>
+                ${room.summary.locationFailed ? `<article class="metric-card" style="min-height:80px;"><strong>Location Issues</strong><span class="metric-value" style="color:#c4820e;">${room.summary.locationFailed}</span></article>` : ""}
+              </div>
+            </section>
+          ` : ""}
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
+            <section class="surface">
+              <h3>📊 Attendance (${att.attendance ? att.attendance.length : 0}/${room.students.length})</h3>
+              ${room.students && room.students.length ? room.students.map((s) => `
+                <div class="attendance-row">
+                  <span style="min-width:120px;">${s.studentName}</span>
+                  ${s.status === "checked_in" ? `<span class="pill location-valid">✅ Checked in</span>`
+                    : s.status === "location_failed" ? `<span class="pill location-denied">⚠️ Location failed</span>`
+                    : `<span class="pill" style="color:var(--muted);">✗ Not checked in</span>`}
+                  ${s.status !== "checked_in" ? `<button class="button secondary manual-checkin-btn" type="button" data-student-id="${s.studentId}" data-student-name="${s.studentName}" style="font-size:11px;min-height:28px;margin-left:auto;">Check In</button>` : ""}
+                </div>
+              `).join("") : `<div class="empty-state">No students in this class.</div>`}
+            </section>
+            <section class="surface">
+              <h3>📚 Materials (${room.materials.length})</h3>
+              ${(() => {
+                const theoryList = room.materials.filter(m => m.phaseTag !== "building");
+                const buildingList = room.materials.filter(m => m.phaseTag !== "theory");
+                const renderItem = (m) => `
+                  <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);">
+                    <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.title}</span>
+                    <span class="pill">${m.fileType}</span>
+                    <span class="pill" style="font-size:11px;">${m.phaseTag === "both" ? "Both" : m.phaseTag}</span>
+                    <button class="button secondary teacher-open-material" type="button" data-download-url="${m.downloadUrl}" data-material-title="${m.title}" style="font-size:12px;min-height:30px;">Open</button>
+                  </div>`;
+                let html = '';
+                if (theoryList.length) html += `<p class="muted" style="margin-top:8px;">📖 Theory</p>` + theoryList.map(renderItem).join("");
+                if (buildingList.length) html += `<p class="muted" style="margin-top:8px;">🔧 Building</p>` + buildingList.map(renderItem).join("");
+                return html || `<div class="empty-state">No materials assigned.</div>`;
+              })()}
+            </section>
+          </div>
+        `;
+      }
+
+      function renderMaterialsView(data, sessionOptions) {
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="overview">Overview</a>
+                <a class="nav-item" href="#" data-view="students">Students</a>
+                <a class="nav-item" href="#" data-view="classes">Classes</a>
+                <a class="nav-item" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item active" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Material Library</h1>
+                  <p class="muted">Upload, edit, replace and delete teaching materials.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" data-view="overview">← Back to Overview</button>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              ${bannerMarkup()}
+              <section class="surface">
+                <h2>Upload New Material</h2>
+                <p class="muted">Supported types: PDF, PowerPoint, images, videos, and other files.</p>
+                <form id="material-form">
+                  <label for="material-title">Title</label>
+                  <input id="material-title" name="title" required />
+                  <label for="material-description">Description</label>
+                  <textarea id="material-description" name="description"></textarea>
+                  <label for="material-type">Type</label>
+                  <select id="material-type" name="file_type" onchange="const v=this.value;document.getElementById('material-file').style.display=v==='link'?'none':'';document.getElementById('material-file').required=v!=='link';document.getElementById('link-url-row').style.display=v==='link'?'':'none';document.getElementById('link-url').required=v==='link';syncMaterialFileAccept()">
+                    <option value="pdf">PDF</option>
+                    <option value="ppt">PowerPoint</option>
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="link">🔗 Link (URL)</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <div id="link-url-row" style="display:none;">
+                    <label for="link-url">URL</label>
+                    <input id="link-url" name="link_url" type="url" placeholder="https://..." />
+                  </div>
+                  <label for="material-file">File</label>
+                  <input id="material-file" name="file" type="file" required />
+                  <div id="file-info" class="muted" style="margin-top:4px;font-size:14px;"></div>
+                  <div class="button-row">
+                    <button class="button" type="submit">Upload material</button>
+                  </div>
+                </form>
+              </section>
+              <section class="surface" style="margin-top: 20px;">
+                <h2>All Materials (${data.summary.materialCount})</h2>
+                <div class="material-cards">
+                  ${data.materials.length ? data.materials.map((material) => renderMaterialCardHTML(material)).join("") : `<div class="empty-state">No materials yet. Upload the first teaching material above.</div>`}
+                </div>
+              </section>
+            </section>
+          </main>
+        `;
+
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            handleNavClick(item.dataset.view);
+          });
+        });
+        document.querySelector("#material-form").addEventListener("submit", handleMaterialCreate);
+        document.querySelector("#material-type").addEventListener("change", syncMaterialFileAccept);
+        document.querySelector("#material-file").addEventListener("change", showFileInfo);
+        syncMaterialFileAccept();
+
+        document.querySelectorAll(".material-edit-btn").forEach((btn) => {
+          btn.addEventListener("click", () => toggleMaterialEdit(btn.dataset.materialId));
+        });
+        document.querySelectorAll(".material-delete-btn").forEach((btn) => {
+          btn.addEventListener("click", () => handleMaterialDelete(btn.dataset.materialId, btn.dataset.materialTitle));
+        });
+        document.querySelectorAll(".material-edit-form").forEach((form) => {
+          form.addEventListener("submit", (e) => handleMaterialEdit(e, form.dataset.materialId));
+        });
+        document.querySelectorAll(".material-replace-form").forEach((form) => {
+          form.addEventListener("submit", (e) => handleMaterialReplace(e, form.dataset.materialId));
+        });
         document.querySelectorAll(".teacher-open-material").forEach((button) => {
           button.addEventListener("click", async () => {
             try {
-              await downloadProtectedFile(button.dataset.downloadUrl, button.dataset.materialTitle || "material");
+              await openMaterialFile(button.dataset.downloadUrl, button.dataset.materialTitle || "material");
             } catch (error) {
               state.flash = "";
               const data = await loadTeacherDashboard();
               renderTeacherPortal(data);
-              app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+              const surface = app.querySelector(".surface");
+              if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
             }
           });
         });
+      }
+
+      function renderMaterialCardHTML(material) {
+        const isEditing = state.editingMaterialId === material.id;
+        return `
+          <article class="material-card">
+            <header>
+              <div>
+                <strong>${material.title}</strong>
+                <div class="material-meta">${material.fileType.toUpperCase()} • ${material.storagePath}</div>
+              </div>
+              <span class="pill">${material.fileType}</span>
+            </header>
+            <p class="muted">${material.description || "No description."}</p>
+            <div class="material-actions">
+              <button class="button secondary teacher-open-material" type="button" data-download-url="${material.downloadUrl}" data-material-title="${material.title}">Download</button>
+              <button class="button secondary material-edit-btn" type="button" data-material-id="${material.id}">${isEditing ? "Cancel" : "Edit"}</button>
+              <button class="button danger material-delete-btn" type="button" data-material-id="${material.id}" data-material-title="${material.title}">Delete</button>
+            </div>
+            ${isEditing ? `
+              <form class="inline-edit-form material-edit-form" data-material-id="${material.id}">
+                <label for="edit-title-${material.id}">Title</label>
+                <input id="edit-title-${material.id}" name="title" value="${material.title.replace(/"/g, "&quot;")}" required />
+                <label for="edit-description-${material.id}">Description</label>
+                <textarea id="edit-description-${material.id}" name="description">${(material.description || "").replace(/"/g, "&quot;")}</textarea>
+                <div class="button-row">
+                  <button class="button" type="submit">Save changes</button>
+                </div>
+              </form>
+            ` : ""}
+            <div class="replace-file-area">
+              <form class="material-replace-form" data-material-id="${material.id}">
+                <label style="font-size:14px;">Replace file (keep metadata)</label>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+                  <input name="file" type="file" accept="${materialAcceptValue(material.fileType)}" style="max-width:240px;min-height:36px;" />
+                  <button class="button secondary" type="submit">Replace</button>
+                </div>
+              </form>
+            </div>
+          </article>
+        `;
+      }
+
+      function renderAttendanceView(data, sessionOptions) {
+        const detail = state.attendanceData;
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="overview">Overview</a>
+                <a class="nav-item" href="#" data-view="students">Students</a>
+                <a class="nav-item" href="#" data-view="classes">Classes</a>
+                <a class="nav-item" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item active" href="#" data-view="attendance">Attendance</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div>
+                  <h1>Attendance</h1>
+                  <p class="muted">View verified attendance, location failures, and absent students per session.</p>
+                </div>
+                <div class="button-row">
+                  <span class="badge">${state.user.role}</span>
+                  <button class="button secondary" data-view="overview">← Back to Overview</button>
+                  <button class="button secondary" id="sign-out" type="button">Sign out</button>
+                </div>
+              </div>
+              <section class="surface">
+                <h2>Select Session</h2>
+                <div class="session-selector-row">
+                  <select id="attendance-session-select">
+                    <option value="">Choose a session...</option>
+                    ${sessionOptions}
+                  </select>
+                </div>
+                ${detail ? renderAttendanceDetailHTML(detail) : `<p class="muted" style="margin-top:16px;">Select a session above to view its attendance records.</p>`}
+              </section>
+            </section>
+          </main>
+        `;
+
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.preventDefault();
+            handleNavClick(item.dataset.view);
+          });
+        });
+        const sessionSelect = document.querySelector("#attendance-session-select");
+        if (sessionSelect) {
+          sessionSelect.addEventListener("change", handleAttendanceSessionSelect);
+          if (state.selectedAttendanceSessionId) {
+            sessionSelect.value = state.selectedAttendanceSessionId;
+          }
+        }
+      }
+
+      function renderAttendanceDetailHTML(detail) {
+        return `
+          <div class="attendance-section" style="margin-top:20px;">
+            <h3 style="border-bottom:none;">${detail.className} — ${detail.sessionDate} ${detail.startTime}–${detail.endTime}</h3>
+          </div>
+          <div class="attendance-section">
+            <h3>Verified Attendance (${detail.attendance.length})</h3>
+            ${detail.attendance.length ? detail.attendance.map((a) => `
+              <div class="attendance-row">
+                <span style="min-width:160px;">${a.studentName}</span>
+                <span class="pill location-valid">Verified</span>
+                <span class="muted">${new Date(a.checkedInAt).toLocaleTimeString()}</span>
+              </div>
+            `).join("") : `<div class="empty-state">No students have checked in yet.</div>`}
+          </div>
+          ${detail.locationAttempts && detail.locationAttempts.length ? `
+          <div class="attendance-section">
+            <h3>Location Verification Failed (${detail.locationAttempts.length})</h3>
+            ${detail.locationAttempts.map((a) => `
+              <div class="attendance-row">
+                <span style="min-width:160px;">${a.studentName}</span>
+                <span class="pill location-${a.locationStatus}">${a.locationStatus}</span>
+                <span class="muted">${a.materialTitle}</span>
+                <span class="muted">${new Date(a.attemptedAt).toLocaleTimeString()}</span>
+              </div>
+            `).join("")}
+          </div>
+          ` : ""}
+          <div class="attendance-section">
+            <h3>Absent / No Activity (${detail.absentStudents.length})</h3>
+            ${detail.absentStudents.length ? detail.absentStudents.map((a) => `
+              <div class="attendance-row">
+                <span style="min-width:160px;">${a.studentName}</span>
+                <span class="muted">No activity recorded</span>
+              </div>
+            `).join("") : `<div class="empty-state">All active class members are accounted for.</div>`}
+          </div>
+        `;
+      }
+
+      function handleNavClick(view) {
+        state.teacherView = view;
+        state.editingMaterialId = null;
+        state.attendanceData = null;
+        state.selectedAttendanceSessionId = null;
+        state.flash = "";
+        loadTeacherDashboard().then((data) => renderTeacherPortal(data));
+      }
+
+      function toggleMaterialEdit(materialId) {
+        if (state.editingMaterialId === materialId) {
+          state.editingMaterialId = null;
+        } else {
+          state.editingMaterialId = materialId;
+        }
+        loadTeacherDashboard().then((data) => renderTeacherPortal(data));
+      }
+
+      async function handleMaterialEdit(event, materialId) {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        try {
+          await api(`/api/teacher/materials/${materialId}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              title: form.get("title"),
+              description: form.get("description") || "",
+            }),
+          });
+          state.editingMaterialId = null;
+          state.flash = "Material updated.";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleMaterialDelete(materialId, materialTitle) {
+        if (!confirm(`Archive "${materialTitle}"?\n\nIt will be hidden from students but preserved in the database.`)) return;
+        try {
+          await api(`/api/teacher/materials/${materialId}`, { method: "DELETE" });
+          state.flash = "Material archived.";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleMaterialReplace(event, materialId) {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        const file = form.get("file");
+        if (!(file instanceof File) || !file.name) {
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">Please choose a file to replace with.</div>`);
+          return;
+        }
+        try {
+          await api(`/api/teacher/materials/${materialId}/replace`, {
+            method: "POST",
+            body: form,
+          });
+          state.flash = "Material file replaced.";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleAttendanceSessionSelect(event) {
+        const sessionId = event.target.value;
+        if (!sessionId) {
+          state.selectedAttendanceSessionId = null;
+          state.attendanceData = null;
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          return;
+        }
+        try {
+          state.selectedAttendanceSessionId = sessionId;
+          state.attendanceData = await api(`/api/teacher/sessions/${sessionId}/attendance`);
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+        } catch (error) {
+          state.flash = "";
+          state.selectedAttendanceSessionId = null;
+          state.attendanceData = null;
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
       }
 
       async function loadTeacherDashboard() {
@@ -1060,19 +2451,37 @@
         renderTeacherPortal(data);
       }
 
+      async function handleResetStudentPassword(studentId, studentName) {
+        if (!confirm(`Reset password for ${studentName}? A new temporary password will be generated.`)) return;
+        try {
+          const result = await api(`/api/teacher/students/${studentId}/reset-password`, { method: "POST" });
+          await rerenderTeacherWithMessage(`New password for ${result.studentName}: <code style="background:#fff;padding:2px 6px;border-radius:3px;font-weight:800;">${result.newPassword}</code>`);
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
       async function handleStudentCreate(event) {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         try {
-          await api("/api/teacher/students", {
+          const result = await api("/api/teacher/students", {
             method: "POST",
             body: JSON.stringify({
               display_name: form.get("display_name"),
               email: form.get("email"),
-              parent_name: form.get("parent_name") || ""
+              parent_name: form.get("parent_name") || "",
+              password: form.get("password") || "",
             })
           });
-          await rerenderTeacherWithMessage("Student created.");
+          const pwd = result.generatedPassword || "";
+          const msg = pwd
+            ? `Student created. Password: <code style="background:#fff;padding:2px 6px;border-radius:3px;font-weight:800;">${pwd}</code>`
+            : "Student created.";
+          await rerenderTeacherWithMessage(msg);
         } catch (error) {
           state.flash = "";
           const data = await loadTeacherDashboard();
@@ -1121,6 +2530,71 @@
         }
       }
 
+      function toggleStudentEdit(studentId) {
+        state.editingStudentId = state.editingStudentId === studentId ? null : studentId;
+        state.editingClassId = null;
+        loadTeacherDashboard().then((data) => renderTeacherPortal(data));
+      }
+
+      async function handleStudentEdit(event, studentId) {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        try {
+          await api(`/api/teacher/students/${studentId}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              display_name: form.get("display_name"),
+              email: form.get("email"),
+              parent_name: form.get("parent_name") || "",
+              password: form.get("password") || "",
+            }),
+          });
+          state.editingStudentId = null;
+          state.flash = "Student updated.";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      function toggleClassEdit(classId) {
+        state.editingClassId = state.editingClassId === classId ? null : classId;
+        state.editingStudentId = null;
+        loadTeacherDashboard().then((data) => renderTeacherPortal(data));
+      }
+
+      async function handleClassEdit(event, classId) {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        try {
+          await api(`/api/teacher/classes/${classId}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: form.get("name"),
+              description: form.get("description") || "",
+              weekday: Number(form.get("weekday")),
+              start_time: form.get("start_time"),
+              end_time: form.get("end_time"),
+            }),
+          });
+          state.editingClassId = null;
+          state.flash = "Class updated.";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          const surface = app.querySelector(".surface");
+          if (surface) surface.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
       async function handleGenerateSessions(event) {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
@@ -1144,7 +2618,41 @@
       async function handleDeleteSession(sessionId) {
         try {
           await api(`/api/teacher/sessions/${sessionId}`, { method: "DELETE" });
-          await rerenderTeacherWithMessage("Session deleted.");
+          await rerenderTeacherWithMessage("Session cancelled.");
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleUpdateSessionStatus(sessionId, status) {
+        try {
+          await api(`/api/teacher/sessions/${sessionId}`, {
+            method: "PUT",
+            body: JSON.stringify({ status }),
+          });
+          const label = status === "completed" ? "completed" : "cancelled";
+          await rerenderTeacherWithMessage(`Session ${label}.`);
+        } catch (error) {
+          state.flash = "";
+          const data = await loadTeacherDashboard();
+          renderTeacherPortal(data);
+          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+        }
+      }
+
+      async function handleUpdateSessionPhase(sessionId, phase) {
+        const formData = new FormData();
+        formData.append("phase", phase);
+        try {
+          await api(`/api/teacher/sessions/${sessionId}/phase`, {
+            method: "PUT",
+            body: formData,
+          });
+          const label = phase === "theory" ? "Theory phase started" : "Building phase started";
+          await rerenderTeacherWithMessage(label);
         } catch (error) {
           state.flash = "";
           const data = await loadTeacherDashboard();
@@ -1184,7 +2692,8 @@
             body: JSON.stringify({
               material_id: form.get("material_id"),
               assigned_to_type: assignedToType,
-              assigned_to_student_id: assignedToType === "student" ? form.get("assigned_to_student_id") : null
+              assigned_to_student_id: assignedToType === "student" ? form.get("assigned_to_student_id") : null,
+              phase_tag: form.get("phase_tag") || "both",
             })
           });
           await rerenderTeacherWithMessage("Material assigned.");
@@ -1221,6 +2730,9 @@
         const source = dataset.source;
         let location = { location_permission: "not_required", latitude: null, longitude: null };
         if (source === "current_lesson") {
+          state.studentNotice = "📍 Getting your location for attendance check-in...";
+          const currentData = await api("/api/student/current-lesson");
+          renderStudentPortal(currentData);
           location = await getBrowserLocationForAttendance();
         }
 
@@ -1235,27 +2747,38 @@
               location_permission: location.location_permission
             })
           });
+
           if (source === "current_lesson") {
             if (result.attendance && result.locationStatus === "valid") {
-              state.studentNotice = "Current lesson opened. Attendance verified for this session.";
+              state.studentNotice = "✅ Attendance verified for this session — material opened in new tab.";
+            } else if (result.locationStatus === "outside") {
+              state.studentNotice = "⚠️ You are outside the classroom area — material opened but attendance not recorded.";
+            } else if (result.locationStatus === "denied") {
+              state.studentNotice = "⚠️ Location permission was denied — material opened but attendance not recorded.";
+            } else if (result.locationStatus === "unavailable") {
+              state.studentNotice = "⚠️ Location unavailable — material opened but attendance could not be verified.";
             } else {
-              state.studentNotice = `Current lesson opened. Attendance status: ${result.locationStatus}.`;
+              state.studentNotice = `📖 Material opened. (Attendance: ${result.locationStatus})`;
             }
           } else {
-            state.studentNotice = "Review material opened.";
+            state.studentNotice = "📖 Review material opened in new tab.";
           }
 
           if (dataset.downloadUrl) {
-            await downloadProtectedFile(dataset.downloadUrl, dataset.materialTitle || "material");
+            await openMaterialFile(dataset.downloadUrl, dataset.materialTitle || "material");
           }
 
-          const data = await api("/api/student/current-lesson");
-          renderStudentPortal(data);
+          // Refresh the current student view
+          const refreshData = await api("/api/student/current-lesson");
+          renderStudentPortal(refreshData);
         } catch (error) {
           state.studentNotice = "";
-          const data = await api("/api/student/current-lesson");
-          renderStudentPortal(data);
-          app.querySelector(".section-copy").insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+          const refreshData = await api("/api/student/current-lesson");
+          renderStudentPortal(refreshData);
+          const secCopy = app.querySelector(".section-copy");
+          if (secCopy) {
+            secCopy.insertAdjacentHTML("beforeend", `<div class="banner error">${error.message}</div>`);
+          }
         }
       }
 

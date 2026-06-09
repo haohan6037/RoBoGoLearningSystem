@@ -28,6 +28,7 @@ MATERIAL_DIRECTORY_MAP = {
     "ppt": "presentations",
     "image": "images",
     "video": "videos",
+    "link": "links",
     "other": "other",
 }
 
@@ -92,17 +93,19 @@ class ClassSession(BaseModel):
     end_datetime: datetime
     status: Literal["scheduled", "cancelled", "completed"] = "scheduled"
     title: str = ""
+    phase: Literal["not_started", "theory", "building"] = "not_started"
     created_at: datetime
 
-
+ 
 class Material(BaseModel):
     id: str
     title: str
     description: str = ""
-    file_type: Literal["pdf", "ppt", "image", "video", "other"]
+    file_type: Literal["pdf", "ppt", "image", "video", "link", "other"]
     file_url: str
     file_size: int = 0
     uploaded_by: str
+    is_deleted: bool = False
     created_at: datetime
 
 
@@ -113,6 +116,7 @@ class SessionMaterialAssignment(BaseModel):
     assigned_to_type: Literal["class", "student"]
     assigned_to_student_id: Optional[str] = None
     assigned_by: str
+    phase_tag: Literal["both", "theory", "building"] = "both"
     created_at: datetime
 
 
@@ -150,6 +154,7 @@ class StudentCreateRequest(BaseModel):
     display_name: str
     email: str
     parent_name: str = ""
+    password: str = ""
 
 
 class ClassCreateRequest(BaseModel):
@@ -173,6 +178,18 @@ class AssignmentCreateRequest(BaseModel):
     material_id: str
     assigned_to_type: Literal["class", "student"] = "class"
     assigned_to_student_id: Optional[str] = None
+    phase_tag: Literal["both", "theory", "building"] = "both"
+
+class MaterialUpdateRequest(BaseModel):
+    title: str
+    description: str = ""
+
+class SessionUpdateRequest(BaseModel):
+    status: Literal["completed", "cancelled"]
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
 class MaterialOpenRequest(BaseModel):
@@ -330,6 +347,7 @@ def init_database() -> None:
                 end_datetime TEXT NOT NULL,
                 status TEXT NOT NULL,
                 title TEXT NOT NULL DEFAULT '',
+                phase TEXT NOT NULL DEFAULT 'not_started',
                 created_at TEXT NOT NULL,
                 UNIQUE(class_group_id, session_date)
             );
@@ -342,6 +360,7 @@ def init_database() -> None:
                 file_url TEXT NOT NULL,
                 file_size INTEGER NOT NULL DEFAULT 0,
                 uploaded_by TEXT NOT NULL,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL
             );
 
@@ -352,6 +371,8 @@ def init_database() -> None:
                 assigned_to_type TEXT NOT NULL,
                 assigned_to_student_id TEXT,
                 assigned_by TEXT NOT NULL,
+                phase_tag TEXT NOT NULL DEFAULT 'both',
+                sort_order INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL
             );
 
@@ -528,6 +549,7 @@ def row_to_class_session(row: sqlite3.Row) -> ClassSession:
         end_datetime=parse_datetime_value(row["end_datetime"]),
         status=row["status"],
         title=row["title"],
+        phase=row.get("phase", "not_started"),
         created_at=parse_datetime_value(row["created_at"]),
     )
 
@@ -541,6 +563,7 @@ def row_to_material(row: sqlite3.Row) -> Material:
         file_url=row["file_url"],
         file_size=row["file_size"],
         uploaded_by=row["uploaded_by"],
+        is_deleted=bool(row.get("is_deleted", 0)),
         created_at=parse_datetime_value(row["created_at"]),
     )
 
@@ -553,6 +576,7 @@ def row_to_assignment(row: sqlite3.Row) -> SessionMaterialAssignment:
         assigned_to_type=row["assigned_to_type"],
         assigned_to_student_id=row["assigned_to_student_id"],
         assigned_by=row["assigned_by"],
+        phase_tag=row.get("phase_tag", "both"),
         created_at=parse_datetime_value(row["created_at"]),
     )
 
@@ -694,7 +718,7 @@ def get_class_session(session_id: str) -> ClassSession:
     with get_connection() as connection:
         row = connection.execute(
             """
-            SELECT id, class_group_id, session_date, start_datetime, end_datetime, status, title, created_at
+            SELECT id, class_group_id, session_date, start_datetime, end_datetime, status, title, phase, created_at
             FROM class_sessions
             WHERE id = ?
             """,
@@ -709,9 +733,9 @@ def get_material(material_id: str) -> Material:
     with get_connection() as connection:
         row = connection.execute(
             """
-            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, created_at
+            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, is_deleted, created_at
             FROM materials
-            WHERE id = ?
+            WHERE id = ? AND is_deleted = 0
             """,
             (material_id,),
         ).fetchone()
@@ -775,23 +799,24 @@ def build_teacher_dashboard_payload(user: User) -> dict:
         ).fetchall()
         session_rows = connection.execute(
             """
-            SELECT id, class_group_id, session_date, start_datetime, end_datetime, status, title, created_at
+            SELECT id, class_group_id, session_date, start_datetime, end_datetime, status, title, phase, created_at
             FROM class_sessions
             ORDER BY session_date, start_datetime
             """
         ).fetchall()
         material_rows = connection.execute(
             """
-            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, created_at
+            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, is_deleted, created_at
             FROM materials
+            WHERE is_deleted = 0
             ORDER BY created_at DESC
             """
         ).fetchall()
         assignment_rows = connection.execute(
             """
-            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
+            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, phase_tag, sort_order, created_at
             FROM session_material_assignments
-            ORDER BY created_at DESC
+            ORDER BY sort_order ASC, created_at ASC
             """
         ).fetchall()
         attendance_rows = connection.execute(
@@ -892,6 +917,7 @@ def build_teacher_dashboard_payload(user: User) -> dict:
                 "endTime": session.end_datetime.strftime("%H:%M"),
                 "status": session.status,
                 "title": session.title,
+                "phase": session.phase,
                 "assignmentCount": len(session_assignments),
                 "attendanceCount": len(session_attendance),
                 "absentCount": max(total_members - len(session_attendance), 0),
@@ -907,6 +933,7 @@ def build_teacher_dashboard_payload(user: User) -> dict:
                         "assignedToStudentName": student_lookup[assignment.assigned_to_student_id].display_name
                         if assignment.assigned_to_student_id in student_lookup
                         else "",
+                        "phaseTag": assignment.phase_tag,
                     }
                     for assignment in session_assignments
                 ],
@@ -1030,11 +1057,12 @@ def build_student_learning_payload(user: User) -> dict:
                 s.end_datetime,
                 s.status,
                 s.title,
+                s.phase,
                 s.created_at,
                 g.name AS class_name
             FROM class_sessions s
             JOIN class_groups g ON g.id = s.class_group_id
-            WHERE s.class_group_id IN ({class_placeholders}) AND s.status = 'scheduled'
+            WHERE s.class_group_id IN ({class_placeholders}) AND s.status IN ('scheduled', 'completed')
             ORDER BY s.start_datetime DESC
             """,
             tuple(class_ids),
@@ -1055,7 +1083,7 @@ def build_student_learning_payload(user: User) -> dict:
         session_placeholders = scoped_placeholders(session_ids)
         assignment_rows = connection.execute(
             f"""
-            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
+            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, phase_tag, sort_order, created_at
             FROM session_material_assignments
             WHERE class_session_id IN ({session_placeholders})
               AND (
@@ -1073,9 +1101,9 @@ def build_student_learning_payload(user: User) -> dict:
             material_placeholders = scoped_placeholders(material_ids)
             material_rows = connection.execute(
                 f"""
-                SELECT id, title, description, file_type, file_url, file_size, uploaded_by, created_at
+                SELECT id, title, description, file_type, file_url, file_size, uploaded_by, is_deleted, created_at
                 FROM materials
-                WHERE id IN ({material_placeholders})
+                WHERE id IN ({material_placeholders}) AND is_deleted = 0
                 """,
                 tuple(material_ids),
             ).fetchall()
@@ -1102,13 +1130,20 @@ def build_student_learning_payload(user: User) -> dict:
         resolved_assignments = personal_assignments or [
             assignment for assignment in session_assignments if assignment.assigned_to_type == "class"
         ]
+        # Filter by current session phase
+        phase_filtered = [
+            a for a in resolved_assignments
+            if session.phase == "not_started"
+            or (session.phase == "theory" and a.phase_tag in ("both", "theory"))
+            or (session.phase == "building" and a.phase_tag in ("both", "building"))
+        ] or resolved_assignments
         session_materials = [
             material_for_student_payload(materials[assignment.material_id], session, class_name, assignment)
-            for assignment in resolved_assignments
+            for assignment in phase_filtered
             if assignment.material_id in materials
         ]
 
-        if session.start_datetime <= current_time <= session.end_datetime and current_session_data is None:
+        if session.start_datetime <= current_time <= session.end_datetime and current_session_data is None and session.status == 'scheduled':
             current_session_data = {
                 "id": session.id,
                 "className": class_name,
@@ -1116,9 +1151,10 @@ def build_student_learning_payload(user: User) -> dict:
                 "startTime": session.start_datetime.strftime("%H:%M"),
                 "endTime": session.end_datetime.strftime("%H:%M"),
                 "title": session.title,
+                "phase": session.phase,
             }
             current_materials = session_materials
-        elif session.end_datetime < current_time:
+        elif session.end_datetime < current_time or session.status == 'completed':
             review_materials.extend(session_materials)
 
     status = "No class is currently in session."
@@ -1126,6 +1162,17 @@ def build_student_learning_payload(user: User) -> dict:
         status = "The teacher is preparing the lesson material."
     elif current_session_data and current_materials:
         status = "Current lesson material is ready."
+
+    attendance_checked_in = False
+    current_phase = "not_started"
+    if current_session_data:
+        with get_connection() as connection:
+            attendance_row = connection.execute(
+                "SELECT id FROM attendance_records WHERE student_id = ? AND class_session_id = ?",
+                (profile.id, current_session_data["id"]),
+            ).fetchone()
+            attendance_checked_in = attendance_row is not None
+        current_phase = current_session_data.get("phase", "not_started")
 
     return {
         "title": "Current Lesson",
@@ -1135,6 +1182,8 @@ def build_student_learning_payload(user: User) -> dict:
         "currentSession": current_session_data,
         "currentMaterials": current_materials,
         "reviewMaterials": review_materials,
+        "classroomPhase": current_phase,
+        "attendanceCheckedIn": attendance_checked_in,
     }
 
 
@@ -1213,7 +1262,25 @@ def build_session_attendance_payload(session_id: str) -> dict:
             (session_id,),
         ).fetchall()
 
-    attendee_ids = {row["student_id"] for row in attendance_rows}
+        # View records for students who attempted but failed location verification
+        location_attempt_rows = connection.execute(
+            """
+            SELECT mvr.student_id, sp.display_name, mvr.location_status, mvr.opened_at, mvr.material_id,
+                   m.title as material_title
+            FROM material_view_records mvr
+            JOIN student_profiles sp ON sp.id = mvr.student_id
+            LEFT JOIN materials m ON m.id = mvr.material_id
+            WHERE mvr.class_session_id = ?
+              AND mvr.location_status IN ('outside', 'denied', 'unavailable')
+            ORDER BY mvr.opened_at
+            """,
+            (session_id,),
+        ).fetchall()
+        location_attempt_ids = {row["student_id"] for row in location_attempt_rows}
+
+        # Filter absent students to exclude those who already show in location attempts
+        already_shown_ids = {row["student_id"] for row in attendance_rows} | location_attempt_ids
+
     return {
         "sessionId": session.id,
         "className": class_group.name,
@@ -1235,7 +1302,17 @@ def build_session_attendance_payload(session_id: str) -> dict:
                 "studentName": row["display_name"],
             }
             for row in membership_rows
-            if row["student_id"] not in attendee_ids
+            if row["student_id"] not in already_shown_ids
+        ],
+        "locationAttempts": [
+            {
+                "studentId": row["student_id"],
+                "studentName": row["display_name"],
+                "locationStatus": row["location_status"],
+                "attemptedAt": parse_datetime_value(row["opened_at"]).isoformat(),
+                "materialTitle": row["material_title"] or "",
+            }
+            for row in location_attempt_rows
         ],
     }
 
@@ -1287,6 +1364,23 @@ def login(request: LoginRequest):
 def me(user: User = Depends(get_current_user)):
     return {"user": to_public_user(user)}
 
+@app.put("/api/me/password")
+def change_password(request: PasswordChangeRequest, user: User = Depends(get_current_user)):
+    if user.password != request.current_password:
+        raise HTTPException(status_code=401, detail="Current password is incorrect.")
+    new_password = request.new_password.strip()
+    if len(new_password) < 6:
+        raise HTTPException(status_code=422, detail="Password must be at least 6 characters.")
+    if new_password == request.current_password:
+        raise HTTPException(status_code=422, detail="New password must be different from current password.")
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE users SET password = ? WHERE id = ?",
+            (new_password, user.id),
+        )
+    return {"message": "Password updated successfully."}
+
 
 @app.get("/api/teacher/dashboard")
 def teacher_dashboard(user: User = Depends(require_teacher)):
@@ -1312,7 +1406,7 @@ def create_student(request: StudentCreateRequest, user: User = Depends(require_t
         id=user_id,
         name=normalized_name,
         email=request.email.strip(),
-        password="ChangeMe123!",
+        password=request.password.strip() or token_urlsafe(6),
         role="Student",
     )
     profile = StudentProfile(
@@ -1342,7 +1436,79 @@ def create_student(request: StudentCreateRequest, user: User = Depends(require_t
                 profile.created_at.isoformat(),
             ),
         )
-    return {"student": build_teacher_dashboard_payload(user)["students"][-1]}
+    generated_password = student_user.password
+    response = {"student": build_teacher_dashboard_payload(user)["students"][-1]}
+    response["generatedPassword"] = generated_password
+    return response
+
+
+@app.post("/api/teacher/students/{student_id}/reset-password")
+def reset_student_password(student_id: str, user: User = Depends(require_teacher)):
+    profile = get_student_profile(student_id)
+    new_password = token_urlsafe(6)
+
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT id, password FROM users WHERE id = ?",
+            (profile.user_id,),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Student user account not found.")
+        connection.execute(
+            "UPDATE users SET password = ? WHERE id = ?",
+            (new_password, profile.user_id),
+        )
+    return {"studentId": student_id, "newPassword": new_password, "studentName": profile.display_name}
+
+
+@app.put("/api/teacher/students/{student_id}")
+def update_student(student_id: str, request: StudentCreateRequest, user: User = Depends(require_teacher)):
+    profile = get_student_profile(student_id)
+    normalized_name = request.display_name.strip()
+    if not normalized_name:
+        raise HTTPException(status_code=422, detail="Student name is required.")
+
+    normalized_email = request.email.strip()
+    if not normalized_email:
+        raise HTTPException(status_code=422, detail="Email is required.")
+
+    existing = find_user_by_email(normalized_email)
+    if existing and existing.id != profile.user_id:
+        raise HTTPException(status_code=409, detail="A user with this email already exists.")
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE users SET name = ?, email = ? WHERE id = ?",
+            (normalized_name, normalized_email, profile.user_id),
+        )
+        if request.password.strip():
+            connection.execute(
+                "UPDATE users SET password = ? WHERE id = ?",
+                (request.password.strip(), profile.user_id),
+            )
+        connection.execute(
+            "UPDATE student_profiles SET display_name = ?, parent_name = ? WHERE id = ?",
+            (normalized_name, request.parent_name.strip(), student_id),
+        )
+    return {"student": get_student_profile(student_id)}
+
+
+@app.put("/api/teacher/classes/{class_id}")
+def update_class(class_id: str, request: ClassCreateRequest, user: User = Depends(require_teacher)):
+    class_group = get_class_group(class_id)
+    normalized_name = request.name.strip()
+    if not normalized_name:
+        raise HTTPException(status_code=422, detail="Class name is required.")
+
+    parse_time_value(request.start_time)
+    parse_time_value(request.end_time)
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE class_groups SET name = ?, description = ?, weekday = ?, start_time = ?, end_time = ? WHERE id = ?",
+            (normalized_name, request.description.strip(), request.weekday, request.start_time, request.end_time, class_id),
+        )
+    return {"class": get_class_group(class_id)}
 
 
 @app.get("/api/teacher/classes")
@@ -1458,8 +1624,8 @@ def generate_sessions(class_id: str, request: GenerateSessionsRequest, user: Use
             connection.execute(
                 """
                 INSERT INTO class_sessions (
-                    id, class_group_id, session_date, start_datetime, end_datetime, status, title, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    id, class_group_id, session_date, start_datetime, end_datetime, status, title, phase, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     session.id,
@@ -1469,6 +1635,7 @@ def generate_sessions(class_id: str, request: GenerateSessionsRequest, user: Use
                     session.end_datetime.isoformat(),
                     session.status,
                     session.title,
+                    session.phase,
                     session.created_at.isoformat(),
                 ),
             )
@@ -1485,8 +1652,39 @@ def delete_session(session_id: str, _: User = Depends(require_teacher)):
         ).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Session not found.")
-        connection.execute("DELETE FROM class_sessions WHERE id = ?", (session_id,))
-    return SessionDeleteResponse(deleted_session_id=session_id)
+        connection.execute("UPDATE class_sessions SET status = 'cancelled' WHERE id = ?", (session_id,))
+    return {"cancelledSessionId": session_id}
+
+
+@app.put("/api/teacher/sessions/{session_id}")
+def update_session(session_id: str, request: SessionUpdateRequest, user: User = Depends(require_teacher)):
+    session = get_class_session(session_id)
+    if session.status != "scheduled":
+        raise HTTPException(status_code=422, detail="Only scheduled sessions can be completed or cancelled.")
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE class_sessions SET status = ? WHERE id = ?",
+            (request.status, session_id),
+        )
+
+    return {"session": get_class_session(session_id)}
+
+
+@app.put("/api/teacher/sessions/{session_id}/phase")
+def update_session_phase(session_id: str, phase: str = Form(...), user: User = Depends(require_teacher)):
+    session = get_class_session(session_id)
+    if phase not in ("not_started", "theory", "building"):
+        raise HTTPException(status_code=422, detail="Invalid phase. Use: not_started, theory, building.")
+    if session.status != "scheduled":
+        raise HTTPException(status_code=422, detail="Only scheduled sessions can change phase.")
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE class_sessions SET phase = ? WHERE id = ?",
+            (phase, session_id),
+        )
+    return {"sessionId": session_id, "phase": phase}
 
 
 @app.get("/api/teacher/materials")
@@ -1498,8 +1696,9 @@ def teacher_materials(user: User = Depends(require_teacher)):
 async def create_material(
     title: str = Form(...),
     description: str = Form(default=""),
-    file_type: Literal["pdf", "ppt", "image", "video", "other"] = Form(...),
-    file: UploadFile = File(...),
+    file_type: Literal["pdf", "ppt", "image", "video", "link", "other"] = Form(...),
+    file: UploadFile = File(default=None),
+    link_url: str = Form(default=""),
     user: User = Depends(require_teacher),
 ):
     normalized_title = title.strip()
@@ -1507,7 +1706,16 @@ async def create_material(
         raise HTTPException(status_code=422, detail="Material title is required.")
 
     material_id = make_id("material")
-    stored_path, file_size = await store_material_file(material_id, file_type, normalized_title, file)
+
+    if file_type == "link":
+        if not link_url.strip():
+            raise HTTPException(status_code=422, detail="URL is required for link-type materials.")
+        stored_path = link_url.strip()
+        file_size = 0
+    else:
+        if file is None or not (file.filename or "").strip():
+            raise HTTPException(status_code=422, detail="File is required for this material type.")
+        stored_path, file_size = await store_material_file(material_id, file_type, normalized_title, file)
 
     material = Material(
         id=material_id,
@@ -1538,6 +1746,60 @@ async def create_material(
         )
     return {"material": material}
 
+@app.put("/api/teacher/materials/{material_id}")
+def update_material(material_id: str, request: MaterialUpdateRequest, user: User = Depends(require_teacher)):
+    material = get_material(material_id)
+    normalized_title = request.title.strip()
+    if not normalized_title:
+        raise HTTPException(status_code=422, detail="Material title is required.")
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE materials SET title = ?, description = ? WHERE id = ?",
+            (normalized_title, request.description.strip(), material_id),
+        )
+    return {"material": get_material(material_id)}
+
+
+@app.delete("/api/teacher/materials/{material_id}")
+def delete_material(material_id: str, user: User = Depends(require_teacher)):
+    material = get_material(material_id)
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE materials SET is_deleted = 1 WHERE id = ?",
+            (material_id,),
+        )
+
+    return {"deletedMaterialId": material_id, "message": "Material has been archived (soft-deleted)."}
+
+
+@app.post("/api/teacher/materials/{material_id}/replace")
+async def replace_material_file(
+    material_id: str,
+    file: UploadFile = File(...),
+    file_type: str = Form(default=""),
+    user: User = Depends(require_teacher),
+):
+    material = get_material(material_id)
+    new_type = file_type if file_type in MATERIAL_DIRECTORY_MAP else material.file_type
+
+    old_path = material_storage_path(material.file_url)
+    if old_path.is_file():
+        old_path.unlink()
+
+    stored_path, file_size = await store_material_file(
+        material_id, new_type, material.title, file
+    )
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE materials SET file_url = ?, file_size = ?, file_type = ? WHERE id = ?",
+            (stored_path, file_size, new_type, material_id),
+        )
+
+    return {"material": get_material(material_id)}
+
 
 @app.get("/api/materials/{material_id}/download")
 def download_material(material_id: str, user: User = Depends(get_current_user)):
@@ -1546,6 +1808,10 @@ def download_material(material_id: str, user: User = Depends(get_current_user)):
         profile = get_student_profile_for_user(user.id)
         if not student_can_download_material(profile, material_id):
             raise HTTPException(status_code=403, detail="This material is not available to the student.")
+
+    if material.file_type == "link":
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=material.file_url)
 
     file_path = material_storage_path(material.file_url)
     if not file_path.is_file():
@@ -1589,14 +1855,15 @@ def assign_material_to_session(
         assigned_to_type=request.assigned_to_type,
         assigned_to_student_id=assigned_to_student_id,
         assigned_by=user.id,
+        phase_tag=request.phase_tag,
         created_at=now_utc(),
     )
     with get_connection() as connection:
         connection.execute(
             """
             INSERT INTO session_material_assignments (
-                id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, phase_tag, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 assignment.id,
@@ -1605,6 +1872,7 @@ def assign_material_to_session(
                 assignment.assigned_to_type,
                 assignment.assigned_to_student_id,
                 assignment.assigned_by,
+                assignment.phase_tag,
                 assignment.created_at.isoformat(),
             ),
         )
@@ -1614,6 +1882,202 @@ def assign_material_to_session(
 @app.get("/api/teacher/sessions/{session_id}/attendance")
 def teacher_session_attendance(session_id: str, _: User = Depends(require_teacher)):
     return build_session_attendance_payload(session_id)
+
+
+@app.post("/api/teacher/sessions/{session_id}/students/{student_id}/check-in")
+def manual_check_in(session_id: str, student_id: str, user: User = Depends(require_teacher)):
+    session = get_class_session(session_id)
+    get_student_profile(student_id)
+    opened_at = now_utc()
+
+    with get_connection() as connection:
+        existing = connection.execute(
+            "SELECT id FROM attendance_records WHERE student_id = ? AND class_session_id = ?",
+            (student_id, session_id),
+        ).fetchone()
+        if existing:
+            raise HTTPException(status_code=409, detail="Student already checked in for this session.")
+
+        record_id = make_id("attendance")
+        connection.execute(
+            """
+            INSERT INTO attendance_records (id, student_id, class_session_id, material_id, checked_in_at, method, location_status, latitude, longitude, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (record_id, student_id, session_id, "", opened_at.isoformat(), "manual", "valid", None, None, opened_at.isoformat()),
+        )
+    return {"attendanceId": record_id, "studentId": student_id, "method": "manual"}
+
+
+@app.get("/api/teacher/sessions/{session_id}/classroom")
+def teacher_classroom(session_id: str, _: User = Depends(require_teacher)):
+    session = get_class_session(session_id)
+    class_group = get_class_group(session.class_group_id)
+    attendance = build_session_attendance_payload(session_id)
+
+    with get_connection() as connection:
+        material_rows = connection.execute(
+            """
+            SELECT m.id, m.title, m.description, m.file_type, m.file_url, m.file_size, m.uploaded_by, m.is_deleted, m.created_at,
+                   sma.assigned_to_type, sma.assigned_to_student_id, sma.phase_tag
+            FROM session_material_assignments sma
+            JOIN materials m ON m.id = sma.material_id
+            WHERE sma.class_session_id = ? AND m.is_deleted = 0
+            ORDER BY sma.sort_order ASC, sma.created_at ASC
+            """,
+            (session_id,),
+        ).fetchall()
+
+        student_rows = connection.execute(
+            """
+            SELECT sp.id, sp.display_name
+            FROM class_memberships cm
+            JOIN student_profiles sp ON sp.id = cm.student_id
+            WHERE cm.class_group_id = ? AND cm.status = 'active'
+            ORDER BY sp.display_name
+            """,
+            (session.class_group_id,),
+        ).fetchall()
+
+    attendee_ids = {a["studentId"] for a in attendance["attendance"]}
+    attempt_ids = {a["studentId"] for a in attendance.get("locationAttempts", [])}
+
+    materials = []
+    for row in material_rows:
+        materials.append({
+            "id": row["id"],
+            "title": row["title"],
+            "description": row["description"],
+            "fileType": row["file_type"],
+            "downloadUrl": material_download_url(row["id"]),
+            "assignedToType": row["assigned_to_type"],
+            "assignedToStudentId": row["assigned_to_student_id"],
+            "phaseTag": row.get("phase_tag", "both"),
+        })
+
+    students_status = []
+    for row in student_rows:
+        sid = row["id"]
+        if sid in attendee_ids:
+            status = "checked_in"
+        elif sid in attempt_ids:
+            status = "location_failed"
+        else:
+            status = "absent"
+        students_status.append({
+            "studentId": sid,
+            "studentName": row["display_name"],
+            "status": status,
+        })
+
+    checked_in = len([s for s in students_status if s["status"] == "checked_in"])
+    location_failed = len([s for s in students_status if s["status"] == "location_failed"])
+    absent = len([s for s in students_status if s["status"] == "absent"])
+
+    return {
+        "sessionId": session.id,
+        "className": class_group.name,
+        "sessionDate": session.session_date.isoformat(),
+        "startTime": session.start_datetime.strftime("%H:%M"),
+        "endTime": session.end_datetime.strftime("%H:%M"),
+        "phase": session.phase,
+        "status": session.status,
+        "title": session.title,
+        "attendance": attendance,
+        "materials": materials,
+        "students": students_status,
+        "summary": {
+            "totalStudents": len(students_status),
+            "checkedIn": checked_in,
+            "locationFailed": location_failed,
+            "absent": absent,
+            "totalMaterials": len(materials),
+        },
+    }
+
+
+@app.get("/api/student/schedule")
+def student_schedule(user: User = Depends(require_student)):
+    profile = get_student_profile_for_user(user.id)
+    current_time = now_utc()
+
+    with get_connection() as connection:
+        membership_rows = connection.execute(
+            "SELECT class_group_id FROM class_memberships WHERE student_id = ? AND status = 'active'",
+            (profile.id,),
+        ).fetchall()
+        class_ids = [row["class_group_id"] for row in membership_rows]
+        if not class_ids:
+            return {"schedule": [], "studentName": profile.display_name}
+
+        class_placeholders = scoped_placeholders(class_ids)
+        session_rows = connection.execute(
+            f"""
+            SELECT s.id, s.class_group_id, s.session_date, s.start_datetime, s.end_datetime, s.status, s.title, s.phase, s.created_at,
+                   g.name AS class_name
+            FROM class_sessions s
+            JOIN class_groups g ON g.id = s.class_group_id
+            WHERE s.class_group_id IN ({class_placeholders})
+              AND s.status = 'scheduled'
+              AND s.start_datetime > ?
+            ORDER BY s.start_datetime ASC
+            """,
+            (*class_ids, current_time.isoformat()),
+        ).fetchall()
+
+    schedule = []
+    for row in session_rows:
+        schedule.append({
+            "id": row["id"],
+            "classGroupId": row["class_group_id"],
+            "className": row["class_name"],
+            "sessionDate": parse_date_value(row["session_date"]).isoformat(),
+            "startTime": parse_datetime_value(row["start_datetime"]).strftime("%H:%M"),
+            "endTime": parse_datetime_value(row["end_datetime"]).strftime("%H:%M"),
+            "status": row["status"],
+            "title": row["title"] or "",
+        })
+
+    return {"schedule": schedule, "studentName": profile.display_name}
+
+
+@app.get("/api/student/attendance")
+def student_attendance(user: User = Depends(require_student)):
+    profile = get_student_profile_for_user(user.id)
+
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT a.id, a.student_id, a.class_session_id, a.material_id, a.checked_in_at, a.method, a.location_status,
+                   a.latitude, a.longitude, a.created_at,
+                   cs.session_date, cs.start_datetime, cs.end_datetime, cs.status as session_status,
+                   cg.name as class_name,
+                   m.title as material_title
+            FROM attendance_records a
+            JOIN class_sessions cs ON cs.id = a.class_session_id
+            JOIN class_groups cg ON cg.id = cs.class_group_id
+            LEFT JOIN materials m ON m.id = a.material_id
+            WHERE a.student_id = ?
+            ORDER BY a.checked_in_at DESC
+            """,
+            (profile.id,),
+        ).fetchall()
+
+    attendance = []
+    for row in rows:
+        attendance.append({
+            "id": row["id"],
+            "classSessionId": row["class_session_id"],
+            "className": row["class_name"],
+            "sessionDate": parse_date_value(row["session_date"]).isoformat(),
+            "startTime": parse_datetime_value(row["start_datetime"]).strftime("%H:%M"),
+            "endTime": parse_datetime_value(row["end_datetime"]).strftime("%H:%M"),
+            "checkedInAt": parse_datetime_value(row["checked_in_at"]).isoformat(),
+            "locationStatus": row["location_status"],
+            "materialTitle": row["material_title"] or "",
+        })
+
+    return {"attendance": attendance, "studentName": profile.display_name}
 
 
 @app.get("/api/student/current-lesson")
@@ -1753,3 +2217,121 @@ def spa(path: str):
 
 
 init_database()
+
+
+def _migrate_add_phase_column() -> None:
+    """Add phase column to existing class_sessions table if missing."""
+    try:
+        with get_connection() as connection:
+            if connection.provider == "postgresql":
+                connection.execute(
+                    "ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS phase TEXT NOT NULL DEFAULT 'not_started'"
+                )
+            else:
+                connection.execute(
+                    "ALTER TABLE class_sessions ADD COLUMN phase TEXT NOT NULL DEFAULT 'not_started'"
+                )
+    except Exception:
+        # Column already exists (SQLite) or other migration issue — safe to ignore
+        pass
+
+try:
+    _migrate_add_phase_column()
+except Exception:
+    pass
+
+
+def _migrate_add_is_deleted_column() -> None:
+    """Add is_deleted column to existing materials table if missing."""
+    try:
+        with get_connection() as connection:
+            if connection.provider == "postgresql":
+                connection.execute(
+                    "ALTER TABLE materials ADD COLUMN IF NOT EXISTS is_deleted INTEGER NOT NULL DEFAULT 0"
+                )
+            else:
+                connection.execute(
+                    "ALTER TABLE materials ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"
+                )
+    except Exception:
+        pass
+
+try:
+    _migrate_add_is_deleted_column()
+except Exception:
+    pass
+
+
+def _migrate_add_phase_tag_column() -> None:
+    try:
+        with get_connection() as connection:
+            if connection.provider == "postgresql":
+                connection.execute(
+                    "ALTER TABLE session_material_assignments ADD COLUMN IF NOT EXISTS phase_tag TEXT NOT NULL DEFAULT 'both'"
+                )
+            else:
+                connection.execute(
+                    "ALTER TABLE session_material_assignments ADD COLUMN phase_tag TEXT NOT NULL DEFAULT 'both'"
+                )
+    except Exception:
+        pass
+
+try:
+    _migrate_add_phase_tag_column()
+except Exception:
+    pass
+
+
+def _migrate_add_sort_order_column() -> None:
+    try:
+        with get_connection() as connection:
+            if connection.provider == "postgresql":
+                connection.execute(
+                    "ALTER TABLE session_material_assignments ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0"
+                )
+            else:
+                connection.execute(
+                    "ALTER TABLE session_material_assignments ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"
+                )
+    except Exception:
+        pass
+
+try:
+    _migrate_add_sort_order_column()
+except Exception:
+    pass
+
+
+@app.put("/api/teacher/assignments/{assignment_id}/move")
+def move_assignment(assignment_id: str, direction: str = Form(...), user: User = Depends(require_teacher)):
+    if direction not in ("up", "down"):
+        raise HTTPException(status_code=422, detail="Direction must be 'up' or 'down'.")
+
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT id, class_session_id, sort_order FROM session_material_assignments WHERE id = ?",
+            (assignment_id,),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Assignment not found.")
+
+        current_order = row["sort_order"]
+        session_id = row["class_session_id"]
+        delta = -1 if direction == "up" else 1
+
+        swap_row = connection.execute(
+            "SELECT id, sort_order FROM session_material_assignments WHERE class_session_id = ? AND sort_order = ? AND id != ?",
+            (session_id, current_order + delta, assignment_id),
+        ).fetchone()
+
+        if swap_row:
+            connection.execute(
+                "UPDATE session_material_assignments SET sort_order = ? WHERE id = ?",
+                (current_order, swap_row["id"]),
+            )
+        connection.execute(
+            "UPDATE session_material_assignments SET sort_order = ? WHERE id = ?",
+            (current_order + delta, assignment_id),
+        )
+
+    return {"assignmentId": assignment_id, "direction": direction}
