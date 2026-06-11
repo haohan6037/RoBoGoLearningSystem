@@ -922,6 +922,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="sessions">Sessions</a>
                 <a class="nav-item" href="#" data-view="classroom">Classroom</a>
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
               </nav>
             </aside>
@@ -1026,6 +1027,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="sessions">Sessions</a>
                 <a class="nav-item" href="#" data-view="classroom">Classroom</a>
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
               </nav>
             </aside>
@@ -1133,6 +1135,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="sessions">Sessions</a>
                 <a class="nav-item" href="#" data-view="classroom">Classroom</a>
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
               </nav>
             </aside>
@@ -1281,6 +1284,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item active" href="#" data-view="sessions">Sessions</a>
                 <a class="nav-item" href="#" data-view="classroom">Classroom</a>
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
               </nav>
             </aside>
@@ -1439,6 +1443,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="sessions">Sessions</a>
                 <a class="nav-item active" href="#" data-view="classroom">Classroom</a>
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
               </nav>
             </aside>
