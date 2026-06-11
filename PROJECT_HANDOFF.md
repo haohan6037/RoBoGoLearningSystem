@@ -1,6 +1,30 @@
 # RoBoGo Learning Portal Handoff
 
-Last updated: 2026-06-09
+Last updated: 2026-06-11
+
+## Latest Update: Preview + Visual Refresh
+
+### Material Preview Direction
+- Moved away from browser-native `.pptx` preview because it was blank or degraded across browsers
+- Local environment now has `LibreOffice` installed via Homebrew cask for stable presentation conversion
+- Current direction: `PPT/PPTX -> PDF preview`, then embed PDF in the portal preview layer
+- This is the correct cross-browser path if the goal is "view in portal without relying on Quick Look HTML"
+
+### UI Styling Refresh
+- `public/css/app.css` was rewritten to move the portal toward an Arcade-inspired SaaS visual style
+- Updated design language:
+  - lighter warm page background
+  - glassy white surfaces
+  - softer shadows
+  - cleaner rounded controls
+  - less prototype-like classroom and dashboard surfaces
+- Sidebar palette was subsequently lightened because the first pass was too dark relative to the main content area
+
+### Immediate Next Design Pass
+1. Continue refining sidebar/content visual balance
+2. Tighten spacing and typography across student/teacher views
+3. Improve topbar / page heading hierarchy
+4. Standardize inline styles still embedded in `public/js/app.js`
 
 ## Session Summary
 
