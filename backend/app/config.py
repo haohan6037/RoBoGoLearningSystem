@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     db_password: str = Field(default="", repr=False)
     sqlserver_driver: str = "ODBC Driver 18 for SQL Server"
     trust_server_certificate: bool = True
-    classroom_latitude: float | None = None
-    classroom_longitude: float | None = None
+    classroom_latitude: float | None = -36.8520745
+    classroom_longitude: float | None = 174.8395784
     allowed_radius_meters: int = 100
     attendance_grace_period_minutes: int = 10
     materials_storage_root: str = "storage/materials"

@@ -1,220 +1,43 @@
-import sqlite3
+"""RoBoGo Learning Portal — FastAPI application endpoints."""
 import re
+import shutil
+import subprocess
 from datetime import date, datetime, time, timedelta, timezone
 from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
 from secrets import token_urlsafe
-from typing import Any, Literal, Optional
-from uuid import uuid4
+from typing import Literal, Optional
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
 
 from .config import Settings, get_settings
-
-try:
-    import psycopg
-    from psycopg.rows import dict_row
-except ImportError:  # pragma: no cover - exercised only when the optional driver is missing.
-    psycopg = None
-    dict_row = None
-
-
-MATERIAL_DIRECTORY_MAP = {
-    "pdf": "pdfs",
-    "ppt": "presentations",
-    "image": "images",
-    "video": "videos",
-    "link": "links",
-    "other": "other",
-}
-
-MATERIAL_ALLOWED_EXTENSIONS = {
-    "pdf": {".pdf"},
-    "ppt": {".ppt", ".pptx"},
-    "image": {".jpg", ".jpeg", ".png", ".gif", ".webp"},
-    "video": {".mp4", ".mov", ".m4v", ".webm"},
-    "other": set(),
-}
-
-MATERIAL_DEFAULT_EXTENSIONS = {
-    "pdf": ".pdf",
-    "ppt": ".pptx",
-    "image": ".png",
-    "video": ".mp4",
-    "other": ".bin",
-}
-
-
-class User(BaseModel):
-    id: str
-    name: str
-    email: str
-    password: str
-    role: Literal["Teacher", "Student"]
-
-
-class StudentProfile(BaseModel):
-    id: str
-    user_id: str
-    display_name: str
-    parent_name: str = ""
-    notes: str = ""
-    created_at: datetime
-
-
-class ClassGroup(BaseModel):
-    id: str
-    name: str
-    description: str = ""
-    weekday: int = Field(ge=0, le=6)
-    start_time: str
-    end_time: str
-    status: Literal["active", "archived"] = "active"
-    created_at: datetime
-
-
-class ClassMembership(BaseModel):
-    id: str
-    class_group_id: str
-    student_id: str
-    status: Literal["active", "inactive"] = "active"
-    joined_at: datetime
-
-
-class ClassSession(BaseModel):
-    id: str
-    class_group_id: str
-    session_date: date
-    start_datetime: datetime
-    end_datetime: datetime
-    status: Literal["scheduled", "cancelled", "completed"] = "scheduled"
-    title: str = ""
-    phase: Literal["not_started", "theory", "building"] = "not_started"
-    created_at: datetime
-
- 
-class Material(BaseModel):
-    id: str
-    title: str
-    description: str = ""
-    file_type: Literal["pdf", "ppt", "image", "video", "link", "other"]
-    file_url: str
-    file_size: int = 0
-    uploaded_by: str
-    is_deleted: bool = False
-    created_at: datetime
-
-
-class SessionMaterialAssignment(BaseModel):
-    id: str
-    class_session_id: str
-    material_id: str
-    assigned_to_type: Literal["class", "student"]
-    assigned_to_student_id: Optional[str] = None
-    assigned_by: str
-    phase_tag: Literal["both", "theory", "building"] = "both"
-    created_at: datetime
-
-
-class MaterialViewRecord(BaseModel):
-    id: str
-    student_id: str
-    material_id: str
-    class_session_id: Optional[str] = None
-    view_source: Literal["current_lesson", "review"]
-    opened_at: datetime
-    location_status: Literal["valid", "outside", "denied", "unavailable", "not_required", "not_configured"]
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-
-
-class AttendanceRecord(BaseModel):
-    id: str
-    student_id: str
-    class_session_id: str
-    material_id: str
-    checked_in_at: datetime
-    method: Literal["auto_location"] = "auto_location"
-    location_status: Literal["valid"] = "valid"
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    created_at: datetime
-
-
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-
-class StudentCreateRequest(BaseModel):
-    display_name: str
-    email: str
-    parent_name: str = ""
-    password: str = ""
-
-
-class ClassCreateRequest(BaseModel):
-    name: str
-    description: str = ""
-    weekday: int = Field(ge=0, le=6)
-    start_time: str
-    end_time: str
-
-
-class MembershipCreateRequest(BaseModel):
-    student_id: str
-
-
-class GenerateSessionsRequest(BaseModel):
-    term_start_date: date
-    session_count: int = Field(ge=1, le=30)
-
-
-class AssignmentCreateRequest(BaseModel):
-    material_id: str
-    assigned_to_type: Literal["class", "student"] = "class"
-    assigned_to_student_id: Optional[str] = None
-    phase_tag: Literal["both", "theory", "building"] = "both"
-
-class MaterialUpdateRequest(BaseModel):
-    title: str
-    description: str = ""
-
-class SessionUpdateRequest(BaseModel):
-    status: Literal["completed", "cancelled"]
-
-class PasswordChangeRequest(BaseModel):
-    current_password: str
-    new_password: str
-
-
-class MaterialOpenRequest(BaseModel):
-    source: Literal["current_lesson", "review"]
-    class_session_id: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    location_permission: Literal["granted", "denied", "unavailable"] = "unavailable"
-
-
-class SessionDeleteResponse(BaseModel):
-    deleted_session_id: str
-
-
-class PublicUser(BaseModel):
-    id: str
-    name: str
-    email: str
-    role: Literal["Teacher", "Student"]
-
-
-class SessionRecord(BaseModel):
-    user_id: str
-    expires_at: datetime
-
+from .models import (
+    MATERIAL_DIRECTORY_MAP, MATERIAL_ALLOWED_EXTENSIONS, MATERIAL_DEFAULT_EXTENSIONS,
+    User, StudentProfile, ClassGroup, ClassMembership, ClassSession,
+    Material, MaterialStep, SessionMaterialAssignment, MaterialViewRecord, AttendanceRecord,
+    LoginRequest, StudentCreateRequest, ClassCreateRequest,
+    MembershipCreateRequest, GenerateSessionsRequest,
+    AssignmentCreateRequest, MaterialUpdateRequest, SessionUpdateRequest,
+    PasswordChangeRequest, MaterialOpenRequest, SessionDeleteResponse,
+    MaterialStepCreateRequest, MaterialStepUpdateRequest, MaterialStepReorderRequest,
+    PublicUser, SessionRecord,
+)
+from .utils import (
+    now_utc, make_id, WEEKDAY_LABELS,
+    parse_time_value, parse_date_value, parse_datetime_value, first_weekday_on_or_after,
+    combine_session_datetime, is_session_active, resolve_location_status,
+)
+from .database import (
+    get_connection, init_database,
+    find_user_by_email, get_student_profile, get_student_profile_for_user,
+    get_class_group, get_class_session, get_material, get_material_steps, get_material_step,
+    row_to_user, row_to_student_profile, row_to_class_group,
+    row_to_class_membership, row_to_class_session, row_to_material,
+    row_to_assignment, row_to_material_view_record, row_to_attendance_record,
+)
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
@@ -229,523 +52,12 @@ app.add_middleware(
 
 sessions: dict[str, SessionRecord] = {}
 
-WEEKDAY_LABELS = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-]
+def extract_bearer_token(authorization: str = "", access_token: Optional[str] = None) -> str:
+    header_token = authorization.removeprefix("Bearer ").strip()
+    return header_token or (access_token or "").strip()
 
 
-def now_utc() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def make_id(prefix: str) -> str:
-    return f"{prefix}-{uuid4().hex[:10]}"
-
-
-def ensure_database_parent() -> None:
-    settings.sqlite_file.parent.mkdir(parents=True, exist_ok=True)
-
-
-class DatabaseConnection:
-    def __init__(self, connection: Any, provider: str):
-        self.connection = connection
-        self.provider = provider
-
-    def __enter__(self) -> "DatabaseConnection":
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        if exc_type is None:
-            self.connection.commit()
-        else:
-            self.connection.rollback()
-        self.connection.close()
-
-    def execute(self, statement: str, parameters: tuple = ()):
-        return self.connection.execute(self.prepare(statement), parameters)
-
-    def executescript(self, script: str) -> None:
-        for statement in script.split(";"):
-            normalized = statement.strip()
-            if normalized:
-                self.execute(normalized)
-
-    def prepare(self, statement: str) -> str:
-        if self.provider == "postgresql":
-            return statement.replace("?", "%s")
-        return statement
-
-
-def get_connection() -> DatabaseConnection:
-    provider = settings.database_provider.lower()
-    if provider == "sqlite":
-        ensure_database_parent()
-        connection = sqlite3.connect(settings.sqlite_file)
-        connection.row_factory = sqlite3.Row
-        return DatabaseConnection(connection, provider)
-
-    if provider == "postgresql":
-        if psycopg is None or dict_row is None:
-            raise RuntimeError("PostgreSQL support requires installing psycopg. Run pip install -r backend/requirements.txt.")
-        connection = psycopg.connect(settings.postgresql_connection_url, row_factory=dict_row)
-        return DatabaseConnection(connection, provider)
-
-    raise RuntimeError(f"Unsupported database provider: {settings.database_provider}")
-
-
-def init_database() -> None:
-    with get_connection() as connection:
-        connection.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL,
-                role TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS student_profiles (
-                id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL UNIQUE,
-                display_name TEXT NOT NULL,
-                parent_name TEXT NOT NULL DEFAULT '',
-                notes TEXT NOT NULL DEFAULT '',
-                created_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS class_groups (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT NOT NULL DEFAULT '',
-                weekday INTEGER NOT NULL,
-                start_time TEXT NOT NULL,
-                end_time TEXT NOT NULL,
-                status TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS class_memberships (
-                id TEXT PRIMARY KEY,
-                class_group_id TEXT NOT NULL,
-                student_id TEXT NOT NULL,
-                status TEXT NOT NULL,
-                joined_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS class_sessions (
-                id TEXT PRIMARY KEY,
-                class_group_id TEXT NOT NULL,
-                session_date TEXT NOT NULL,
-                start_datetime TEXT NOT NULL,
-                end_datetime TEXT NOT NULL,
-                status TEXT NOT NULL,
-                title TEXT NOT NULL DEFAULT '',
-                phase TEXT NOT NULL DEFAULT 'not_started',
-                created_at TEXT NOT NULL,
-                UNIQUE(class_group_id, session_date)
-            );
-
-            CREATE TABLE IF NOT EXISTS materials (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL DEFAULT '',
-                file_type TEXT NOT NULL,
-                file_url TEXT NOT NULL,
-                file_size INTEGER NOT NULL DEFAULT 0,
-                uploaded_by TEXT NOT NULL,
-                is_deleted INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS session_material_assignments (
-                id TEXT PRIMARY KEY,
-                class_session_id TEXT NOT NULL,
-                material_id TEXT NOT NULL,
-                assigned_to_type TEXT NOT NULL,
-                assigned_to_student_id TEXT,
-                assigned_by TEXT NOT NULL,
-                phase_tag TEXT NOT NULL DEFAULT 'both',
-                sort_order INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS material_view_records (
-                id TEXT PRIMARY KEY,
-                student_id TEXT NOT NULL,
-                material_id TEXT NOT NULL,
-                class_session_id TEXT,
-                view_source TEXT NOT NULL,
-                opened_at TEXT NOT NULL,
-                location_status TEXT NOT NULL,
-                latitude DOUBLE PRECISION,
-                longitude DOUBLE PRECISION
-            );
-
-            CREATE TABLE IF NOT EXISTS attendance_records (
-                id TEXT PRIMARY KEY,
-                student_id TEXT NOT NULL,
-                class_session_id TEXT NOT NULL,
-                material_id TEXT NOT NULL,
-                checked_in_at TEXT NOT NULL,
-                method TEXT NOT NULL,
-                location_status TEXT NOT NULL,
-                latitude DOUBLE PRECISION,
-                longitude DOUBLE PRECISION,
-                created_at TEXT NOT NULL,
-                UNIQUE(student_id, class_session_id)
-            );
-            """
-        )
-
-        existing_users = connection.execute("SELECT COUNT(*) AS count FROM users").fetchone()["count"]
-        if existing_users:
-            return
-
-        created_at = now_utc().isoformat()
-        connection.execute(
-            "INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)",
-            ("teacher-1", "RoBoGo Teacher", "teacher@robogo.local", "Teacher123!", "Teacher"),
-        )
-        connection.execute(
-            "INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)",
-            ("student-1", "Demo Student", "student@robogo.local", "Student123!", "Student"),
-        )
-        connection.execute(
-            """
-            INSERT INTO student_profiles (id, user_id, display_name, parent_name, notes, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            ("student-profile-1", "student-1", "Demo Student", "", "", created_at),
-        )
-
-
-def parse_time_value(raw: str) -> time:
-    try:
-        hour, minute = raw.split(":", 1)
-        return time(hour=int(hour), minute=int(minute))
-    except Exception as exc:
-        raise HTTPException(status_code=422, detail="Time must use HH:MM format.") from exc
-
-
-def combine_session_datetime(session_date: date, raw_time: str) -> datetime:
-    session_time = parse_time_value(raw_time)
-    return datetime.combine(session_date, session_time, tzinfo=timezone.utc)
-
-
-def first_weekday_on_or_after(start_date: date, weekday: int) -> date:
-    delta = (weekday - start_date.weekday()) % 7
-    return start_date + timedelta(days=delta)
-
-
-def parse_datetime_value(raw: str) -> datetime:
-    if isinstance(raw, datetime):
-        return raw
-    return datetime.fromisoformat(raw)
-
-
-def parse_date_value(raw: str) -> date:
-    if isinstance(raw, date):
-        return raw
-    return date.fromisoformat(raw)
-
-
-def is_session_active(session: ClassSession, now: datetime) -> bool:
-    grace = timedelta(minutes=settings.attendance_grace_period_minutes)
-    return session.start_datetime - grace <= now <= session.end_datetime + grace
-
-
-def haversine_distance_meters(
-    latitude_a: float,
-    longitude_a: float,
-    latitude_b: float,
-    longitude_b: float,
-) -> float:
-    earth_radius_meters = 6_371_000
-    lat_a = radians(latitude_a)
-    lon_a = radians(longitude_a)
-    lat_b = radians(latitude_b)
-    lon_b = radians(longitude_b)
-    delta_lat = lat_b - lat_a
-    delta_lon = lon_b - lon_a
-    term = sin(delta_lat / 2) ** 2 + cos(lat_a) * cos(lat_b) * sin(delta_lon / 2) ** 2
-    return 2 * earth_radius_meters * asin(sqrt(term))
-
-
-def resolve_location_status(request: MaterialOpenRequest) -> str:
-    if request.source == "review":
-        return "not_required"
-    if request.location_permission == "denied":
-        return "denied"
-    if request.location_permission == "unavailable":
-        return "unavailable"
-    if request.latitude is None or request.longitude is None:
-        return "unavailable"
-    if not settings.is_attendance_location_configured:
-        return "not_configured"
-    distance = haversine_distance_meters(
-        request.latitude,
-        request.longitude,
-        settings.classroom_latitude,
-        settings.classroom_longitude,
-    )
-    return "valid" if distance <= settings.allowed_radius_meters else "outside"
-
-
-def to_public_user(user: User) -> PublicUser:
-    return PublicUser(id=user.id, name=user.name, email=user.email, role=user.role)
-
-
-def row_to_user(row: sqlite3.Row) -> User:
-    return User(**dict(row))
-
-
-def row_to_student_profile(row: sqlite3.Row) -> StudentProfile:
-    return StudentProfile(
-        id=row["id"],
-        user_id=row["user_id"],
-        display_name=row["display_name"],
-        parent_name=row["parent_name"],
-        notes=row["notes"],
-        created_at=parse_datetime_value(row["created_at"]),
-    )
-
-
-def row_to_class_group(row: sqlite3.Row) -> ClassGroup:
-    return ClassGroup(
-        id=row["id"],
-        name=row["name"],
-        description=row["description"],
-        weekday=row["weekday"],
-        start_time=row["start_time"],
-        end_time=row["end_time"],
-        status=row["status"],
-        created_at=parse_datetime_value(row["created_at"]),
-    )
-
-
-def row_to_class_membership(row: sqlite3.Row) -> ClassMembership:
-    return ClassMembership(
-        id=row["id"],
-        class_group_id=row["class_group_id"],
-        student_id=row["student_id"],
-        status=row["status"],
-        joined_at=parse_datetime_value(row["joined_at"]),
-    )
-
-
-def row_to_class_session(row: sqlite3.Row) -> ClassSession:
-    return ClassSession(
-        id=row["id"],
-        class_group_id=row["class_group_id"],
-        session_date=parse_date_value(row["session_date"]),
-        start_datetime=parse_datetime_value(row["start_datetime"]),
-        end_datetime=parse_datetime_value(row["end_datetime"]),
-        status=row["status"],
-        title=row["title"],
-        phase=row.get("phase", "not_started"),
-        created_at=parse_datetime_value(row["created_at"]),
-    )
-
-
-def row_to_material(row: sqlite3.Row) -> Material:
-    return Material(
-        id=row["id"],
-        title=row["title"],
-        description=row["description"],
-        file_type=row["file_type"],
-        file_url=row["file_url"],
-        file_size=row["file_size"],
-        uploaded_by=row["uploaded_by"],
-        is_deleted=bool(row.get("is_deleted", 0)),
-        created_at=parse_datetime_value(row["created_at"]),
-    )
-
-
-def row_to_assignment(row: sqlite3.Row) -> SessionMaterialAssignment:
-    return SessionMaterialAssignment(
-        id=row["id"],
-        class_session_id=row["class_session_id"],
-        material_id=row["material_id"],
-        assigned_to_type=row["assigned_to_type"],
-        assigned_to_student_id=row["assigned_to_student_id"],
-        assigned_by=row["assigned_by"],
-        phase_tag=row.get("phase_tag", "both"),
-        created_at=parse_datetime_value(row["created_at"]),
-    )
-
-
-def row_to_material_view_record(row: sqlite3.Row) -> MaterialViewRecord:
-    return MaterialViewRecord(
-        id=row["id"],
-        student_id=row["student_id"],
-        material_id=row["material_id"],
-        class_session_id=row["class_session_id"],
-        view_source=row["view_source"],
-        opened_at=parse_datetime_value(row["opened_at"]),
-        location_status=row["location_status"],
-        latitude=row["latitude"],
-        longitude=row["longitude"],
-    )
-
-
-def row_to_attendance_record(row: sqlite3.Row) -> AttendanceRecord:
-    return AttendanceRecord(
-        id=row["id"],
-        student_id=row["student_id"],
-        class_session_id=row["class_session_id"],
-        material_id=row["material_id"],
-        checked_in_at=parse_datetime_value(row["checked_in_at"]),
-        method=row["method"],
-        location_status=row["location_status"],
-        latitude=row["latitude"],
-        longitude=row["longitude"],
-        created_at=parse_datetime_value(row["created_at"]),
-    )
-
-
-def slugify_filename_part(value: str) -> str:
-    normalized = re.sub(r"[^a-z0-9]+", "-", value.strip().lower())
-    return normalized.strip("-") or "material"
-
-
-def material_storage_path(relative_path: str) -> Path:
-    return settings.materials_storage_dir / relative_path
-
-
-def material_download_url(material_id: str) -> str:
-    return f"/api/materials/{material_id}/download"
-
-
-def material_storage_label(relative_path: str) -> str:
-    return f"/{relative_path.lstrip('/')}"
-
-
-def resolve_material_extension(file_type: str, upload: UploadFile) -> str:
-    original_name = upload.filename or ""
-    extension = Path(original_name).suffix.lower()
-    allowed_extensions = MATERIAL_ALLOWED_EXTENSIONS[file_type]
-
-    if extension:
-        if allowed_extensions and extension not in allowed_extensions:
-            raise HTTPException(
-                status_code=422,
-                detail=f"Uploaded file does not match the selected {file_type} material type.",
-            )
-        return extension
-
-    return MATERIAL_DEFAULT_EXTENSIONS[file_type]
-
-
-async def store_material_file(material_id: str, file_type: str, title: str, upload: UploadFile) -> tuple[str, int]:
-    extension = resolve_material_extension(file_type, upload)
-    directory = settings.materials_storage_dir / MATERIAL_DIRECTORY_MAP[file_type]
-    directory.mkdir(parents=True, exist_ok=True)
-
-    filename = f"{slugify_filename_part(title)[:40]}-{material_id}{extension}"
-    destination = directory / filename
-    content = await upload.read()
-    if not content:
-        raise HTTPException(status_code=422, detail="Uploaded file is empty.")
-
-    destination.write_bytes(content)
-    relative_path = destination.relative_to(settings.materials_storage_dir).as_posix()
-    return relative_path, len(content)
-
-
-def find_user_by_email(email: str) -> Optional[User]:
-    normalized = email.strip().lower()
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT id, name, email, password, role FROM users WHERE lower(email) = ?",
-            (normalized,),
-        ).fetchone()
-    return row_to_user(row) if row else None
-
-
-def get_student_profile(student_id: str) -> StudentProfile:
-    with get_connection() as connection:
-        row = connection.execute(
-            """
-            SELECT id, user_id, display_name, parent_name, notes, created_at
-            FROM student_profiles
-            WHERE id = ?
-            """,
-            (student_id,),
-        ).fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Student not found.")
-    return row_to_student_profile(row)
-
-
-def get_student_profile_for_user(user_id: str) -> StudentProfile:
-    with get_connection() as connection:
-        row = connection.execute(
-            """
-            SELECT id, user_id, display_name, parent_name, notes, created_at
-            FROM student_profiles
-            WHERE user_id = ?
-            """,
-            (user_id,),
-        ).fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Student profile not found.")
-    return row_to_student_profile(row)
-
-
-def get_class_group(class_id: str) -> ClassGroup:
-    with get_connection() as connection:
-        row = connection.execute(
-            """
-            SELECT id, name, description, weekday, start_time, end_time, status, created_at
-            FROM class_groups
-            WHERE id = ?
-            """,
-            (class_id,),
-        ).fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Class not found.")
-    return row_to_class_group(row)
-
-
-def get_class_session(session_id: str) -> ClassSession:
-    with get_connection() as connection:
-        row = connection.execute(
-            """
-            SELECT id, class_group_id, session_date, start_datetime, end_datetime, status, title, phase, created_at
-            FROM class_sessions
-            WHERE id = ?
-            """,
-            (session_id,),
-        ).fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Session not found.")
-    return row_to_class_session(row)
-
-
-def get_material(material_id: str) -> Material:
-    with get_connection() as connection:
-        row = connection.execute(
-            """
-            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, is_deleted, created_at
-            FROM materials
-            WHERE id = ? AND is_deleted = 0
-            """,
-            (material_id,),
-        ).fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Material not found.")
-    return row_to_material(row)
-
-
-def get_current_user(authorization: str = Header(default="")) -> User:
-    token = authorization.removeprefix("Bearer ").strip()
+def lookup_user_by_session_token(token: str) -> User:
     session = sessions.get(token)
     if not token or session is None or session.expires_at < now_utc():
         sessions.pop(token, None)
@@ -759,6 +71,10 @@ def get_current_user(authorization: str = Header(default="")) -> User:
     if row is None:
         raise HTTPException(status_code=401, detail="Not authenticated.")
     return row_to_user(row)
+
+
+def get_current_user(authorization: str = Header(default="")) -> User:
+    return lookup_user_by_session_token(extract_bearer_token(authorization))
 
 
 def require_teacher(user: User = Depends(get_current_user)) -> User:
@@ -806,9 +122,8 @@ def build_teacher_dashboard_payload(user: User) -> dict:
         ).fetchall()
         material_rows = connection.execute(
             """
-            SELECT id, title, description, file_type, file_url, file_size, uploaded_by, is_deleted, created_at
+            SELECT id, title, description, uploaded_by, created_at, updated_at
             FROM materials
-            WHERE is_deleted = 0
             ORDER BY created_at DESC
             """
         ).fetchall()
@@ -945,12 +260,9 @@ def build_teacher_dashboard_payload(user: User) -> dict:
             "id": material.id,
             "title": material.title,
             "description": material.description,
-            "fileType": material.file_type,
-            "fileUrl": material_storage_label(material.file_url),
-            "storagePath": material.file_url,
-            "downloadUrl": material_download_url(material.id),
-            "fileSize": material.file_size,
+            "stepCount": len(get_material_steps(material.id)),
             "createdAt": material.created_at.isoformat(),
+            "updatedAt": material.updated_at.isoformat(),
         }
         for material in materials
     ]
@@ -996,26 +308,188 @@ def scoped_placeholders(values: list[str]) -> str:
     return ", ".join("?" for _ in values)
 
 
+def attachment_file_type_label(filename: Optional[str], attachment_url: Optional[str]) -> str:
+    source = filename or attachment_url or ""
+    match = re.search(r"\.([A-Za-z0-9]+)$", source)
+    if not match:
+        return "Attachment"
+    return match.group(1).upper()
+
+
+def is_external_attachment_url(value: Optional[str]) -> bool:
+    return bool(value and re.match(r"^https?://", value, re.IGNORECASE))
+
+
+def supports_generated_preview(filename: Optional[str], attachment_url: Optional[str]) -> bool:
+    source = (filename or attachment_url or "").lower()
+    return source.endswith(".ppt") or source.endswith(".pptx")
+
+
+def step_preview_dir(step_id: str) -> Path:
+    return settings.materials_storage_dir / "previews" / "steps" / step_id
+
+
+def build_preview_entry_url(step_id: str) -> str:
+    return f"/api/materials/steps/{step_id}/preview"
+
+
+def _convert_to_pdf(file_path: Path, output_dir: Path) -> Path:
+    """LibreOffice headless conversion: PPT/PPTX → PDF."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    pdf_path = output_dir / f"{file_path.stem}.pdf"
+    target = output_dir / "source.pdf"
+
+    if target.is_file() and target.stat().st_mtime >= file_path.stat().st_mtime:
+        return target
+
+    result = subprocess.run(
+        ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(output_dir), str(file_path)],
+        capture_output=True, text=True, check=False, timeout=120,
+    )
+    if pdf_path.is_file():
+        shutil.move(str(pdf_path), str(target))
+    elif result.returncode != 0 or not target.is_file():
+        detail = (result.stderr or result.stdout or "PDF conversion failed.").strip()
+        raise HTTPException(status_code=500, detail=detail)
+    return target
+
+
+def _pdf_to_images(pdf_path: Path, output_dir: Path, max_width: int = 1400, thumb_width: int = 220) -> list[dict]:
+    """PyMuPDF: render PDF pages to PNG images + thumbnails.
+    Returns list of {page_path, thumb_path} dicts."""
+    import fitz  # PyMuPDF
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    doc = fitz.open(str(pdf_path))
+    results: list[dict] = []
+
+    try:
+        for i in range(len(doc)):
+            page_path = output_dir / f"page_{i + 1:03d}.png"
+            thumb_path = output_dir / f"thumb_{i + 1:03d}.png"
+            cached = (page_path.is_file() and page_path.stat().st_mtime >= pdf_path.stat().st_mtime
+                      and thumb_path.is_file() and thumb_path.stat().st_mtime >= pdf_path.stat().st_mtime)
+            if cached:
+                results.append({"page": page_path, "thumb": thumb_path})
+                continue
+
+            page = doc[i]
+
+            # 主图
+            zoom = max_width / page.rect.width
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            pix.save(str(page_path))
+
+            # 缩略图
+            t_zoom = thumb_width / page.rect.width
+            t_mat = fitz.Matrix(t_zoom, t_zoom)
+            t_pix = page.get_pixmap(matrix=t_mat)
+            t_pix.save(str(thumb_path))
+
+            results.append({"page": page_path, "thumb": thumb_path})
+    finally:
+        doc.close()
+
+    return results
+
+
+def ensure_preview_images(step: MaterialStep) -> list[dict]:
+    """Ensure preview images exist for a step. Returns list of {page, thumb} dicts."""
+    if not step.attachment_url or is_external_attachment_url(step.attachment_url):
+        raise HTTPException(status_code=404, detail="Preview is only available for uploaded files.")
+
+    file_path = settings.materials_storage_dir / step.attachment_url
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Attachment file not found.")
+
+    preview_dir = step_preview_dir(step.id)
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    page_marker = preview_dir / "page_001.png"
+    if page_marker.is_file() and page_marker.stat().st_mtime >= file_path.stat().st_mtime:
+        results = []
+        for p in sorted(preview_dir.glob("page_*.png")):
+            idx = p.stem.split("_")[1]
+            thumb = preview_dir / f"thumb_{idx}.png"
+            results.append({"page": p, "thumb": thumb})
+        return results
+
+    # Clean old previews
+    for child in preview_dir.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+    # Step 1: PPT/PPTX → PDF
+    pdf_path = _convert_to_pdf(file_path, preview_dir)
+
+    # Step 2: PDF → PNG images + thumbnails
+    results = _pdf_to_images(pdf_path, preview_dir)
+
+    if not results:
+        raise HTTPException(status_code=500, detail="No preview pages were generated.")
+    return results
+
+
+def resolve_step_open_target(step: MaterialStep) -> tuple[str, bool]:
+    if not step.attachment_url:
+        return "", False
+    if is_external_attachment_url(step.attachment_url):
+        return step.attachment_url, True
+    return f"/api/materials/steps/{step.id}/download", False
+
+
 def material_for_student_payload(
     material: Material,
     session: ClassSession,
     class_name: str,
     assignment: SessionMaterialAssignment,
 ) -> dict:
+    steps = get_material_steps(material.id)
+    primary_step = next((step for step in steps if step.attachment_url), None)
+    download_url, is_link = resolve_step_open_target(primary_step) if primary_step else ("", False)
+    preview_url = (
+        build_preview_entry_url(primary_step.id)
+        if primary_step and supports_generated_preview(primary_step.attachment_name, primary_step.attachment_url)
+        else ""
+    )
     return {
         "id": material.id,
         "title": material.title,
         "description": material.description,
-        "fileType": material.file_type,
-        "fileUrl": material_storage_label(material.file_url),
-        "storagePath": material.file_url,
-        "downloadUrl": material_download_url(material.id),
+        "stepCount": len(steps),
+        "steps": [
+            {
+                "id": step.id,
+                "stepNumber": step.step_number,
+                "stepType": step.step_type,
+                "title": step.title,
+                "content": step.content,
+                "attachmentUrl": step.attachment_url,
+                "attachmentName": step.attachment_name,
+                "downloadUrl": resolve_step_open_target(step)[0] if step.attachment_url else "",
+                "isLink": is_external_attachment_url(step.attachment_url),
+                "previewUrl": build_preview_entry_url(step.id)
+                if supports_generated_preview(step.attachment_name, step.attachment_url)
+                else "",
+            }
+            for step in steps
+        ],
         "classSessionId": session.id,
         "className": class_name,
         "sessionDate": session.session_date.isoformat(),
         "startTime": session.start_datetime.strftime("%H:%M"),
         "endTime": session.end_datetime.strftime("%H:%M"),
         "assignmentScope": assignment.assigned_to_type,
+        "downloadUrl": download_url,
+        "isLink": is_link,
+        "previewUrl": preview_url,
+        "downloadName": primary_step.attachment_name if primary_step else "",
+        "fileType": attachment_file_type_label(
+            primary_step.attachment_name if primary_step else None,
+            primary_step.attachment_url if primary_step else None,
+        ),
     }
 
 
@@ -1101,9 +575,9 @@ def build_student_learning_payload(user: User) -> dict:
             material_placeholders = scoped_placeholders(material_ids)
             material_rows = connection.execute(
                 f"""
-                SELECT id, title, description, file_type, file_url, file_size, uploaded_by, is_deleted, created_at
+                SELECT id, title, description, uploaded_by, created_at, updated_at
                 FROM materials
-                WHERE id IN ({material_placeholders}) AND is_deleted = 0
+                WHERE id IN ({material_placeholders})
                 """,
                 tuple(material_ids),
             ).fetchall()
@@ -1197,7 +671,7 @@ def find_assignment_for_student_material(
     with get_connection() as connection:
         row = connection.execute(
             """
-            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, created_at
+            SELECT id, class_session_id, material_id, assigned_to_type, assigned_to_student_id, assigned_by, phase_tag, sort_order, created_at
             FROM session_material_assignments
             WHERE class_session_id = ?
               AND material_id = ?
@@ -1347,6 +821,10 @@ def database_config(settings: Settings = Depends(get_settings), _: User = Depend
         "allowedRadiusMeters": settings.allowed_radius_meters,
         "attendanceGracePeriodMinutes": settings.attendance_grace_period_minutes,
     }
+
+
+def to_public_user(user: User) -> PublicUser:
+    return PublicUser(id=user.id, name=user.name, email=user.email, role=user.role)
 
 
 @app.post("/api/auth/login")
@@ -1602,7 +1080,12 @@ def generate_sessions(class_id: str, request: GenerateSessionsRequest, user: Use
         existing_dates = {
             row["session_date"]
             for row in connection.execute(
-                "SELECT session_date FROM class_sessions WHERE class_group_id = ?",
+                """
+                SELECT session_date
+                FROM class_sessions
+                WHERE class_group_id = ?
+                  AND status != 'cancelled'
+                """,
                 (class_group.id,),
             ).fetchall()
         }
@@ -1653,7 +1136,7 @@ def delete_session(session_id: str, _: User = Depends(require_teacher)):
         if row is None:
             raise HTTPException(status_code=404, detail="Session not found.")
         connection.execute("UPDATE class_sessions SET status = 'cancelled' WHERE id = ?", (session_id,))
-    return {"cancelledSessionId": session_id}
+    return {"deleted_session_id": session_id}
 
 
 @app.put("/api/teacher/sessions/{session_id}")
@@ -1693,58 +1176,58 @@ def teacher_materials(user: User = Depends(require_teacher)):
 
 
 @app.post("/api/teacher/materials")
-async def create_material(
+def create_material(
     title: str = Form(...),
     description: str = Form(default=""),
-    file_type: Literal["pdf", "ppt", "image", "video", "link", "other"] = Form(...),
-    file: UploadFile = File(default=None),
-    link_url: str = Form(default=""),
     user: User = Depends(require_teacher),
 ):
     normalized_title = title.strip()
     if not normalized_title:
         raise HTTPException(status_code=422, detail="Material title is required.")
 
+    now = now_utc()
     material_id = make_id("material")
 
-    if file_type == "link":
-        if not link_url.strip():
-            raise HTTPException(status_code=422, detail="URL is required for link-type materials.")
-        stored_path = link_url.strip()
-        file_size = 0
-    else:
-        if file is None or not (file.filename or "").strip():
-            raise HTTPException(status_code=422, detail="File is required for this material type.")
-        stored_path, file_size = await store_material_file(material_id, file_type, normalized_title, file)
-
-    material = Material(
-        id=material_id,
-        title=normalized_title,
-        description=description.strip(),
-        file_type=file_type,
-        file_url=stored_path,
-        file_size=file_size,
-        uploaded_by=user.id,
-        created_at=now_utc(),
-    )
     with get_connection() as connection:
         connection.execute(
             """
-            INSERT INTO materials (id, title, description, file_type, file_url, file_size, uploaded_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO materials (id, title, description, uploaded_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (
-                material.id,
-                material.title,
-                material.description,
-                material.file_type,
-                material.file_url,
-                material.file_size,
-                material.uploaded_by,
-                material.created_at.isoformat(),
-            ),
+            (material_id, normalized_title, description.strip(), user.id, now.isoformat(), now.isoformat()),
         )
-    return {"material": material}
+
+    return {"material": get_material(material_id)}
+
+
+@app.get("/api/teacher/materials/{material_id}")
+def get_material_detail(material_id: str, user: User = Depends(require_teacher)):
+    material = get_material(material_id)
+    steps = get_material_steps(material_id)
+    return {
+        "material": {
+            "id": material.id,
+            "title": material.title,
+            "description": material.description,
+            "stepCount": len(steps),
+            "createdAt": material.created_at.isoformat(),
+            "updatedAt": material.updated_at.isoformat(),
+        },
+        "steps": [
+            {
+                "id": step.id,
+                "stepNumber": step.step_number,
+                "stepType": step.step_type,
+                "title": step.title,
+                "content": step.content,
+                "attachmentUrl": step.attachment_url,
+                "attachmentName": step.attachment_name,
+                "createdAt": step.created_at.isoformat(),
+            }
+            for step in steps
+        ],
+    }
+
 
 @app.put("/api/teacher/materials/{material_id}")
 def update_material(material_id: str, request: MaterialUpdateRequest, user: User = Depends(require_teacher)):
@@ -1753,71 +1236,233 @@ def update_material(material_id: str, request: MaterialUpdateRequest, user: User
     if not normalized_title:
         raise HTTPException(status_code=422, detail="Material title is required.")
 
+    now = now_utc()
     with get_connection() as connection:
         connection.execute(
-            "UPDATE materials SET title = ?, description = ? WHERE id = ?",
-            (normalized_title, request.description.strip(), material_id),
+            "UPDATE materials SET title = ?, description = ?, updated_at = ? WHERE id = ?",
+            (normalized_title, request.description.strip(), now.isoformat(), material_id),
         )
     return {"material": get_material(material_id)}
 
 
 @app.delete("/api/teacher/materials/{material_id}")
 def delete_material(material_id: str, user: User = Depends(require_teacher)):
-    material = get_material(material_id)
+    get_material(material_id)
 
     with get_connection() as connection:
-        connection.execute(
-            "UPDATE materials SET is_deleted = 1 WHERE id = ?",
-            (material_id,),
-        )
+        connection.execute("DELETE FROM material_steps WHERE material_id = ?", (material_id,))
+        connection.execute("DELETE FROM session_material_assignments WHERE material_id = ?", (material_id,))
+        connection.execute("DELETE FROM materials WHERE id = ?", (material_id,))
 
-    return {"deletedMaterialId": material_id, "message": "Material has been archived (soft-deleted)."}
+    return {"deletedMaterialId": material_id, "message": "Material and all steps deleted."}
 
 
-@app.post("/api/teacher/materials/{material_id}/replace")
-async def replace_material_file(
+@app.post("/api/teacher/materials/{material_id}/steps")
+def create_material_step(
     material_id: str,
-    file: UploadFile = File(...),
-    file_type: str = Form(default=""),
+    request: MaterialStepCreateRequest,
     user: User = Depends(require_teacher),
 ):
-    material = get_material(material_id)
-    new_type = file_type if file_type in MATERIAL_DIRECTORY_MAP else material.file_type
+    get_material(material_id)
 
-    old_path = material_storage_path(material.file_url)
-    if old_path.is_file():
-        old_path.unlink()
+    existing = get_material_steps(material_id)
+    next_number = max([s.step_number for s in existing], default=0) + 1
 
-    stored_path, file_size = await store_material_file(
-        material_id, new_type, material.title, file
-    )
+    step_id = make_id("step")
+    now = now_utc()
 
     with get_connection() as connection:
         connection.execute(
-            "UPDATE materials SET file_url = ?, file_size = ?, file_type = ? WHERE id = ?",
-            (stored_path, file_size, new_type, material_id),
+            """
+            INSERT INTO material_steps (id, material_id, step_number, step_type, title, content,
+                                        attachment_url, attachment_name, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                step_id, material_id, next_number, request.step_type, request.title.strip(),
+                request.content.strip(), request.attachment_url.strip(), request.attachment_name.strip(),
+                now.isoformat(),
+            ),
         )
 
-    return {"material": get_material(material_id)}
+    return {"step": get_material_step(step_id)}
 
 
-@app.get("/api/materials/{material_id}/download")
-def download_material(material_id: str, user: User = Depends(get_current_user)):
-    material = get_material(material_id)
-    if user.role == "Student":
-        profile = get_student_profile_for_user(user.id)
-        if not student_can_download_material(profile, material_id):
-            raise HTTPException(status_code=403, detail="This material is not available to the student.")
+@app.put("/api/teacher/materials/{material_id}/steps/{step_id}")
+def update_material_step(
+    material_id: str,
+    step_id: str,
+    request: MaterialStepUpdateRequest,
+    user: User = Depends(require_teacher),
+):
+    get_material(material_id)
+    step = get_material_step(step_id)
+    if step.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Step does not belong to this material.")
 
-    if material.file_type == "link":
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url=material.file_url)
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE material_steps
+            SET step_type = ?, title = ?, content = ?, attachment_url = ?, attachment_name = ?
+            WHERE id = ?
+            """,
+            (
+                request.step_type, request.title.strip(), request.content.strip(),
+                request.attachment_url.strip(), request.attachment_name.strip(), step_id,
+            ),
+        )
 
-    file_path = material_storage_path(material.file_url)
+    return {"step": get_material_step(step_id)}
+
+
+@app.delete("/api/teacher/materials/{material_id}/steps/{step_id}")
+def delete_material_step(
+    material_id: str,
+    step_id: str,
+    user: User = Depends(require_teacher),
+):
+    get_material(material_id)
+    step = get_material_step(step_id)
+    if step.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Step does not belong to this material.")
+
+    with get_connection() as connection:
+        connection.execute("DELETE FROM material_steps WHERE id = ?", (step_id,))
+
+    return {"deletedStepId": step_id, "message": "Step deleted."}
+
+
+@app.put("/api/teacher/materials/{material_id}/steps/reorder")
+def reorder_material_steps(
+    material_id: str,
+    request: MaterialStepReorderRequest,
+    user: User = Depends(require_teacher),
+):
+    get_material(material_id)
+
+    with get_connection() as connection:
+        for idx, step_id in enumerate(request.step_ids, start=1):
+            connection.execute(
+                "UPDATE material_steps SET step_number = ? WHERE id = ? AND material_id = ?",
+                (idx, step_id, material_id),
+            )
+
+    return {"steps": [
+        {"id": step.id, "stepNumber": step.step_number, "title": step.title}
+        for step in get_material_steps(material_id)
+    ]}
+
+
+@app.post("/api/teacher/materials/{material_id}/steps/{step_id}/upload")
+async def upload_step_attachment(
+    material_id: str,
+    step_id: str,
+    file: UploadFile = File(...),
+    user: User = Depends(require_teacher),
+):
+    get_material(material_id)
+    step = get_material_step(step_id)
+    if step.material_id != material_id:
+        raise HTTPException(status_code=404, detail="Step does not belong to this material.")
+
+    if not file.filename:
+        raise HTTPException(status_code=422, detail="No file selected.")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=422, detail="Uploaded file is empty.")
+
+    # 存储到 storage/materials/steps/{step_id}/{filename}
+    step_dir = settings.materials_storage_dir / "steps" / step_id
+    step_dir.mkdir(parents=True, exist_ok=True)
+
+    original_name = file.filename
+    safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", original_name)
+    dest = step_dir / safe_name
+    dest.write_bytes(content)
+
+    relative_url = f"steps/{step_id}/{safe_name}"
+
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE material_steps SET attachment_url = ?, attachment_name = ? WHERE id = ?",
+            (relative_url, original_name, step_id),
+        )
+
+    return {
+        "stepId": step_id,
+        "attachmentUrl": relative_url,
+        "attachmentName": original_name,
+        "fileSize": len(content),
+    }
+
+
+@app.get("/api/materials/steps/{step_id}/download")
+def download_step_attachment(step_id: str, user: User = Depends(get_current_user)):
+    step = get_material_step(step_id)
+    if not step.attachment_url:
+        raise HTTPException(status_code=404, detail="No attachment for this step.")
+
+    file_path = settings.materials_storage_dir / step.attachment_url
     if not file_path.is_file():
-        raise HTTPException(status_code=404, detail="Stored material file was not found.")
+        raise HTTPException(status_code=404, detail="Attachment file not found.")
 
-    return FileResponse(file_path, filename=file_path.name)
+    media_type, _ = mimetypes.guess_type(step.attachment_name or file_path.name)
+    return FileResponse(
+        file_path,
+        filename=step.attachment_name or file_path.name,
+        media_type=media_type or "application/octet-stream",
+        content_disposition_type="inline",
+    )
+
+
+@app.get("/api/materials/steps/{step_id}/preview")
+def get_step_preview_manifest(step_id: str, user: User = Depends(get_current_user)):
+    step = get_material_step(step_id)
+    results = ensure_preview_images(step)
+    return {
+        "stepId": step_id,
+        "pageCount": len(results),
+        "pages": [
+            {
+                "number": i + 1,
+                "url": f"/api/materials/steps/{step_id}/preview/{i + 1}",
+                "thumbnailUrl": f"/api/materials/steps/{step_id}/preview/{i + 1}/thumb",
+            }
+            for i in range(len(results))
+        ],
+    }
+
+
+@app.get("/api/materials/steps/{step_id}/preview/{page:int}")
+def get_step_preview_page(step_id: str, page: int, user: User = Depends(get_current_user)):
+    step = get_material_step(step_id)
+    results = ensure_preview_images(step)
+    idx = page - 1
+    if idx < 0 or idx >= len(results):
+        raise HTTPException(status_code=404, detail="Page not found.")
+    return FileResponse(
+        results[idx]["page"],
+        filename=f"page_{page:03d}.png",
+        media_type="image/png",
+        content_disposition_type="inline",
+    )
+
+
+@app.get("/api/materials/steps/{step_id}/preview/{page:int}/thumb")
+def get_step_preview_thumb(step_id: str, page: int):
+    step = get_material_step(step_id)
+    results = ensure_preview_images(step)
+    idx = page - 1
+    if idx < 0 or idx >= len(results):
+        raise HTTPException(status_code=404, detail="Page not found.")
+    return FileResponse(
+        results[idx]["thumb"],
+        filename=f"thumb_{page:03d}.png",
+        media_type="image/png",
+        content_disposition_type="inline",
+    )
 
 
 @app.post("/api/teacher/sessions/{session_id}/assign-material")
@@ -1918,11 +1563,11 @@ def teacher_classroom(session_id: str, _: User = Depends(require_teacher)):
     with get_connection() as connection:
         material_rows = connection.execute(
             """
-            SELECT m.id, m.title, m.description, m.file_type, m.file_url, m.file_size, m.uploaded_by, m.is_deleted, m.created_at,
+            SELECT m.id, m.title, m.description, m.uploaded_by, m.created_at, m.updated_at,
                    sma.assigned_to_type, sma.assigned_to_student_id, sma.phase_tag
             FROM session_material_assignments sma
             JOIN materials m ON m.id = sma.material_id
-            WHERE sma.class_session_id = ? AND m.is_deleted = 0
+            WHERE sma.class_session_id = ?
             ORDER BY sma.sort_order ASC, sma.created_at ASC
             """,
             (session_id,),
@@ -1944,15 +1589,25 @@ def teacher_classroom(session_id: str, _: User = Depends(require_teacher)):
 
     materials = []
     for row in material_rows:
+        steps = get_material_steps(row["id"])
+        primary_step = next((step for step in steps if step.attachment_url), None)
+        download_url, is_link = resolve_step_open_target(primary_step) if primary_step else ("", False)
         materials.append({
             "id": row["id"],
             "title": row["title"],
             "description": row["description"],
-            "fileType": row["file_type"],
-            "downloadUrl": material_download_url(row["id"]),
             "assignedToType": row["assigned_to_type"],
             "assignedToStudentId": row["assigned_to_student_id"],
-            "phaseTag": row.get("phase_tag", "both"),
+            "phaseTag": row["phase_tag"],
+            "downloadUrl": download_url,
+            "isLink": is_link,
+            "previewUrl": build_preview_entry_url(primary_step.id)
+            if primary_step and supports_generated_preview(primary_step.attachment_name, primary_step.attachment_url)
+            else "",
+            "fileType": attachment_file_type_label(
+                primary_step.attachment_name if primary_step else None,
+                primary_step.attachment_url if primary_step else None,
+            ),
         })
 
     students_status = []
@@ -2216,7 +1871,6 @@ def spa(path: str):
     return FileResponse("public/index.html")
 
 
-init_database()
 
 
 def _migrate_add_phase_column() -> None:
@@ -2239,28 +1893,6 @@ try:
     _migrate_add_phase_column()
 except Exception:
     pass
-
-
-def _migrate_add_is_deleted_column() -> None:
-    """Add is_deleted column to existing materials table if missing."""
-    try:
-        with get_connection() as connection:
-            if connection.provider == "postgresql":
-                connection.execute(
-                    "ALTER TABLE materials ADD COLUMN IF NOT EXISTS is_deleted INTEGER NOT NULL DEFAULT 0"
-                )
-            else:
-                connection.execute(
-                    "ALTER TABLE materials ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"
-                )
-    except Exception:
-        pass
-
-try:
-    _migrate_add_is_deleted_column()
-except Exception:
-    pass
-
 
 def _migrate_add_phase_tag_column() -> None:
     try:
@@ -2335,3 +1967,5 @@ def move_assignment(assignment_id: str, direction: str = Form(...), user: User =
         )
 
     return {"assignmentId": assignment_id, "direction": direction}
+
+init_database()

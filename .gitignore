@@ -7,3 +7,5 @@ __pycache__/
 .venv311/
 .DS_Store
 storage/materials/
+logs/
+.uvicorn.pid
