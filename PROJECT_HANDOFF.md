@@ -1,8 +1,49 @@
 # RoBoGo Learning Portal Handoff
 
-Last updated: 2026-06-11
+Last updated: 2026-06-12
 
-## Latest Update: Preview + Visual Refresh
+## Latest Update: Assembly Studio Project Persistence + Dashboard Polish
+
+- Assembly Studio now starts from a dedicated local Projects dashboard instead of dropping straight into the editor
+- Added project-level local persistence in IndexedDB:
+  - each project has its own ID and shareable local designer link
+  - uploaded model blobs are stored with the project
+  - disassembly steps and generated assembly steps are restored when reopening the same project
+- Added project actions:
+  - `Designer`
+  - `Duplicate`
+  - `Copy Link`
+  - `Delete`
+- Fixed a save-state bug where uploaded models were not persisted after reload because the workspace never re-entered a saveable hydrated state
+- Tightened the project table layout:
+  - stable dashboard work-area height
+  - header/data column alignment via shared table columns
+  - action menu overflow behavior improved for short project lists
+- 3D authoring improvements completed in this cycle before dashboard work:
+  - hidden parts are no longer selectable
+  - hover highlighting added
+  - project import/remap is tied to stable model keys instead of volatile runtime UUIDs
+  - right mouse button is reserved for camera orbit/pan while left mouse is focused on part operations
+
+### Immediate Next Assembly Pass
+1. Add upward-opening dropdown behavior near the bottom of the project list
+2. Add a visible "Saved just now" state in the studio shell
+3. Continue smoothing multi-part drag behavior toward a more Cadasio-like feel
+4. Decide whether project metadata should later sync into the learning portal material workflow
+
+## Previous Update: Repository Structure Cleanup
+
+- Split the repository into two app roots:
+  - `apps/learning-portal` for the FastAPI classroom portal
+  - `apps/assembly-step-studio` for the Next.js 3D authoring studio
+- Added a root `package.json` with clear convenience commands:
+  - `npm run start:learning`
+  - `npm run start:assembly`
+  - `npm run verify:learning`
+- Updated backend static/data paths so the learning portal can run cleanly after moving under `apps/learning-portal`
+- Root `README.md` now documents the overall structure and startup commands
+
+## Previous Update: Preview + Visual Refresh
 
 ### Material Preview Direction
 - Moved away from browser-native `.pptx` preview because it was blank or degraded across browsers
@@ -11,7 +52,7 @@ Last updated: 2026-06-11
 - This is the correct cross-browser path if the goal is "view in portal without relying on Quick Look HTML"
 
 ### UI Styling Refresh
-- `public/css/app.css` was rewritten to move the portal toward an Arcade-inspired SaaS visual style
+- `apps/learning-portal/public/css/app.css` was rewritten to move the portal toward an Arcade-inspired SaaS visual style
 - Updated design language:
   - lighter warm page background
   - glassy white surfaces
@@ -24,7 +65,7 @@ Last updated: 2026-06-11
 1. Continue refining sidebar/content visual balance
 2. Tighten spacing and typography across student/teacher views
 3. Improve topbar / page heading hierarchy
-4. Standardize inline styles still embedded in `public/js/app.js`
+4. Standardize inline styles still embedded in `apps/learning-portal/public/js/app.js`
 
 ## Session Summary
 
@@ -32,10 +73,10 @@ This session transformed the RoBoGo Learning Portal from a basic MVP into a full
 
 ## Architecture
 
-- **Backend**: FastAPI (`backend/app/main.py` ~2320 lines)
-- **Frontend**: Single-page HTML/CSS/JS (`public/index.html` ~2820 lines)
+- **Backend**: FastAPI (`apps/learning-portal/backend/app/main.py` ~2320 lines)
+- **Frontend**: Single-page HTML/CSS/JS (`apps/learning-portal/public/index.html` ~2820 lines)
 - **Database**: PostgreSQL `RoBoGoLearningSystemDB` (SQLite fallback)
-- **Runtime**: `.venv311/bin/python` (Python 3.11), `npm start` → `http://127.0.0.1:3001`
+- **Runtime**: root `.venv311/bin/python` (Python 3.11), `npm run start:learning` → `http://127.0.0.1:3001`
 
 ## What Was Built This Session
 
@@ -126,11 +167,11 @@ student@robogo.local / Student123!
 ```
 
 ## Key Files
-- `backend/app/main.py` — All backend logic (~2320 lines)
-- `backend/app/config.py` — Runtime config
-- `backend/requirements.txt` — Python dependencies
-- `public/index.html` — Full frontend (~2820 lines)
-- `package.json` — npm start script
+- `apps/learning-portal/backend/app/main.py` — All backend logic (~2320 lines)
+- `apps/learning-portal/backend/app/config.py` — Runtime config
+- `apps/learning-portal/backend/requirements.txt` — Python dependencies
+- `apps/learning-portal/public/index.html` — Full frontend (~2820 lines)
+- `package.json` — root convenience scripts
 - `PROJECT_HANDOFF.md` — This file
 
 ## Known Limitations / Future Work
@@ -149,6 +190,6 @@ student@robogo.local / Student123!
 ## Running the Project
 ```bash
 cd "/Users/happyfamily/Hector/VEX/RoBoGo Learning system"
-npm start
+npm run start:learning
 # Opens at http://127.0.0.1:3001
 ```

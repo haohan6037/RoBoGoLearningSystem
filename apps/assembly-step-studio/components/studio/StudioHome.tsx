@@ -1,0 +1,125 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import ProjectsDashboard from '@/components/projects/ProjectsDashboard';
+import StudioWorkspace from '@/components/studio/StudioWorkspace';
+import {
+  createStudioProject,
+  deleteStudioProject,
+  duplicateStudioProject,
+  listStudioProjects,
+  makeStudioProjectLink,
+} from '@/lib/projects/projectStorage';
+import type { StudioProjectRecord } from '@/types/assembly';
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';
+  textArea.style.opacity = '0';
+  document.body.appendChild(textArea);
+  textArea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textArea);
+}
+
+export default function StudioHome() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get('projectId');
+  const [projects, setProjects] = useState<StudioProjectRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const refreshProjects = useCallback(async () => {
+    setProjects(await listStudioProjects());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      await refreshProjects();
+    })();
+  }, [refreshProjects]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  const handleCreateProject = async (name: string) => {
+    const record = await createStudioProject(name);
+    await refreshProjects();
+    router.push(`/?projectId=${record.id}`);
+  };
+
+  const handleOpenProject = (nextProjectId: string) => {
+    router.push(`/?projectId=${nextProjectId}`);
+  };
+
+  const handleBackToProjects = async () => {
+    router.push('/');
+    await refreshProjects();
+  };
+
+  const handleDuplicateProject = async (nextProjectId: string) => {
+    const duplicated = await duplicateStudioProject(nextProjectId);
+    await refreshProjects();
+    if (duplicated) setNotice(`Duplicated "${duplicated.name}"`);
+  };
+
+  const handleDeleteProject = async (nextProjectId: string) => {
+    await deleteStudioProject(nextProjectId);
+    await refreshProjects();
+    setNotice('Project deleted');
+    if (projectId === nextProjectId) {
+      router.push('/');
+    }
+  };
+
+  const handleCopyProjectLink = async (nextProjectId: string) => {
+    const link = makeStudioProjectLink(nextProjectId);
+    await copyTextToClipboard(link);
+    setNotice('Project link copied to clipboard');
+  };
+
+  return (
+    <>
+      {notice && (
+        <div className="fixed right-4 top-4 z-50 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-2xl shadow-slate-900/20">
+          {notice}
+        </div>
+      )}
+
+      {!projectId ? (
+        loading ? (
+          <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
+            Loading projects...
+          </div>
+        ) : (
+          <ProjectsDashboard
+            projects={projects}
+            onCreateProject={handleCreateProject}
+            onOpenProject={handleOpenProject}
+            onDuplicateProject={handleDuplicateProject}
+            onDeleteProject={handleDeleteProject}
+            onCopyProjectLink={handleCopyProjectLink}
+          />
+        )
+      ) : (
+        <StudioWorkspace
+          projectId={projectId}
+          onBackToProjects={handleBackToProjects}
+          onProjectSaved={refreshProjects}
+        />
+      )}
+    </>
+  );
+}

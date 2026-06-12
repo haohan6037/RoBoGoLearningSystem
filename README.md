@@ -1,65 +1,47 @@
-# RoBoGo Learning Portal
+# RoBoGo Learning System
 
-MVP foundation for the RoBoGo classroom learning portal.
+This repository contains two independently started applications:
 
-## Current Technology Stack
+- `apps/learning-portal` - the classroom learning portal for teachers and students
+- `apps/assembly-step-studio` - the 3D assembly step authoring studio
 
-- Frontend: static HTML/CSS/JavaScript in `public/index.html`
-- Backend: FastAPI in `backend/app`
-- Local persistence: PostgreSQL database `RoBoGoLearningSystemDB`
-- Preview runtime: local Python 3.11 virtual environment in `.venv311`
+Shared product documents remain in `doc/`. Local runtime data, uploaded materials, and logs belong inside the app that owns them.
 
-The original Node prototype is still present in `server.mjs`, but the active preview stack now uses FastAPI plus PostgreSQL-backed local persistence.
-
-## Local Database Configuration
-
-Copy `.env.example` to `.env` if you want to override the local defaults.
-
-```bash
-cp .env.example .env
-```
-
-Default local values:
+## Project Layout
 
 ```text
-ROBOGO_DATABASE_PROVIDER=postgresql
-ROBOGO_DB_HOST=127.0.0.1
-ROBOGO_DB_PORT=5432
-ROBOGO_DB_NAME=RoBoGoLearningSystemDB
-ROBOGO_DB_USER=postgres
-ROBOGO_DB_PASSWORD=
-ROBOGO_CLASSROOM_LATITUDE=
-ROBOGO_CLASSROOM_LONGITUDE=
-ROBOGO_ALLOWED_RADIUS_METERS=100
-ROBOGO_ATTENDANCE_GRACE_PERIOD_MINUTES=10
-ROBOGO_MATERIALS_STORAGE_ROOT=storage/materials
-ROBOGO_PORT=3001
+RoBoGo Learning system/
+  apps/
+    learning-portal/        # FastAPI + static portal UI
+      backend/
+      public/
+      scripts/
+      data/                 # local only, git-ignored
+      storage/              # local uploads/previews, git-ignored
+      logs/                 # local only, git-ignored
+    assembly-step-studio/   # Next.js 3D model lesson authoring tool
+      app/
+      components/
+      lib/
+      store/
+      public/
+  doc/                      # source requirements and product notes
+  PROJECT_HANDOFF.md        # current progress and next-step notes
+  package.json              # root convenience commands
 ```
 
-The app can still be pointed at SQLite for local fallback by setting `ROBOGO_DATABASE_PROVIDER=sqlite`, but the current default is local PostgreSQL.
-Set `ROBOGO_CLASSROOM_LATITUDE` and `ROBOGO_CLASSROOM_LONGITUDE` in `.env` to enable verified attendance from browser location.
-Uploaded materials are stored locally under `storage/materials/<type>/...` by default, and you can override the root with `ROBOGO_MATERIALS_STORAGE_ROOT`.
+## Start Learning Portal
 
-## Run the FastAPI Backend
-
-Install dependencies into the local Python 3.11 environment:
+The learning portal runs at `http://127.0.0.1:3001`.
 
 ```bash
+cd "/Users/happyfamily/Hector/VEX/RoBoGo Learning system"
 python3.11 -m venv .venv311
-.venv311/bin/pip install -r backend/requirements.txt
+.venv311/bin/pip install -r apps/learning-portal/backend/requirements.txt
+npm run start:learning
 ```
 
-Start the app:
-
-```bash
-npm start
-```
-
-Open:
-
-```text
-http://127.0.0.1:3001
-```
+Default database target is local PostgreSQL database `RoBoGoLearningSystemDB`. Put overrides in either root `.env` or `apps/learning-portal/.env`.
 
 Demo accounts:
 
@@ -68,33 +50,27 @@ teacher@robogo.local / Teacher123!
 student@robogo.local / Student123!
 ```
 
-## Current Scope
+## Start Assembly Step Studio
 
-The current MVP supports:
+The 3D assembly authoring tool runs at `http://localhost:3000`.
 
-- create students
-- create classes
-- add students to classes
-- generate term sessions
-- delete sessions
-- upload material files with automatic local storage paths by type
-- assign material to a class session
-- assign material to an individual student
-- show students their current lesson materials during an active session
-- show students historical review materials after sessions end
-- record material view history
-- verify attendance once per session when current lesson open, session time, and classroom location all match
-
-## Database Endpoints
-
-Teacher-only database config check:
-
-```text
-GET /api/config/database
+```bash
+cd "/Users/happyfamily/Hector/VEX/RoBoGo Learning system"
+npm --prefix apps/assembly-step-studio install
+npm run start:assembly
 ```
 
-Health check:
+## Useful Commands
 
-```text
-GET /api/health
+```bash
+npm run start:learning     # FastAPI portal on 127.0.0.1:3001
+npm run start:assembly     # Next.js 3D studio on localhost:3000
+npm run verify:learning    # targeted portal smoke check
+npm run lint:assembly      # Next.js lint
+npm run build:assembly     # Next.js production build check
 ```
+
+For more app-specific details, see:
+
+- `apps/learning-portal/README.md`
+- `apps/assembly-step-studio/README.md`

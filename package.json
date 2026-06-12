@@ -1,12 +1,20 @@
 {
-  "name": "robogo-learning-portal",
+  "name": "robogo-learning-system",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": ".venv311/bin/python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 3001",
-    "start:node-prototype": "node server.mjs"
+    "start": "npm run start:learning",
+    "start:learning": "npm --prefix apps/learning-portal start",
+    "start:assembly": "npm --prefix apps/assembly-step-studio run dev -- --port 3000",
+    "verify:learning": "bash apps/learning-portal/scripts/verify.sh",
+    "build:assembly": "npm --prefix apps/assembly-step-studio run build",
+    "lint:assembly": "npm --prefix apps/assembly-step-studio run lint"
   },
+  "workspaces": [
+    "apps/learning-portal",
+    "apps/assembly-step-studio"
+  ],
   "engines": {
     "node": ">=20"
   }
