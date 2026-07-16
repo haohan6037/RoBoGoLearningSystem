@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProjectsDashboard from '@/components/projects/ProjectsDashboard';
 import StudioWorkspace from '@/components/studio/StudioWorkspace';
+import MateLab from '@/components/mate/MateLab';
+import ModelLibraryLab from '@/components/library/ModelLibraryLab';
 import {
   createStudioProject,
   deleteStudioProject,
@@ -34,6 +36,8 @@ export default function StudioHome() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get('projectId');
   const isBuildPresentation = searchParams.get('view') === 'build';
+  const isMateLab = searchParams.get('view') === 'mate-lab';
+  const isPartLibrary = searchParams.get('view') === 'part-library';
   const [projects, setProjects] = useState<StudioProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
@@ -103,21 +107,41 @@ export default function StudioHome() {
         </div>
       )}
 
-      {!projectId ? (
+      {isPartLibrary ? (
+        <ModelLibraryLab onBack={() => router.push('/')} />
+      ) : isMateLab ? (
+        <MateLab onBack={() => router.push('/')} />
+      ) : !projectId ? (
         loading ? (
           <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
             Loading projects...
           </div>
         ) : (
-          <ProjectsDashboard
-            projects={projects}
-            onCreateProject={handleCreateProject}
-            onOpenProject={handleOpenProject}
-            onDuplicateProject={handleDuplicateProject}
-            onDeleteProject={handleDeleteProject}
-            onCopyProjectLink={handleCopyProjectLink}
-            onPreviewProject={handlePreviewProject}
-          />
+          <div className="relative min-h-screen">
+            <ProjectsDashboard
+              projects={projects}
+              onCreateProject={handleCreateProject}
+              onOpenProject={handleOpenProject}
+              onDuplicateProject={handleDuplicateProject}
+              onDeleteProject={handleDeleteProject}
+              onCopyProjectLink={handleCopyProjectLink}
+              onPreviewProject={handlePreviewProject}
+            />
+            <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3">
+              <button
+                onClick={() => router.push('/?view=part-library')}
+                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800"
+              >
+                Open Model Library
+              </button>
+              <button
+                onClick={() => router.push('/?view=mate-lab')}
+                className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700"
+              >
+                Open Mate Lab
+              </button>
+            </div>
+          </div>
         )
       ) : (
         <StudioWorkspace
