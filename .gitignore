@@ -12,3 +12,4 @@ node_modules/
 **/.uvicorn.pid
 apps/learning-portal/data/
 apps/learning-portal/storage/
+apps/assembly-step-studio/CAD Files/

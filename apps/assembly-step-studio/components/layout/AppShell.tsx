@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import TopBar from './TopBar';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
+import type { CoverCapture } from '@/types/assembly';
 
 const ViewerCanvas = dynamic(() => import('@/components/viewer/ViewerCanvas'), {
   ssr: false,
@@ -16,6 +17,7 @@ interface Props {
   onUploadModel: (file: File) => void;
   onImportJson: (file: File) => Promise<void> | void;
   onExportJson: () => void;
+  onCoverCaptured: (capture: CoverCapture) => Promise<void> | void;
 }
 
 export default function AppShell({
@@ -25,6 +27,7 @@ export default function AppShell({
   onUploadModel,
   onImportJson,
   onExportJson,
+  onCoverCaptured,
 }: Props) {
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
@@ -38,8 +41,8 @@ export default function AppShell({
       />
       <div className="flex flex-1 overflow-hidden">
         <LeftPanel />
-        <main className="flex-1">
-          <ViewerCanvas />
+        <main className="relative flex-1">
+          <ViewerCanvas onCoverCaptured={onCoverCaptured} />
         </main>
         <RightPanel />
       </div>

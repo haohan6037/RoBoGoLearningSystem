@@ -6,10 +6,45 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { parseModelTree } from '@/lib/gltf/parseModelTree';
-import type { ObjectState } from '@/types/assembly';
+import partNameCatalog from '@/lib/parts/partNameCatalog.json';
+import type { ModelNode, ObjectState } from '@/types/assembly';
 
 const origMaterials = new WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>();
 const STEP_TRANSITION_MS = 520;
+const PART_NUMBER_PATTERN = /\d{3}-\d{4}-\d{3,4}/;
+
+function restoreSourceNames(root: THREE.Object3D) {
+  root.traverse((object) => {
+    const sourceName = object.userData.assemblySourceName;
+    if (typeof sourceName === 'string') {
+      object.name = sourceName;
+    } else {
+      object.userData.assemblySourceName = object.name;
+    }
+  });
+}
+
+function applyCatalogPartNames(root: THREE.Object3D): Map<string, string> {
+  const displayNames = new Map<string, string>();
+  root.traverse((object) => {
+    const partNumber = object.name.match(PART_NUMBER_PATTERN)?.[0];
+    if (!partNumber) return;
+    const meaningfulName = (partNameCatalog as Record<string, string>)[partNumber];
+    if (!meaningfulName) return;
+    const displayName = `${meaningfulName} (${partNumber})`;
+    object.name = displayName;
+    displayNames.set(object.uuid, displayName);
+  });
+  return displayNames;
+}
+
+function applyTreeDisplayNames(nodes: ModelNode[], displayNames: Map<string, string>): ModelNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    name: displayNames.get(node.uuid) ?? node.name,
+    children: applyTreeDisplayNames(node.children, displayNames),
+  }));
+}
 
 type PartialObjectState = {
   visible?: boolean;
@@ -139,8 +174,10 @@ export default function ModelScene({ modelUrl, onSceneReady }: Props) {
   useEffect(() => {
     if (initDone.current) return;
     initDone.current = true;
-    const tree = parseModelTree(scene);
-    setObjectTree(tree);
+    restoreSourceNames(scene);
+    const sourceTree = parseModelTree(scene);
+    const displayNames = applyCatalogPartNames(scene);
+    setObjectTree(applyTreeDisplayNames(sourceTree, displayNames));
     const states = collectStates(scene);
     saveInitialStates(states);
   }, [scene, setObjectTree, saveInitialStates]);

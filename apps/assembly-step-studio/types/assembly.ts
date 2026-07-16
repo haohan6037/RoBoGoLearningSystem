@@ -26,10 +26,7 @@ export type AssemblyStep = {
   mode: 'disassembly' | 'assembly';
   objectStates: Record<string, ObjectState>;
   selectedObjectUuids: string[];
-  camera?: {
-    position: [number, number, number];
-    target: [number, number, number];
-  };
+  camera?: CameraView;
   createdAt: string;
 };
 
@@ -45,6 +42,22 @@ export type AssemblyProject = {
 
 export type StudioProjectStatus = 'In Progress' | 'Published';
 
+export type CameraView = {
+  position: [number, number, number];
+  target: [number, number, number];
+  up?: [number, number, number];
+};
+
+export type CoverCapture = {
+  blob: Blob;
+  camera: CameraView;
+};
+
+export type ProjectCoverAsset = CoverCapture & {
+  type: string;
+  updatedAt: string;
+};
+
 export type StudioProjectRecord = {
   id: string;
   name: string;
@@ -59,4 +72,5 @@ export type StudioProjectRecord = {
     type: string;
     blob: Blob;
   } | null;
+  coverAsset?: ProjectCoverAsset | null;
 };

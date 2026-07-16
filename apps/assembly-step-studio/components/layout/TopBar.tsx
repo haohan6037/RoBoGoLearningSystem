@@ -26,6 +26,12 @@ export default function TopBar({
 
   const handleUploadClick = () => fileInputRef.current?.click();
   const handleImportClick = () => importRef.current?.click();
+  const handlePreviewBuildSteps = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('projectId', projectId);
+    url.searchParams.set('view', 'build');
+    window.open(url.toString(), '_blank', 'noopener,noreferrer');
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,6 +81,9 @@ export default function TopBar({
         </button>
         <button onClick={onExportJson} className="px-3 py-1 text-xs bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors">
           Export JSON
+        </button>
+        <button onClick={handlePreviewBuildSteps} className="px-3 py-1 text-xs bg-emerald-700 hover:bg-emerald-600 rounded border border-emerald-600 transition-colors">
+          Preview Build Steps
         </button>
       </div>
     </header>

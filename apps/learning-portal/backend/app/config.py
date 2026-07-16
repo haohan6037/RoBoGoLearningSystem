@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     database_provider: str = "postgresql"
     sqlite_path: str = "data/robogo-learning-portal.sqlite3"
     db_host: str = "127.0.0.1"
-    db_port: int = 5432
+    db_port: int = 5488
     db_name: str = "RoBoGoLearningSystemDB"
     db_user: str = "postgres"
     db_password: str = Field(default="", repr=False)

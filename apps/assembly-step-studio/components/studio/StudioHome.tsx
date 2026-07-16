@@ -33,6 +33,7 @@ export default function StudioHome() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get('projectId');
+  const isBuildPresentation = searchParams.get('view') === 'build';
   const [projects, setProjects] = useState<StudioProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
@@ -87,7 +88,11 @@ export default function StudioHome() {
   const handleCopyProjectLink = async (nextProjectId: string) => {
     const link = makeStudioProjectLink(nextProjectId);
     await copyTextToClipboard(link);
-    setNotice('Project link copied to clipboard');
+    setNotice('Student build link copied to clipboard');
+  };
+
+  const handlePreviewProject = (nextProjectId: string) => {
+    window.open(makeStudioProjectLink(nextProjectId), '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -111,11 +116,13 @@ export default function StudioHome() {
             onDuplicateProject={handleDuplicateProject}
             onDeleteProject={handleDeleteProject}
             onCopyProjectLink={handleCopyProjectLink}
+            onPreviewProject={handlePreviewProject}
           />
         )
       ) : (
         <StudioWorkspace
           projectId={projectId}
+          presentationMode={isBuildPresentation}
           onBackToProjects={handleBackToProjects}
           onProjectSaved={refreshProjects}
         />

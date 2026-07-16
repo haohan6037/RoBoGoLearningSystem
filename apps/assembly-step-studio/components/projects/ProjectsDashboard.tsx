@@ -10,6 +10,7 @@ interface Props {
   onDuplicateProject: (projectId: string) => Promise<void> | void;
   onDeleteProject: (projectId: string) => Promise<void> | void;
   onCopyProjectLink: (projectId: string) => Promise<void> | void;
+  onPreviewProject: (projectId: string) => void;
 }
 
 type ProjectFilter = 'Published' | 'All';
@@ -47,6 +48,7 @@ export default function ProjectsDashboard({
   onDuplicateProject,
   onDeleteProject,
   onCopyProjectLink,
+  onPreviewProject,
 }: Props) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<ProjectFilter>('Published');
@@ -290,6 +292,15 @@ export default function ProjectsDashboard({
                                       Designer
                                     </button>
                                     <button
+                                      onClick={() => {
+                                        setMenuProjectId(null);
+                                        onPreviewProject(project.id);
+                                      }}
+                                      className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                                    >
+                                      Preview Build View
+                                    </button>
+                                    <button
                                       onClick={async () => {
                                         setMenuProjectId(null);
                                         await onDuplicateProject(project.id);
@@ -305,7 +316,7 @@ export default function ProjectsDashboard({
                                       }}
                                       className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
                                     >
-                                      Copy Link
+                                      Copy Build Link
                                     </button>
                                     <button
                                       onClick={async () => {

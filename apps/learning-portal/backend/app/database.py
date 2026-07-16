@@ -435,20 +435,33 @@ def _migrate_add_phase_column() -> None:
         # Column already exists (SQLite) or other migration issue — safe to ignore
         pass
 
-def _migrate_add_is_deleted_column() -> None:
-    """Add is_deleted column to existing materials table if missing."""
-    try:
-        with get_connection() as connection:
-            if connection.provider == "postgresql":
-                connection.execute(
-                    "ALTER TABLE materials ADD COLUMN IF NOT EXISTS is_deleted INTEGER NOT NULL DEFAULT 0"
-                )
-            else:
-                connection.execute(
-                    "ALTER TABLE materials ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"
-                )
-    except Exception:
-        pass
+def _migrate_remove_legacy_material_columns() -> None:
+    """Remove file-era material columns after the move to step attachments."""
+    legacy_columns = ("file_type", "file_url", "file_size", "is_deleted")
+
+    with get_connection() as connection:
+        if connection.provider == "postgresql":
+            table_exists = connection.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'materials'
+                ) AS exists
+                """
+            ).fetchone()["exists"]
+            if not table_exists:
+                return
+            for column in legacy_columns:
+                connection.execute(f"ALTER TABLE materials DROP COLUMN IF EXISTS {column}")
+            return
+
+        existing_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(materials)").fetchall()
+        }
+        for column in legacy_columns:
+            if column in existing_columns:
+                connection.execute(f"ALTER TABLE materials DROP COLUMN {column}")
 
 def _migrate_add_material_updated_at_column() -> None:
     """Add updated_at column to legacy materials table and backfill it."""
@@ -501,10 +514,7 @@ try:
 except Exception:
     pass
 
-try:
-    _migrate_add_is_deleted_column()
-except Exception:
-    pass
+_migrate_remove_legacy_material_columns()
 
 try:
     _migrate_add_material_updated_at_column()

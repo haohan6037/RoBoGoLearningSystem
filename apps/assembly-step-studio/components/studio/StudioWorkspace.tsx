@@ -2,18 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
+import BuildStepsPresentation from '@/components/build/BuildStepsPresentation';
 import { downloadProjectJSON, readProjectJSON } from '@/lib/steps/exportProject';
 import { loadStudioProject, saveStudioProject } from '@/lib/projects/projectStorage';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
-import type { AssemblyProject, StudioProjectRecord } from '@/types/assembly';
+import type { AssemblyProject, CoverCapture, StudioProjectRecord } from '@/types/assembly';
 
 interface Props {
   projectId: string;
+  presentationMode: boolean;
   onBackToProjects: () => void;
   onProjectSaved: () => Promise<void> | void;
 }
 
-export default function StudioWorkspace({ projectId, onBackToProjects, onProjectSaved }: Props) {
+export default function StudioWorkspace({ projectId, presentationMode, onBackToProjects, onProjectSaved }: Props) {
   const resetEditor = useAssemblyStore((s) => s.resetEditor);
   const setModelUrl = useAssemblyStore((s) => s.setModelUrl);
   const setProjectName = useAssemblyStore((s) => s.setProjectName);
@@ -29,18 +31,24 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
   const [record, setRecord] = useState<StudioProjectRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
 
   const recordRef = useRef<StudioProjectRecord | null>(null);
   const queuedImportRef = useRef<AssemblyProject | null>(null);
   const hydratedRef = useRef(false);
   const objectUrlRef = useRef<string | null>(null);
+  const coverUrlRef = useRef<string | null>(null);
   const modelAssetRef = useRef<StudioProjectRecord['modelAsset']>(null);
+  const coverAssetRef = useRef<StudioProjectRecord['coverAsset']>(null);
   const saveTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (objectUrlRef.current) {
         URL.revokeObjectURL(objectUrlRef.current);
+      }
+      if (coverUrlRef.current) {
+        URL.revokeObjectURL(coverUrlRef.current);
       }
       if (saveTimerRef.current) {
         window.clearTimeout(saveTimerRef.current);
@@ -62,6 +70,11 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
         URL.revokeObjectURL(objectUrlRef.current);
         objectUrlRef.current = null;
       }
+      if (coverUrlRef.current) {
+        URL.revokeObjectURL(coverUrlRef.current);
+        coverUrlRef.current = null;
+      }
+      setCoverImageUrl(null);
 
       const loaded = await loadStudioProject(projectId);
       if (cancelled) return;
@@ -78,7 +91,14 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
       setRecord(loaded);
       setProjectName(loaded.name);
       modelAssetRef.current = loaded.modelAsset ?? null;
+      coverAssetRef.current = loaded.coverAsset ?? null;
       queuedImportRef.current = { ...loaded.data, projectName: loaded.name };
+
+      if (loaded.coverAsset?.blob) {
+        const nextCoverUrl = URL.createObjectURL(loaded.coverAsset.blob);
+        coverUrlRef.current = nextCoverUrl;
+        setCoverImageUrl(nextCoverUrl);
+      }
 
       if (loaded.modelAsset?.blob) {
         const nextUrl = URL.createObjectURL(loaded.modelAsset.blob);
@@ -113,7 +133,7 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
   }, [record, objectTree.length, importProject]);
 
   useEffect(() => {
-    if (!recordRef.current || !hydratedRef.current) return;
+    if (presentationMode || !recordRef.current || !hydratedRef.current) return;
 
     if (saveTimerRef.current) {
       window.clearTimeout(saveTimerRef.current);
@@ -132,6 +152,7 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
           projectName,
         },
         modelAsset: modelAssetRef.current ?? null,
+        coverAsset: coverAssetRef.current ?? null,
       };
       const saved = await saveStudioProject(nextRecord);
       recordRef.current = saved;
@@ -153,6 +174,7 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
     currentStepId,
     exportProject,
     onProjectSaved,
+    presentationMode,
   ]);
 
   const handleModelUpload = (file: File) => {
@@ -166,6 +188,12 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
       type: file.type || 'model/gltf-binary',
       blob: file,
     };
+    coverAssetRef.current = null;
+    if (coverUrlRef.current) {
+      URL.revokeObjectURL(coverUrlRef.current);
+      coverUrlRef.current = null;
+    }
+    setCoverImageUrl(null);
     setModelUrl(nextUrl, file.name);
     hydratedRef.current = false;
   };
@@ -186,6 +214,37 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
   const handleExportJson = () => {
     const exported = exportProject();
     downloadProjectJSON({ ...exported, projectName });
+  };
+
+  const handleCoverCaptured = async ({ blob, camera }: CoverCapture) => {
+    const baseRecord = recordRef.current;
+    if (!baseRecord) throw new Error('Project is not loaded.');
+
+    const coverAsset: NonNullable<StudioProjectRecord['coverAsset']> = {
+      blob,
+      camera,
+      type: blob.type || 'image/webp',
+      updatedAt: new Date().toISOString(),
+    };
+    const exported = exportProject();
+    const nextRecord: StudioProjectRecord = {
+      ...baseRecord,
+      name: projectName,
+      updatedAt: coverAsset.updatedAt,
+      data: { ...exported, projectName },
+      modelAsset: modelAssetRef.current ?? null,
+      coverAsset,
+    };
+    const saved = await saveStudioProject(nextRecord);
+    recordRef.current = saved;
+    coverAssetRef.current = coverAsset;
+    setRecord(saved);
+
+    if (coverUrlRef.current) URL.revokeObjectURL(coverUrlRef.current);
+    const nextCoverUrl = URL.createObjectURL(blob);
+    coverUrlRef.current = nextCoverUrl;
+    setCoverImageUrl(nextCoverUrl);
+    await onProjectSaved();
   };
 
   if (loading) {
@@ -213,6 +272,18 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
     );
   }
 
+  if (presentationMode) {
+    return (
+      <BuildStepsPresentation
+        projectName={projectName}
+        stepCount={record.data.assemblySteps.length}
+        coverImageUrl={coverImageUrl}
+        coverCamera={record.coverAsset?.camera}
+        onBackToProjects={onBackToProjects}
+      />
+    );
+  }
+
   return (
     <AppShell
         projectId={record.id}
@@ -221,6 +292,7 @@ export default function StudioWorkspace({ projectId, onBackToProjects, onProject
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
       onUploadModel={handleModelUpload}
+      onCoverCaptured={handleCoverCaptured}
     />
   );
 }

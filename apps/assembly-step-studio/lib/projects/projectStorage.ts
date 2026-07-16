@@ -67,6 +67,7 @@ function normalizeRecord(record: StudioProjectRecord): StudioProjectRecord {
       assemblySteps: record.data.assemblySteps ?? [],
     },
     modelAsset: record.modelAsset ?? null,
+    coverAsset: record.coverAsset ?? null,
   };
 }
 
@@ -75,8 +76,13 @@ function cloneProjectData(project: AssemblyProject): AssemblyProject {
 }
 
 export function makeStudioProjectLink(projectId: string): string {
-  if (typeof window === 'undefined') return `/?projectId=${projectId}`;
-  return `${window.location.origin}/?projectId=${projectId}`;
+  if (typeof window === 'undefined') {
+    return `/?projectId=${encodeURIComponent(projectId)}&view=build`;
+  }
+  const url = new URL('/', window.location.origin);
+  url.searchParams.set('projectId', projectId);
+  url.searchParams.set('view', 'build');
+  return url.toString();
 }
 
 export async function listStudioProjects(): Promise<StudioProjectRecord[]> {
@@ -124,6 +130,7 @@ export async function createStudioProject(name: string): Promise<StudioProjectRe
     tags: [],
     data: buildEmptyAssemblyProject(name),
     modelAsset: null,
+    coverAsset: null,
   };
   return saveStudioProject(record);
 }
@@ -155,6 +162,17 @@ export async function duplicateStudioProject(projectId: string): Promise<StudioP
           name: source.modelAsset.name,
           type: source.modelAsset.type,
           blob: source.modelAsset.blob,
+        }
+      : null,
+    coverAsset: source.coverAsset
+      ? {
+          blob: source.coverAsset.blob,
+          type: source.coverAsset.type,
+          updatedAt: source.coverAsset.updatedAt,
+          camera: {
+            position: [...source.coverAsset.camera.position],
+            target: [...source.coverAsset.camera.target],
+          },
         }
       : null,
   };
