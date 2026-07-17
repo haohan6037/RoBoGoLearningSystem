@@ -37,7 +37,7 @@ export default function StudioHome() {
   const projectId = searchParams.get('projectId');
   const isBuildPresentation = searchParams.get('view') === 'build';
   const isMateLab = searchParams.get('view') === 'mate-lab';
-  const isPartLibrary = searchParams.get('view') === 'part-library';
+  const isPartLibrary = ['assembly', 'part-library'].includes(searchParams.get('view') ?? '');
   const [projects, setProjects] = useState<StudioProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
@@ -127,18 +127,12 @@ export default function StudioHome() {
               onCopyProjectLink={handleCopyProjectLink}
               onPreviewProject={handlePreviewProject}
             />
-            <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3">
+            <div className="fixed bottom-6 right-6 z-30">
               <button
-                onClick={() => router.push('/?view=part-library')}
+                onClick={() => router.push('/?view=assembly')}
                 className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800"
               >
-                Open Model Library
-              </button>
-              <button
-                onClick={() => router.push('/?view=mate-lab')}
-                className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700"
-              >
-                Open Mate Lab
+                Open Assembly
               </button>
             </div>
           </div>

@@ -39,6 +39,9 @@ export async function loadStepModel(url: string, color: THREE.ColorRepresentatio
       geometry.computeVertexNormals();
     }
     geometry.setIndex(sourceMesh.index.array);
+    geometry.userData.brepFaces = (
+      sourceMesh as typeof sourceMesh & { brep_faces?: Array<{ first: number; last: number }> }
+    ).brep_faces ?? [];
     geometry.computeBoundingSphere();
 
     const mesh = new THREE.Mesh(

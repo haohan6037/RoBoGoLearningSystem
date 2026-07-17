@@ -16,7 +16,7 @@ export async function GET(
     const part = catalog.parts.find((candidate) => candidate.id === id);
     if (!part) return Response.json({ error: 'Part not found.' }, { status: 404 });
 
-    const sourceRoot = path.resolve(process.cwd(), 'CAD Files', catalog.sourceDirectory);
+    const sourceRoot = path.resolve(process.cwd(), 'CAD Files');
     const stepPath = path.resolve(sourceRoot, part.sourceFile);
     if (!stepPath.startsWith(`${sourceRoot}${path.sep}`)) {
       return Response.json({ error: 'Invalid part path.' }, { status: 400 });
