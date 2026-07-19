@@ -13,7 +13,7 @@ import {
   listStudioProjects,
   makeStudioProjectLink,
 } from '@/lib/projects/projectStorage';
-import type { StudioProjectRecord } from '@/types/assembly';
+import type { StudioProjectRecord, StudioProjectType } from '@/types/assembly';
 
 async function copyTextToClipboard(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) {
@@ -37,7 +37,8 @@ export default function StudioHome() {
   const projectId = searchParams.get('projectId');
   const isBuildPresentation = searchParams.get('view') === 'build';
   const isMateLab = searchParams.get('view') === 'mate-lab';
-  const isPartLibrary = ['assembly', 'part-library'].includes(searchParams.get('view') ?? '');
+  const isAssemblyProject = searchParams.get('view') === 'assembly';
+  const isPartLibrary = searchParams.get('view') === 'part-library';
   const [projects, setProjects] = useState<StudioProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
@@ -59,14 +60,19 @@ export default function StudioHome() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const handleCreateProject = async (name: string) => {
-    const record = await createStudioProject(name);
+  const handleCreateProject = async (name: string, projectType: StudioProjectType) => {
+    const record = await createStudioProject(name, projectType);
     await refreshProjects();
-    router.push(`/?projectId=${record.id}`);
+    router.push(projectType === 'assembly'
+      ? `/?projectId=${record.id}&view=assembly`
+      : `/?projectId=${record.id}`);
   };
 
   const handleOpenProject = (nextProjectId: string) => {
-    router.push(`/?projectId=${nextProjectId}`);
+    const project = projects.find((candidate) => candidate.id === nextProjectId);
+    router.push(project?.projectType === 'assembly'
+      ? `/?projectId=${nextProjectId}&view=assembly`
+      : `/?projectId=${nextProjectId}`);
   };
 
   const handleBackToProjects = async () => {
@@ -107,8 +113,18 @@ export default function StudioHome() {
         </div>
       )}
 
-      {isPartLibrary ? (
-        <ModelLibraryLab onBack={() => router.push('/')} />
+      {isAssemblyProject && projectId ? (
+        <ModelLibraryLab
+          projectId={projectId}
+          onBack={handleBackToProjects}
+          onBuildInstructionsCreated={(instructionsProjectId) => {
+            router.push(`/?projectId=${instructionsProjectId}`);
+          }}
+        />
+      ) : isPartLibrary ? (
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
+          Open a saved Assembly Project to use the parts library.
+        </div>
       ) : isMateLab ? (
         <MateLab onBack={() => router.push('/')} />
       ) : !projectId ? (
@@ -117,25 +133,15 @@ export default function StudioHome() {
             Loading projects...
           </div>
         ) : (
-          <div className="relative min-h-screen">
-            <ProjectsDashboard
-              projects={projects}
-              onCreateProject={handleCreateProject}
-              onOpenProject={handleOpenProject}
-              onDuplicateProject={handleDuplicateProject}
-              onDeleteProject={handleDeleteProject}
-              onCopyProjectLink={handleCopyProjectLink}
-              onPreviewProject={handlePreviewProject}
-            />
-            <div className="fixed bottom-6 right-6 z-30">
-              <button
-                onClick={() => router.push('/?view=assembly')}
-                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800"
-              >
-                Open Assembly
-              </button>
-            </div>
-          </div>
+          <ProjectsDashboard
+            projects={projects}
+            onCreateProject={handleCreateProject}
+            onOpenProject={handleOpenProject}
+            onDuplicateProject={handleDuplicateProject}
+            onDeleteProject={handleDeleteProject}
+            onCopyProjectLink={handleCopyProjectLink}
+            onPreviewProject={handlePreviewProject}
+          />
         )
       ) : (
         <StudioWorkspace

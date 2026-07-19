@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import LibraryAssemblyCanvas, {
+  type HoleMarkingShape,
   type LibraryConnectorPick,
   type LibraryMateMode,
   type LibraryPartInstance,
@@ -13,24 +14,25 @@ import {
   applySingleLibraryMate,
   applyTwoHoleLibraryMate,
 } from '@/lib/mate/applyLibraryMate';
-import { downloadAssemblyGlb } from '@/lib/partLibrary/exportAssembly';
+import {
+  applyRigidGroupTransform,
+  expandCustomGroupMemberIds,
+  removeSelectedMembersFromGroups,
+} from '@/lib/mate/assemblyGroups';
+import { createAssemblyGlbBlob, downloadAssemblyGlb } from '@/lib/partLibrary/exportAssembly';
 import {
   comparePartsByName,
   normalizePartSearchText,
 } from '@/lib/partLibrary/search';
+import {
+  createBuildInstructionsProject,
+  loadStudioProject,
+  saveStudioProject,
+} from '@/lib/projects/projectStorage';
+import type { AssemblyMateRecord, AssemblyRigidGroup } from '@/types/assembly';
 import type { PartLibraryCatalog, PartLibraryItem } from '@/types/partLibrary';
 
 const PART_COLORS = ['#356fe3', '#f47a32', '#7c3aed', '#0f9f76', '#db2777', '#d69e2e'];
-
-type MateRecord = {
-  id: string;
-  type: LibraryMateMode;
-  fixedInstanceId: string;
-  movingInstanceId: string;
-  fixedConnectorIds: string[];
-  movingConnectorIds: string[];
-  createdAt: string;
-};
 
 function connectorNormalsMatch(first: LibraryConnectorPick, second: LibraryConnectorPick): boolean {
   return new THREE.Vector3(...first.connector.normal)
@@ -39,6 +41,12 @@ function connectorNormalsMatch(first: LibraryConnectorPick, second: LibraryConne
 
 function mateGuide(mode: LibraryMateMode, picks: LibraryConnectorPick[]): string {
   const pickCount = picks.length;
+  if (mode === 'hole-align') {
+    if (pickCount === 0) return '1. Select a square or round hole on the fixed part.';
+    return picks[0].connector.kind === 'square-hole'
+      ? '2. Select a round hole on the moving part.'
+      : '2. Select a square hole on the moving part.';
+  }
   if (mode === 'pin') {
     return pickCount === 0 ? '1. Select a blue hole face.' : '2. Select an orange Pin stop-ring face.';
   }
@@ -70,26 +78,48 @@ function connectorWorldPosition(
     .add(new THREE.Vector3(...transform.position));
 }
 
-export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
+export default function ModelLibraryLab({
+  projectId,
+  onBack,
+  onBuildInstructionsCreated,
+}: {
+  projectId: string;
+  onBack: () => void;
+  onBuildInstructionsCreated: (projectId: string) => void;
+}) {
   const [catalog, setCatalog] = useState<PartLibraryCatalog | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [assemblyName, setAssemblyName] = useState('New Assembly');
   const [instances, setInstances] = useState<LibraryPartInstance[]>([]);
-  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+  const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const [mode, setMode] = useState<'translate' | 'rotate'>('translate');
   const [mateMode, setMateMode] = useState<LibraryMateMode | null>(null);
   const [holeMarkingInstanceId, setHoleMarkingInstanceId] = useState<string | null>(null);
+  const [holeMarkingShape, setHoleMarkingShape] = useState<HoleMarkingShape | null>(null);
   const [holeMarkingStatus, setHoleMarkingStatus] = useState<{ message: string; error: boolean } | null>(null);
   const [connectorPicks, setConnectorPicks] = useState<LibraryConnectorPick[]>([]);
   const [mateError, setMateError] = useState<string | null>(null);
-  const [mateRecords, setMateRecords] = useState<MateRecord[]>([]);
+  const [mateRecords, setMateRecords] = useState<AssemblyMateRecord[]>([]);
+  const [groups, setGroups] = useState<AssemblyRigidGroup[]>([]);
   const [shaftAdjustment, setShaftAdjustment] = useState<ShaftAdjustment | null>(null);
   const [assemblyRoot, setAssemblyRoot] = useState<THREE.Group | null>(null);
   const [assemblyReady, setAssemblyReady] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+
+  useEffect(() => {
+    void loadStudioProject(projectId).then((record) => {
+      if (!record || record.projectType !== 'assembly') return;
+      setAssemblyName(record.name);
+      setInstances(record.assemblyData?.instances ?? []);
+      setMateRecords(record.assemblyData?.mateRecords ?? []);
+      setGroups(record.assemblyData?.groups ?? []);
+    });
+  }, [projectId]);
 
   useEffect(() => {
     void fetch('/part-library/catalog.json')
@@ -115,7 +145,31 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
     }).sort(comparePartsByName);
   }, [catalog, category, query]);
 
+  const selectedInstanceId = selectedInstanceIds.at(-1) ?? null;
   const selectedInstance = instances.find((instance) => instance.instanceId === selectedInstanceId) ?? null;
+  const selectedGroups = groups.filter((group) => (
+    group.instanceIds.some((instanceId) => selectedInstanceIds.includes(instanceId))
+  ));
+  const selectedGroup = selectedGroups.find((group) => (
+    selectedInstanceId ? group.instanceIds.includes(selectedInstanceId) : false
+  )) ?? selectedGroups[0] ?? null;
+  const groupCandidateIds = expandCustomGroupMemberIds(selectedInstanceIds, groups);
+  const selectedGroupedMemberCount = selectedInstanceIds.filter((instanceId) => (
+    groups.some((group) => group.instanceIds.includes(instanceId))
+  )).length;
+
+  const handleCanvasSelect = (instanceId: string, additive: boolean) => {
+    setSelectedInstanceIds((current) => {
+      if (!additive) return [instanceId];
+      return current.includes(instanceId)
+        ? current.filter((selectedId) => selectedId !== instanceId)
+        : [...current, instanceId];
+    });
+  };
+
+  const handleLassoSelect = (instanceIds: string[]) => {
+    setSelectedInstanceIds((current) => [...new Set([...current, ...instanceIds])]);
+  };
 
   const addPart = (part: PartLibraryItem) => {
     const instanceId = crypto.randomUUID();
@@ -131,7 +185,7 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
     };
     setAssemblyReady(false);
     setInstances((current) => [...current, next]);
-    setSelectedInstanceId(instanceId);
+    setSelectedInstanceIds([instanceId]);
   };
 
   const removeSelected = () => {
@@ -140,22 +194,33 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
     setMateRecords((current) => current.filter(
       (mate) => mate.fixedInstanceId !== selectedInstanceId && mate.movingInstanceId !== selectedInstanceId,
     ));
+    setGroups((current) => current
+      .map((group) => ({
+        ...group,
+        instanceIds: group.instanceIds.filter((instanceId) => instanceId !== selectedInstanceId),
+      }))
+      .filter((group) => group.instanceIds.length >= 2));
     setConnectorPicks([]);
     setMateMode(null);
-    if (holeMarkingInstanceId === selectedInstanceId) setHoleMarkingInstanceId(null);
+    if (holeMarkingInstanceId === selectedInstanceId) {
+      setHoleMarkingInstanceId(null);
+      setHoleMarkingShape(null);
+    }
     if (shaftAdjustment?.instanceId === selectedInstanceId) setShaftAdjustment(null);
-    setSelectedInstanceId(null);
+    setSelectedInstanceIds((current) => current.filter((instanceId) => instanceId !== selectedInstanceId));
   };
 
   const clearAssembly = () => {
     setInstances([]);
     setMateRecords([]);
+    setGroups([]);
     setConnectorPicks([]);
     setMateMode(null);
     setHoleMarkingInstanceId(null);
+    setHoleMarkingShape(null);
     setHoleMarkingStatus(null);
     setShaftAdjustment(null);
-    setSelectedInstanceId(null);
+    setSelectedInstanceIds([]);
     setAssemblyReady(false);
   };
 
@@ -164,15 +229,51 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
     position: [number, number, number],
     quaternion: [number, number, number, number],
   ) => {
-    setInstances((current) => current.map((instance) => (
-      instance.instanceId === instanceId ? { ...instance, position, quaternion } : instance
-    )));
+    const rigidGroup = groups.find((group) => group.instanceIds.includes(instanceId));
+    setInstances((current) => applyRigidGroupTransform(
+      current,
+      instanceId,
+      position,
+      quaternion,
+      rigidGroup?.instanceIds ?? [instanceId],
+    ));
+  };
+
+  const makeOrUpdateGroup = () => {
+    if (selectedInstanceIds.length < 2 || groupCandidateIds.length < 2) return;
+    const memberIds = new Set(groupCandidateIds);
+    const overlappingGroups = groups.filter((group) => (
+      group.instanceIds.some((instanceId) => memberIds.has(instanceId))
+    ));
+    const retainedGroup = selectedGroup ?? overlappingGroups[0] ?? null;
+    const nextGroupNumber = groups.reduce((largest, group) => {
+      const match = group.name.match(/^Group (\d+)$/);
+      return Math.max(largest, Number(match?.[1] ?? 0));
+    }, 0) + 1;
+    const nextGroup: AssemblyRigidGroup = {
+      id: retainedGroup?.id ?? crypto.randomUUID(),
+      name: retainedGroup?.name ?? `Group ${nextGroupNumber}`,
+      instanceIds: groupCandidateIds,
+      createdAt: retainedGroup?.createdAt ?? new Date().toISOString(),
+    };
+    const replacedIds = new Set(overlappingGroups.map((group) => group.id));
+    setGroups((current) => [
+      ...current.filter((group) => !replacedIds.has(group.id)),
+      nextGroup,
+    ]);
+    setSelectedInstanceIds(nextGroup.instanceIds);
+  };
+
+  const removeSelectionFromGroups = () => {
+    if (selectedGroupedMemberCount === 0) return;
+    setGroups((current) => removeSelectedMembersFromGroups(current, selectedInstanceIds));
   };
 
   const startTransformMode = (nextMode: 'translate' | 'rotate') => {
     setMode(nextMode);
     setMateMode(null);
     setHoleMarkingInstanceId(null);
+    setHoleMarkingShape(null);
     setHoleMarkingStatus(null);
     setConnectorPicks([]);
     setMateError(null);
@@ -182,22 +283,26 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
   const startMateMode = (nextMode: LibraryMateMode) => {
     setMateMode(nextMode);
     setHoleMarkingInstanceId(null);
+    setHoleMarkingShape(null);
     setHoleMarkingStatus(null);
     setConnectorPicks([]);
     setMateError(null);
     setShaftAdjustment(null);
-    setSelectedInstanceId(null);
+    setSelectedInstanceIds([]);
   };
 
-  const startHoleMarking = () => {
+  const startHoleMarking = (shape: HoleMarkingShape) => {
     if (!selectedInstance) return;
     setMateMode(null);
     setConnectorPicks([]);
     setMateError(null);
     setShaftAdjustment(null);
     setHoleMarkingInstanceId(selectedInstance.instanceId);
+    setHoleMarkingShape(shape);
     setHoleMarkingStatus({
-      message: 'Click the curved inside wall of a hole. Each click is saved automatically.',
+      message: shape === 'square'
+        ? 'Click one flat inside wall of a square hole. Each click is saved automatically.'
+        : 'Click the curved inside wall of a round hole. Each click is saved automatically.',
       error: false,
     });
   };
@@ -287,7 +392,7 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
           : [picks[1].connector.id],
         createdAt: new Date().toISOString(),
       }]);
-      setSelectedInstanceId(movingInstance.instanceId);
+      setSelectedInstanceIds([movingInstance.instanceId]);
       setConnectorPicks([]);
       setMateMode(null);
       setMateError(null);
@@ -312,6 +417,25 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
       return;
     }
 
+    if (mateMode === 'hole-align') {
+      const apertureKinds = ['hole', 'square-hole'];
+      if (!apertureKinds.includes(pick.connector.kind)) {
+        setMateError('Select a square or round hole.');
+        return;
+      }
+      if (connectorPicks.length === 0) {
+        setConnectorPicks([pick]);
+        return;
+      }
+      const fixedPick = connectorPicks[0];
+      if (pick.instanceId === fixedPick.instanceId || pick.connector.kind === fixedPick.connector.kind) {
+        setMateError('Select the other hole shape on a different part. One hole must be square and one round.');
+        return;
+      }
+      connectPickedParts('hole-align', [fixedPick, pick]);
+      return;
+    }
+
     if (mateMode === 'pin') {
       if (connectorPicks.length === 0) {
         if (pick.connector.kind !== 'hole') {
@@ -331,15 +455,15 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
 
     if (mateMode === 'shaft') {
       if (connectorPicks.length === 0) {
-        if (pick.connector.kind !== 'hole') {
-          setMateError('Select a blue hole face first.');
+        if (!['hole', 'square-hole'].includes(pick.connector.kind)) {
+          setMateError('Select a blue round hole or purple square hole first.');
           return;
         }
         setConnectorPicks([pick]);
         return;
       }
       if (pick.connector.kind !== 'shaft-end' || pick.instanceId === connectorPicks[0].instanceId) {
-        setMateError('Now select a yellow end on a different Shaft.');
+        setMateError('Now select a yellow end on a different Shaft or Idler Pin.');
         return;
       }
       connectPickedParts('shaft', [...connectorPicks, pick]);
@@ -446,6 +570,42 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const saveAssembly = async () => {
+    const record = await loadStudioProject(projectId);
+    if (!record || record.projectType !== 'assembly') return null;
+    setSaving(true);
+    try {
+      const saved = await saveStudioProject({
+        ...record,
+        name: assemblyName.trim() || 'Untitled Assembly',
+        updatedAt: new Date().toISOString(),
+        assemblyData: { instances, mateRecords, groups },
+      });
+      setSaveStatus('saved');
+      window.setTimeout(() => setSaveStatus('idle'), 1800);
+      return saved;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startBuildInstructions = async () => {
+    if (!assemblyRoot || !assemblyReady) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const source = await saveAssembly();
+      if (!source) throw new Error('Unable to save this Assembly Project.');
+      const modelBlob = await createAssemblyGlbBlob(assemblyRoot);
+      const instructions = await createBuildInstructionsProject(source, modelBlob);
+      onBuildInstructionsCreated(instructions.id);
+    } catch (error: unknown) {
+      setExportError(error instanceof Error ? error.message : 'Unable to start Build Instructions.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const canConnect = mateMode === 'pin'
     ? connectorPicks.length === 2
     : mateMode === 'multi-leg'
@@ -472,13 +632,27 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
           />
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="text-sm font-semibold text-slate-500">{instances.length} parts · {mateRecords.length} connections</span>
+          <span className="text-sm font-semibold text-slate-500">{instances.length} parts · {mateRecords.length} connections · {groups.length} groups</span>
+          <button
+            disabled={saving}
+            onClick={() => void saveAssembly()}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Project'}
+          </button>
           <button
             disabled={!assemblyReady || exporting}
             onClick={() => void exportAssembly()}
             className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {exporting ? 'Exporting...' : 'Export GLB'}
+          </button>
+          <button
+            disabled={!assemblyReady || exporting}
+            onClick={() => void startBuildInstructions()}
+            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            Start Build Instructions
           </button>
         </div>
       </header>
@@ -492,15 +666,27 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
         <button onClick={() => startMateMode('pin')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'pin' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Pin to Hole</button>
         <button onClick={() => startMateMode('multi-leg')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'multi-leg' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Multi-leg Connect</button>
         <button onClick={() => startMateMode('beam')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'beam' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Stack by 2 Holes</button>
-        <button onClick={() => startMateMode('shaft')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'shaft' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Shaft Through Hole</button>
+        <button onClick={() => startMateMode('hole-align')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'hole-align' ? 'bg-purple-600 text-white' : 'border border-purple-200 bg-white text-purple-700 hover:bg-purple-50'}`}>Align Square + Round</button>
+        <button onClick={() => startMateMode('shaft')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'shaft' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Shaft / Idler Through Hole</button>
         <div className="mx-2 h-7 w-px bg-slate-200" />
         <button
           disabled={!selectedInstance}
-          onClick={startHoleMarking}
-          className={`rounded-xl px-4 py-2 text-sm font-semibold ${holeMarkingInstanceId ? 'bg-amber-500 text-white' : 'border border-amber-200 bg-white text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40'}`}
-        >Mark Holes</button>
+          onClick={() => startHoleMarking('round')}
+          className={`rounded-xl px-4 py-2 text-sm font-semibold ${holeMarkingInstanceId && holeMarkingShape === 'round' ? 'bg-blue-600 text-white' : 'border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40'}`}
+        >Mark Round</button>
+        <button
+          disabled={!selectedInstance}
+          onClick={() => startHoleMarking('square')}
+          className={`rounded-xl px-4 py-2 text-sm font-semibold ${holeMarkingInstanceId && holeMarkingShape === 'square' ? 'bg-purple-600 text-white' : 'border border-purple-200 bg-white text-purple-700 hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-40'}`}
+        >Mark Square</button>
         <div className="ml-auto flex items-center gap-2">
-          <span className="max-w-56 truncate text-xs font-semibold text-slate-500">{selectedInstance?.part.name ?? 'No part selected'}</span>
+          <span className="max-w-56 truncate text-xs font-semibold text-slate-500">
+            {selectedInstanceIds.length > 1
+              ? `${selectedInstanceIds.length} parts selected`
+              : selectedGroup
+              ? `${selectedGroup.name} · ${selectedGroup.instanceIds.length} parts`
+              : selectedInstance?.part.name ?? 'No part selected'}
+          </span>
           <button disabled={!selectedInstance} onClick={removeSelected} className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40">Remove</button>
           <button onClick={clearAssembly} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-100">Clear</button>
         </div>
@@ -553,6 +739,36 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
         </aside>
 
         <section className="relative min-w-0 flex-1">
+          {!mateMode && !holeMarkingInstanceId && selectedInstanceIds.length > 0 && (
+            <div className="absolute right-4 top-4 z-20 w-64 rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-xl backdrop-blur">
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Custom Group</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">
+                {selectedInstanceIds.length} {selectedInstanceIds.length === 1 ? 'part' : 'parts'} selected
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                {selectedGroup
+                  ? `${selectedGroup.name} currently has ${selectedGroup.instanceIds.length} parts.`
+                  : 'Select at least two parts to make a rigid group.'}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  disabled={selectedInstanceIds.length < 2 || groupCandidateIds.length < 2}
+                  onClick={makeOrUpdateGroup}
+                  className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >Make Group</button>
+                <button
+                  disabled={selectedGroupedMemberCount === 0}
+                  onClick={removeSelectionFromGroups}
+                  className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >Remove Members</button>
+              </div>
+            </div>
+          )}
+          {!mateMode && !holeMarkingInstanceId && instances.length > 0 && (
+            <div className="pointer-events-none absolute bottom-4 left-4 z-20 rounded-xl border border-emerald-200 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur">
+              ⌘ Click to add or remove one part · ⌘ Drag to box-select · Green boxes show your selection
+            </div>
+          )}
           {instances.length === 0 && (
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
               <div className="rounded-3xl border border-slate-200 bg-white/90 px-8 py-6 text-center shadow-xl backdrop-blur">
@@ -566,14 +782,14 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
             <div className="absolute left-4 top-4 z-20 w-80 rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-xl backdrop-blur">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-blue-600">{mateMode === 'pin' ? 'Pin to Hole' : mateMode === 'multi-leg' ? 'Multi-leg Connect' : mateMode === 'beam' ? 'Two-hole Stack' : 'Shaft Through Hole'}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-blue-600">{mateMode === 'pin' ? 'Pin to Hole' : mateMode === 'multi-leg' ? 'Multi-leg Connect' : mateMode === 'beam' ? 'Two-hole Stack' : mateMode === 'hole-align' ? 'Align Square + Round' : 'Shaft / Idler Through Hole'}</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{mateGuide(mateMode, connectorPicks)}</p>
                 </div>
                 <button onClick={() => { setMateMode(null); setConnectorPicks([]); setMateError(null); }} className="text-xs font-bold text-slate-400 hover:text-slate-700">Cancel</button>
               </div>
-              <p className="mt-2 text-xs text-slate-500">Blue = hole · Orange = Pin ring · Yellow = Shaft end</p>
+              <p className="mt-2 text-xs text-slate-500">Blue = round hole · Purple = square hole · Orange = Pin ring · Yellow = Shaft/Idler end</p>
               {mateError && <p className="mt-3 rounded-xl bg-red-50 p-2 text-xs font-semibold text-red-600">{mateError}</p>}
-              {mateMode !== 'shaft' && (
+              {!['shaft', 'hole-align'].includes(mateMode) && (
                 <button
                   disabled={!canConnect}
                   onClick={() => connectPickedParts(mateMode, connectorPicks)}
@@ -589,15 +805,21 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
             <div className="absolute left-4 top-4 z-20 w-80 rounded-2xl border border-amber-200 bg-white/95 p-4 shadow-xl backdrop-blur">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-amber-600">Mark Missing Holes</p>
+                  <p className={`text-xs font-bold uppercase tracking-wider ${holeMarkingShape === 'square' ? 'text-purple-600' : 'text-blue-600'}`}>
+                    {holeMarkingShape === 'square' ? 'Mark Square Holes' : 'Mark Round Holes'}
+                  </p>
                   <p className="mt-1 text-sm font-bold text-slate-900">{selectedInstance?.part.name}</p>
                 </div>
                 <button
-                  onClick={() => { setHoleMarkingInstanceId(null); setHoleMarkingStatus(null); }}
+                  onClick={() => { setHoleMarkingInstanceId(null); setHoleMarkingShape(null); setHoleMarkingStatus(null); }}
                   className="text-xs font-bold text-slate-400 hover:text-slate-700"
                 >Done</button>
               </div>
-              <p className="mt-3 text-xs leading-5 text-slate-600">Click the curved inside wall of each hole. Blue rings confirm saved holes. Click the same hole again to remove its mark.</p>
+              <p className="mt-3 text-xs leading-5 text-slate-600">
+                {holeMarkingShape === 'square'
+                  ? 'Click one flat inside wall of each square hole. Purple squares confirm saved holes. Click the same hole again to remove its mark.'
+                  : 'Click the curved inside wall of each round hole. Blue rings confirm saved holes. Click the same hole again to remove its mark.'}
+              </p>
               {holeMarkingStatus && (
                 <p className={`mt-3 rounded-xl p-2 text-xs font-semibold ${holeMarkingStatus.error ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
                   {holeMarkingStatus.message}
@@ -620,14 +842,18 @@ export default function ModelLibraryLab({ onBack }: { onBack: () => void }) {
           <LibraryAssemblyCanvas
             instances={instances}
             selectedInstanceId={selectedInstanceId}
+            selectedInstanceIds={selectedInstanceIds}
             mode={mode}
             mateMode={mateMode}
             holeMarkingInstanceId={holeMarkingInstanceId}
+            holeMarkingShape={holeMarkingShape}
             connectorPicks={connectorPicks}
             shaftAdjustment={shaftAdjustment}
             assemblyName={assemblyName}
             mateRecords={mateRecords}
-            onSelect={setSelectedInstanceId}
+            onSelect={handleCanvasSelect}
+            onLassoSelect={handleLassoSelect}
+            onClearSelection={() => setSelectedInstanceIds([])}
             onTransformChange={updateInstanceTransform}
             onConnectorPick={handleConnectorPick}
             onHoleMarkingResult={handleHoleMarkingResult}

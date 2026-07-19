@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import TopBar from './TopBar';
-import LeftPanel from './LeftPanel';
+// import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import type { CoverCapture } from '@/types/assembly';
 
@@ -40,7 +40,8 @@ export default function AppShell({
         onExportJson={onExportJson}
       />
       <div className="flex flex-1 overflow-hidden">
-        <LeftPanel />
+        {/* Object Tree is temporarily hidden until it has a clear role in the workflow. */}
+        {/* <LeftPanel /> */}
         <main className="relative flex-1">
           <ViewerCanvas onCoverCaptured={onCoverCaptured} />
         </main>

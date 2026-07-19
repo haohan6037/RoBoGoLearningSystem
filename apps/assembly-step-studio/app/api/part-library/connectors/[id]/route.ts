@@ -27,12 +27,12 @@ function isTuple(value: unknown): value is [number, number, number] {
     && value.every((item) => typeof item === 'number' && Number.isFinite(item));
 }
 
-function isHoleConnector(value: unknown): value is LibraryConnector {
+export function isHoleConnector(value: unknown): value is LibraryConnector {
   if (!value || typeof value !== 'object') return false;
   const connector = value as Partial<LibraryConnector>;
   return typeof connector.id === 'string'
     && typeof connector.label === 'string'
-    && connector.kind === 'hole'
+    && (connector.kind === 'hole' || connector.kind === 'square-hole')
     && isTuple(connector.position)
     && (!connector.centerPosition || isTuple(connector.centerPosition))
     && isTuple(connector.markerPosition)

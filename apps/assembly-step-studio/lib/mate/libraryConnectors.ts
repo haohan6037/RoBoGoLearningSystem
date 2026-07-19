@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type ConnectorKind = 'hole' | 'pin-ring' | 'shaft-end';
+export type ConnectorKind = 'hole' | 'square-hole' | 'pin-ring' | 'shaft-end';
 export type ConnectorAxis = 'x' | 'y' | 'z';
 
 export type LibraryConnector = {
@@ -26,6 +26,7 @@ const HOLE_EDGE_MIN_RADIUS = 1.7;
 const HOLE_EDGE_MAX_RADIUS = 2.5;
 const HOLE_ANGLE_BIN_COUNT = 12;
 const MIN_HOLE_ANGLE_BINS = 8;
+const MIN_CIRCULAR_HOLE_ANGLE_BINS = 10;
 const LEG_SHOULDER_MIN_RADIUS = 2.75;
 const LEG_SHOULDER_MAX_RADIUS = 3.55;
 const LEG_SCAN_DISTANCE = 8;
@@ -65,7 +66,7 @@ function circularHoleFaceCoordinates(
   secondRadialAxis: ConnectorAxis,
   thicknessAxis: ConnectorAxis,
 ): { negative: number; positive: number } | null {
-  const planes = new Map<number, Set<number>>();
+  const planes = new Map<number, Map<number, Set<number>>>();
 
   for (const point of vertices) {
     const firstOffset = axisValue(point, firstRadialAxis) - axisValue(center, firstRadialAxis);
@@ -79,13 +80,18 @@ function circularHoleFaceCoordinates(
       Math.floor(normalizedAngle * HOLE_ANGLE_BIN_COUNT),
     );
     const coordinate = clean(axisValue(point, thicknessAxis));
-    const angleBins = planes.get(coordinate) ?? new Set<number>();
+    const radiusBins = planes.get(coordinate) ?? new Map<number, Set<number>>();
+    const radiusBin = Math.round(radius * 10) / 10;
+    const angleBins = radiusBins.get(radiusBin) ?? new Set<number>();
     angleBins.add(angleBin);
-    planes.set(coordinate, angleBins);
+    radiusBins.set(radiusBin, angleBins);
+    planes.set(coordinate, radiusBins);
   }
 
   const circularPlanes = [...planes.entries()]
-    .filter(([, angleBins]) => angleBins.size >= MIN_HOLE_ANGLE_BINS)
+    .filter(([, radiusBins]) => [...radiusBins.values()].some(
+      (angleBins) => angleBins.size >= MIN_CIRCULAR_HOLE_ANGLE_BINS,
+    ))
     .map(([coordinate]) => coordinate)
     .sort((left, right) => left - right);
   if (circularPlanes.length < 2) return null;
@@ -96,12 +102,43 @@ function circularHoleFaceCoordinates(
   };
 }
 
+function squareHoleFaceCoordinates(
+  vertices: THREE.Vector3[],
+  center: THREE.Vector3,
+  firstRadialAxis: ConnectorAxis,
+  secondRadialAxis: ConnectorAxis,
+  thicknessAxis: ConnectorAxis,
+): { negative: number; positive: number } | null {
+  const planes = new Map<number, Set<string>>();
+  for (const point of vertices) {
+    const firstOffset = axisValue(point, firstRadialAxis) - axisValue(center, firstRadialAxis);
+    const secondOffset = axisValue(point, secondRadialAxis) - axisValue(center, secondRadialAxis);
+    const edgeDistance = Math.max(Math.abs(firstOffset), Math.abs(secondOffset));
+    if (edgeDistance < 1.3 || edgeDistance > 2.7) continue;
+
+    const sides = planes.get(clean(axisValue(point, thicknessAxis))) ?? new Set<string>();
+    if (Math.abs(firstOffset) >= Math.abs(secondOffset) - 0.15) {
+      sides.add(firstOffset < 0 ? 'first-negative' : 'first-positive');
+    }
+    if (Math.abs(secondOffset) >= Math.abs(firstOffset) - 0.15) {
+      sides.add(secondOffset < 0 ? 'second-negative' : 'second-positive');
+    }
+    planes.set(clean(axisValue(point, thicknessAxis)), sides);
+  }
+
+  const squarePlanes = [...planes.entries()]
+    .filter(([, sides]) => sides.size === 4)
+    .map(([coordinate]) => coordinate)
+    .sort((left, right) => left - right);
+  if (squarePlanes.length < 2) return null;
+  return { negative: squarePlanes[0], positive: squarePlanes[squarePlanes.length - 1] };
+}
+
 function buildHoleConnectors(
   part: ConnectorPart,
   model: THREE.Object3D,
   bounds: THREE.Box3,
 ): LibraryConnector[] {
-  if (!['Beams', 'Plates'].includes(part.category)) return [];
   const dimensionMatch = part.name.match(/^(\d+)x(\d+)/i);
   if (!dimensionMatch) return [];
 
@@ -121,13 +158,21 @@ function buildHoleConnectors(
       const holeCenter = center.clone();
       setAxis(holeCenter, columnAxis, axisValue(center, columnAxis) + (column - (columns - 1) / 2) * PITCH);
       setAxis(holeCenter, rowAxis, axisValue(center, rowAxis) + (row - (rows - 1) / 2) * PITCH);
-      const holeFaces = circularHoleFaceCoordinates(
+      const circularFaces = circularHoleFaceCoordinates(
         vertices,
         holeCenter,
         columnAxis,
         rowAxis,
         thicknessAxis,
       );
+      const squareFaces = circularFaces ? null : squareHoleFaceCoordinates(
+        vertices,
+        holeCenter,
+        columnAxis,
+        rowAxis,
+        thicknessAxis,
+      );
+      const holeFaces = circularFaces ?? squareFaces;
       if (!holeFaces) continue;
 
       for (const direction of [-1, 1] as const) {
@@ -137,7 +182,7 @@ function buildHoleConnectors(
         connectors.push({
           id: `hole-${row + 1}-${column + 1}-${side}`,
           label: `Hole ${row + 1}.${column + 1} · ${side} face`,
-          kind: 'hole',
+          kind: squareFaces ? 'square-hole' : 'hole',
           position: tuple(facePosition),
           centerPosition: tuple(holeCenter),
           markerPosition: tuple(facePosition),
@@ -150,6 +195,42 @@ function buildHoleConnectors(
   }
 
   return connectors;
+}
+
+function buildCentralSquareHoleConnectors(
+  model: THREE.Object3D,
+  bounds: THREE.Box3,
+): LibraryConnector[] {
+  const thicknessAxis = rankedAxes(bounds).at(-1);
+  if (!thicknessAxis) return [];
+  const radialAxes = AXES.filter((candidate) => candidate !== thicknessAxis);
+  const center = bounds.getCenter(new THREE.Vector3());
+  const vertices = collectLocalVertices(model);
+  const squareFaces = squareHoleFaceCoordinates(
+    vertices,
+    center,
+    radialAxes[0],
+    radialAxes[1],
+    thicknessAxis,
+  );
+  if (!squareFaces) return [];
+
+  return ([-1, 1] as const).map((direction) => {
+    const facePosition = center.clone();
+    setAxis(facePosition, thicknessAxis, direction < 0 ? squareFaces.negative : squareFaces.positive);
+    const side = direction < 0 ? 'bottom' : 'top';
+    return {
+      id: `central-square-hole-${side}`,
+      label: `Square hole · ${side} face`,
+      kind: 'square-hole',
+      position: tuple(facePosition),
+      centerPosition: tuple(center),
+      markerPosition: tuple(facePosition),
+      normal: tuple(axisNormal(thicknessAxis, direction)),
+      radius: 3.2,
+      axis: thicknessAxis,
+    };
+  });
 }
 
 function collectLocalVertices(model: THREE.Object3D): THREE.Vector3[] {
@@ -377,6 +458,89 @@ export function buildManualHoleConnectors(
   });
 }
 
+export function buildManualSquareHoleConnectors(
+  mesh: THREE.Mesh,
+  faceIndex: number,
+  root: THREE.Object3D,
+  connectorNumber: number,
+): LibraryConnector[] {
+  const positions = mesh.geometry.getAttribute('position');
+  const index = mesh.geometry.index;
+  const faces = mesh.geometry.userData.brepFaces as BrepFaceRange[] | undefined;
+  const face = faces?.find((candidate) => faceIndex >= candidate.first && faceIndex <= candidate.last);
+  if (!positions || !index || !face) return [];
+
+  root.updateMatrixWorld(true);
+  mesh.updateMatrixWorld(true);
+  const toRoot = root.matrixWorld.clone().invert().multiply(mesh.matrixWorld);
+  const facePoints: THREE.Vector3[] = [];
+  for (let triangleIndex = face.first; triangleIndex <= face.last; triangleIndex += 1) {
+    for (let corner = 0; corner < 3; corner += 1) {
+      const vertexIndex = index.getX(triangleIndex * 3 + corner);
+      facePoints.push(new THREE.Vector3(
+        positions.getX(vertexIndex),
+        positions.getY(vertexIndex),
+        positions.getZ(vertexIndex),
+      ).applyMatrix4(toRoot));
+    }
+  }
+  if (facePoints.length < 6) return [];
+
+  const allVertices = collectLocalVertices(root);
+  const rootBounds = new THREE.Box3().setFromPoints(allVertices);
+  const holeAxis = rankedAxes(rootBounds).at(-1);
+  if (!holeAxis) return [];
+  const radialAxes = AXES.filter((candidate) => candidate !== holeAxis);
+  const faceBounds = new THREE.Box3().setFromPoints(facePoints);
+  const faceSize = faceBounds.getSize(new THREE.Vector3());
+  const wallNormalAxis = radialAxes.sort(
+    (left, right) => axisValue(faceSize, left) - axisValue(faceSize, right),
+  )[0];
+  const sideAxis = radialAxes.find((candidate) => candidate !== wallNormalAxis);
+  if (!sideAxis) return [];
+
+  const sideWidth = axisValue(faceSize, sideAxis);
+  const depth = axisValue(faceSize, holeAxis);
+  if (sideWidth < 2.6 || sideWidth > 5.4 || depth < 0.4) return [];
+
+  const faceCenter = faceBounds.getCenter(new THREE.Vector3());
+  for (const direction of [-1, 1] as const) {
+    const center = faceCenter.clone();
+    setAxis(
+      center,
+      wallNormalAxis,
+      axisValue(faceCenter, wallNormalAxis) + direction * sideWidth / 2,
+    );
+    const squareFaces = squareHoleFaceCoordinates(
+      allVertices,
+      center,
+      wallNormalAxis,
+      sideAxis,
+      holeAxis,
+    );
+    if (!squareFaces) continue;
+
+    return ([-1, 1] as const).map((faceDirection) => {
+      const side = faceDirection < 0 ? 'a' : 'b';
+      const position = center.clone();
+      setAxis(position, holeAxis, faceDirection < 0 ? squareFaces.negative : squareFaces.positive);
+      return {
+        id: `manual-square-hole-${connectorNumber}-${side}`,
+        label: `Marked square hole ${connectorNumber} · side ${side.toUpperCase()}`,
+        kind: 'square-hole',
+        position: tuple(position),
+        centerPosition: tuple(center),
+        markerPosition: tuple(position),
+        normal: tuple(axisNormal(holeAxis, faceDirection)),
+        radius: clean(Math.max(2.6, sideWidth * 0.75)),
+        axis: holeAxis,
+      };
+    });
+  }
+
+  return [];
+}
+
 function dominantAxis(normal: THREE.Vector3): ConnectorAxis {
   return [...AXES].sort(
     (left, right) => Math.abs(axisValue(normal, right)) - Math.abs(axisValue(normal, left)),
@@ -502,10 +666,21 @@ function buildEmbeddedLegConnectors(model: THREE.Object3D): LibraryConnector[] {
 export function buildLibraryConnectors(part: ConnectorPart, model: THREE.Object3D): LibraryConnector[] {
   const bounds = new THREE.Box3().setFromObject(model);
   if (bounds.isEmpty()) return [];
-  if (part.category === 'Pins') return buildPinConnectors(model, bounds);
+  if (part.category === 'Pins') {
+    const pinConnectors = buildPinConnectors(model, bounds);
+    return /idler pin/i.test(part.name)
+      ? [...pinConnectors, ...buildShaftConnectors(bounds)]
+      : pinConnectors;
+  }
   if (part.category === 'Shafts') return buildShaftConnectors(bounds);
-  if (['Beams', 'Plates'].includes(part.category)) return buildHoleConnectors(part, model, bounds);
-  return buildEmbeddedLegConnectors(model);
+  const gridHoles = buildHoleConnectors(part, model, bounds);
+  if (['Beams', 'Plates'].includes(part.category)) return gridHoles;
+
+  const supportsCentralSquareHole = ['Gears', 'Wheels', 'Pulleys', 'Shaft Hardware'].includes(part.category);
+  const centralSquareHoles = !supportsCentralSquareHole || gridHoles.some((connector) => connector.kind === 'square-hole')
+    ? []
+    : buildCentralSquareHoleConnectors(model, bounds);
+  return [...gridHoles, ...centralSquareHoles, ...buildEmbeddedLegConnectors(model)];
 }
 
 export function centerLibraryConnectors(

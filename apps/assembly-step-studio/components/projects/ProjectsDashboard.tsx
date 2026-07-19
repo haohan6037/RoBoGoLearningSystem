@@ -1,19 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { StudioProjectRecord } from '@/types/assembly';
+import type { StudioProjectRecord, StudioProjectType } from '@/types/assembly';
 
 interface Props {
   projects: StudioProjectRecord[];
-  onCreateProject: (name: string) => Promise<void> | void;
+  onCreateProject: (name: string, projectType: StudioProjectType) => Promise<void> | void;
   onOpenProject: (projectId: string) => void;
   onDuplicateProject: (projectId: string) => Promise<void> | void;
   onDeleteProject: (projectId: string) => Promise<void> | void;
   onCopyProjectLink: (projectId: string) => Promise<void> | void;
   onPreviewProject: (projectId: string) => void;
 }
-
-type ProjectFilter = 'Published' | 'All';
 
 function formatProjectDate(value: string): string {
   return new Intl.DateTimeFormat('en-NZ', {
@@ -51,7 +49,7 @@ export default function ProjectsDashboard({
   onPreviewProject,
 }: Props) {
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<ProjectFilter>('Published');
+  const [projectType, setProjectType] = useState<StudioProjectType>('assembly');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [menuProjectId, setMenuProjectId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
@@ -70,22 +68,23 @@ export default function ProjectsDashboard({
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredProjects = projects.filter((project) => {
-    const matchesFilter = filter === 'All' || project.status === filter;
+    const matchesType = project.projectType === projectType;
     const matchesQuery =
       normalizedQuery.length === 0 ||
       project.name.toLowerCase().includes(normalizedQuery) ||
       project.id.toLowerCase().includes(normalizedQuery) ||
       project.data.modelFileName?.toLowerCase().includes(normalizedQuery);
-    return matchesFilter && matchesQuery;
+    return matchesType && matchesQuery;
   });
 
-  const countPublished = projects.filter((project) => project.status === 'Published').length;
-  const effectiveSelectedProjectId = selectedProjectId ?? filteredProjects[0]?.id ?? projects[0]?.id ?? null;
+  const countAssembly = projects.filter((project) => project.projectType === 'assembly').length;
+  const countBuildInstructions = projects.filter((project) => project.projectType === 'build-instructions').length;
+  const effectiveSelectedProjectId = selectedProjectId ?? filteredProjects[0]?.id ?? null;
 
   const handleCreate = async () => {
     const name = draftName.trim();
     if (!name) return;
-    await onCreateProject(name);
+    await onCreateProject(name, projectType);
     setDraftName('');
     setShowCreateForm(false);
   };
@@ -121,10 +120,14 @@ export default function ProjectsDashboard({
             <div className="mb-5 flex flex-col gap-4 rounded-[28px] border border-white/70 bg-white/85 px-5 py-5 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-sky-600">Assembly Studio</p>
-                  <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Projects</h1>
+                  <p className="text-sm font-medium text-sky-600">RoBoGo Studio</p>
+                  <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
+                    {projectType === 'assembly' ? 'Assembly Projects' : 'Build Instructions'}
+                  </h1>
                   <p className="mt-2 text-sm text-slate-500">
-                    Pick a project to continue in Designer. Each project keeps its own ID, model, steps, and link.
+                    {projectType === 'assembly'
+                      ? 'Build and save a robot model from the parts library.'
+                      : 'Disassemble a completed model and turn it into student build steps.'}
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -140,7 +143,7 @@ export default function ProjectsDashboard({
                     onClick={() => setShowCreateForm((value) => !value)}
                     className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-sky-600 to-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-200 transition hover:translate-y-[-1px]"
                   >
-                    + New Project
+                    + New {projectType === 'assembly' ? 'Assembly Project' : 'Build Instructions'}
                   </button>
                 </div>
               </div>
@@ -167,14 +170,18 @@ export default function ProjectsDashboard({
               <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-4 sm:px-6">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   {[
-                    { value: 'Published' as const, label: 'Published', count: countPublished },
-                    { value: 'All' as const, label: 'All', count: projects.length },
+                    { value: 'assembly' as const, label: 'Assembly Projects', count: countAssembly },
+                    { value: 'build-instructions' as const, label: 'Build Instructions', count: countBuildInstructions },
                   ].map((option) => (
                     <button
                       key={option.value}
-                      onClick={() => setFilter(option.value)}
+                      onClick={() => {
+                        setProjectType(option.value);
+                        setSelectedProjectId(null);
+                        setShowCreateForm(false);
+                      }}
                       className={`rounded-full px-3 py-1.5 transition ${
-                        filter === option.value
+                        projectType === option.value
                           ? 'bg-slate-900 text-white shadow-sm'
                           : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                       }`}
@@ -224,7 +231,9 @@ export default function ProjectsDashboard({
                           <td className={`rounded-l-[24px] border-y border-l px-6 py-4 ${sharedRowClass} ${hoverRowClass}`}>
                             <div className="flex min-w-0 items-center gap-4">
                               <div className={`flex h-16 w-24 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${buildProjectAccent(project.id)} text-[11px] font-semibold text-slate-600 shadow-inner`}>
-                                {project.data.modelFileName ? project.data.modelFileName.split('.').pop()?.toUpperCase() : 'PROJECT'}
+                                {project.projectType === 'assembly'
+                                  ? 'ASSEMBLY'
+                                  : project.data.modelFileName?.split('.').pop()?.toUpperCase() ?? 'STEPS'}
                               </div>
                               <div className="min-w-0">
                                 <button
@@ -265,7 +274,7 @@ export default function ProjectsDashboard({
                                 }}
                                 className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
                               >
-                                Designer
+                                {project.projectType === 'assembly' ? 'Edit Assembly' : 'Edit Steps'}
                               </button>
                               <div
                                 ref={menuProjectId === project.id ? menuRef : undefined}
@@ -289,17 +298,19 @@ export default function ProjectsDashboard({
                                       }}
                                       className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
                                     >
-                                      Designer
+                                      {project.projectType === 'assembly' ? 'Edit Assembly' : 'Edit Steps'}
                                     </button>
-                                    <button
-                                      onClick={() => {
-                                        setMenuProjectId(null);
-                                        onPreviewProject(project.id);
-                                      }}
-                                      className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-                                    >
-                                      Preview Build View
-                                    </button>
+                                    {project.projectType === 'build-instructions' && (
+                                      <button
+                                        onClick={() => {
+                                          setMenuProjectId(null);
+                                          onPreviewProject(project.id);
+                                        }}
+                                        className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                                      >
+                                        Preview Build View
+                                      </button>
+                                    )}
                                     <button
                                       onClick={async () => {
                                         setMenuProjectId(null);
@@ -309,15 +320,17 @@ export default function ProjectsDashboard({
                                     >
                                       Duplicate
                                     </button>
-                                    <button
-                                      onClick={async () => {
-                                        setMenuProjectId(null);
-                                        await onCopyProjectLink(project.id);
-                                      }}
-                                      className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-                                    >
-                                      Copy Build Link
-                                    </button>
+                                    {project.projectType === 'build-instructions' && (
+                                      <button
+                                        onClick={async () => {
+                                          setMenuProjectId(null);
+                                          await onCopyProjectLink(project.id);
+                                        }}
+                                        className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                                      >
+                                        Copy Build Link
+                                      </button>
+                                    )}
                                     <button
                                       onClick={async () => {
                                         setMenuProjectId(null);

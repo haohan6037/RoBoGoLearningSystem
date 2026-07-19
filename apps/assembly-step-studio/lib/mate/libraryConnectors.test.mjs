@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import {
   buildLibraryConnectors,
   buildManualHoleConnectors,
+  buildManualSquareHoleConnectors,
 } from './libraryConnectors.ts';
 
 function addHoleRings(model, centers, axis = 'z') {
@@ -25,6 +26,53 @@ function addHoleRings(model, centers, axis = 'z') {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   model.add(new THREE.Mesh(geometry));
+}
+
+function addSquareHoleRings(model, centers, axis = 'z') {
+  const positions = [];
+  const radialAxes = ['x', 'y', 'z'].filter((candidate) => candidate !== axis);
+  centers.forEach((center) => {
+    for (const faceOffset of [-2.286, 2.286]) {
+      for (const edgePosition of [-2.1, -1.05, 0, 1.05, 2.1]) {
+        for (const [first, second] of [
+          [-2.1, edgePosition],
+          [2.1, edgePosition],
+          [edgePosition, -2.1],
+          [edgePosition, 2.1],
+        ]) {
+          const point = { x: center.x, y: center.y, z: center.z };
+          point[axis] += faceOffset;
+          point[radialAxes[0]] += first;
+          point[radialAxes[1]] += second;
+          positions.push(point.x, point.y, point.z);
+        }
+      }
+    }
+  });
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  model.add(new THREE.Mesh(geometry));
+}
+
+function squareTunnelMesh(halfWidth = 2.1, halfDepth = 3) {
+  const quads = [
+    [[-halfWidth, -halfWidth, -halfDepth], [-halfWidth, halfWidth, -halfDepth], [-halfWidth, halfWidth, halfDepth], [-halfWidth, -halfWidth, halfDepth]],
+    [[halfWidth, -halfWidth, -halfDepth], [halfWidth, -halfWidth, halfDepth], [halfWidth, halfWidth, halfDepth], [halfWidth, halfWidth, -halfDepth]],
+    [[-halfWidth, -halfWidth, -halfDepth], [-halfWidth, -halfWidth, halfDepth], [halfWidth, -halfWidth, halfDepth], [halfWidth, -halfWidth, -halfDepth]],
+    [[-halfWidth, halfWidth, -halfDepth], [halfWidth, halfWidth, -halfDepth], [halfWidth, halfWidth, halfDepth], [-halfWidth, halfWidth, halfDepth]],
+  ];
+  const positions = [];
+  const indices = [];
+  quads.forEach((quad) => {
+    const offset = positions.length / 3;
+    quad.forEach((point) => positions.push(...point));
+    indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);
+  });
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.userData.brepFaces = quads.map((_, index) => ({ first: index * 2, last: index * 2 + 1 }));
+  return new THREE.Mesh(geometry);
 }
 
 function builtInLegModel() {
@@ -111,6 +159,50 @@ test('a shaft exposes two ends but mates from its center', () => {
   assert.deepEqual(connectors.map((connector) => connector.markerPosition[2]), [-30.861, 30.861]);
 });
 
+test('a square beam opening exposes square-hole connectors on both faces', () => {
+  const model = new THREE.Group();
+  model.add(new THREE.Mesh(new THREE.BoxGeometry(12.7, 12.7, 6.1)));
+  addSquareHoleRings(model, [{ x: 0, y: 0, z: 0 }]);
+
+  const connectors = buildLibraryConnectors(
+    { name: '1x1 Beam', category: 'Beams' },
+    model,
+  );
+
+  assert.deepEqual(connectors.map((connector) => connector.kind), ['square-hole', 'square-hole']);
+  assert.deepEqual(connectors.map((connector) => connector.centerPosition), [[0, 0, 0], [0, 0, 0]]);
+});
+
+test('a gear exposes its central square opening without beam-style naming', () => {
+  const model = new THREE.Group();
+  model.add(new THREE.Mesh(new THREE.BoxGeometry(50, 50, 6.1)));
+  addSquareHoleRings(model, [{ x: 0, y: 0, z: 0 }]);
+
+  const connectors = buildLibraryConnectors(
+    { name: '36 Tooth Gear', category: 'Gears' },
+    model,
+  ).filter((connector) => connector.kind === 'square-hole');
+
+  assert.equal(connectors.length, 2);
+  assert.deepEqual(connectors.map((connector) => connector.centerPosition), [[0, 0, 0], [0, 0, 0]]);
+});
+
+test('an Idler Pin exposes center-axis ends for through-hole insertion', () => {
+  const model = new THREE.Group();
+  model.add(new THREE.Mesh(new THREE.BoxGeometry(3.175, 3.175, 25.4)));
+
+  const connectors = buildLibraryConnectors(
+    { name: '1x2 Idler Pin', category: 'Pins' },
+    model,
+  );
+
+  assert.equal(connectors.filter((connector) => connector.kind === 'shaft-end').length, 2);
+  assert.deepEqual(
+    connectors.filter((connector) => connector.kind === 'shaft-end').map((connector) => connector.position),
+    [[0, 0, 0], [0, 0, 0]],
+  );
+});
+
 test('a pin exposes both sides of its widest stop ring', () => {
   const positions = [];
   for (const z of [-6, -1, 1, 6]) {
@@ -180,4 +272,19 @@ test('selecting one half of a split cylindrical hole wall still finds the whole 
   assert.equal(connectors.length, 2);
   assert.deepEqual(connectors[0].centerPosition, [0, 0, 0]);
   assert.equal(connectors[0].radius, 3.15);
+});
+
+test('selecting one flat wall marks the complete square hole on both faces', () => {
+  const mesh = squareTunnelMesh();
+  const root = new THREE.Group();
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(20, 20, 6)));
+  root.add(mesh);
+  root.updateMatrixWorld(true);
+
+  const connectors = buildManualSquareHoleConnectors(mesh, 0, root, 1);
+
+  assert.equal(connectors.length, 2);
+  assert.deepEqual(connectors.map((connector) => connector.kind), ['square-hole', 'square-hole']);
+  assert.deepEqual(connectors.map((connector) => connector.centerPosition), [[0, 0, 0], [0, 0, 0]]);
+  assert.deepEqual(connectors.map((connector) => connector.position[2]).sort((a, b) => a - b), [-3, 3]);
 });

@@ -6,6 +6,12 @@ import { Suspense, useState, useRef, useCallback, useEffect, useMemo } from 'rea
 import * as THREE from 'three';
 import type { TrackballControls as TrackballControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import {
+  buildInstructionPartDisplayName,
+  editorDragObjectUuids,
+  findEditorPart,
+  viewerMouseButtons,
+} from '@/lib/viewer/editorInteraction';
 import type { CameraView, CoverCapture, ObjectState } from '@/types/assembly';
 import ModelScene from './ModelScene';
 
@@ -106,10 +112,6 @@ function isEffectivelyVisible(obj: THREE.Object3D): boolean {
 
 type ViewerVariant = 'editor' | 'presentation';
 
-function selectedPartDisplayName(name: string): string {
-  return name.replace(/\s*\(\d{3}-\d{4}-\d{3,4}\)\s*$/, '').trim() || 'Unnamed part';
-}
-
 function SelectedPartLabel({ uuid }: { uuid: string }) {
   const { scene } = useThree();
   const anchorRef = useRef<THREE.Group>(null);
@@ -141,7 +143,7 @@ function SelectedPartLabel({ uuid }: { uuid: string }) {
     <group ref={anchorRef}>
       <Html center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
         <div className="whitespace-nowrap rounded-xl border border-blue-200 bg-white/95 px-3 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-slate-900/10">
-          {selectedPartDisplayName(part.name)}
+          {buildInstructionPartDisplayName(part.name)}
         </div>
       </Html>
     </group>
@@ -189,7 +191,6 @@ function SceneContent({
   const initialModelFitApplied = useRef(false);
   const initialStepFitApplied = useRef(false);
   const modelSceneRef = useRef<THREE.Object3D | null>(null);
-
   useEffect(() => {
     if (!initialCameraView || initialCameraApplied.current || !controlsRef.current) return;
     camera.position.fromArray(initialCameraView.position);
@@ -372,17 +373,6 @@ function SceneContent({
     void captureThumbnail();
   }, [camera, gl, initialObjectStates, onStepThumbnailCaptured, scene, stepThumbnailRequest]);
 
-  const findPartGroup = useCallback((mesh: THREE.Object3D): THREE.Object3D => {
-    let current: THREE.Object3D | null = mesh;
-    while (current && current.parent) {
-      if (current instanceof THREE.Group && current.name && current.type !== 'Scene') {
-        return current;
-      }
-      current = current.parent;
-    }
-    return mesh;
-  }, []);
-
   const pickPartFromPointer = useCallback((e: PointerEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     const mouse = new THREE.Vector2(
@@ -395,12 +385,12 @@ function SceneContent({
       const obj = intersect.object;
       if (!(obj instanceof THREE.Mesh)) continue;
       if (!isEffectivelyVisible(obj)) continue;
-      const part = findPartGroup(obj);
+      const part = findEditorPart(obj);
       if (!isEffectivelyVisible(part)) continue;
       return part;
     }
     return null;
-  }, [camera, scene, findPartGroup]);
+  }, [camera, scene]);
 
   const fitVisibleModel = useCallback((modelScene: THREE.Object3D) => {
     const controls = controlsRef.current;
@@ -488,7 +478,7 @@ function SceneContent({
     const axisPixels = screenAxis.length();
     if (axisPixels < 0.001) return null;
 
-    const snapshots = selectedUuids
+    const snapshots = editorDragObjectUuids(part.uuid, selectedUuids)
       .map((uuid) => {
         const object = findInScene(scene, uuid);
         if (!object) return null;
@@ -544,7 +534,7 @@ function SceneContent({
     const canvas = gl.domElement;
     const onDown = (e: PointerEvent) => {
       const part = pickPartFromPointer(e, canvas);
-      const modifier = variant === 'editor' && (e.metaKey || e.ctrlKey || e.shiftKey);
+      const modifier = false;
       const wasSelected = !!part && selectedUuids.includes(part.uuid);
       const canDrag = variant === 'editor' && e.button === 0 && !!part && wasSelected && !modifier;
       pointerDown.current = {
@@ -558,8 +548,10 @@ function SceneContent({
         dragging: false,
       };
       if (canDrag) {
+        if (controlsRef.current) controlsRef.current.enabled = false;
         canvas.setPointerCapture(e.pointerId);
         e.preventDefault();
+        e.stopImmediatePropagation();
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -586,6 +578,7 @@ function SceneContent({
       if (canvas.hasPointerCapture(e.pointerId)) {
         canvas.releasePointerCapture(e.pointerId);
       }
+      if (controlsRef.current) controlsRef.current.enabled = true;
       setIsDragging(false);
       if (state.dragging || Math.abs(dx) > 3 || Math.abs(dy) > 3) {
         canvas.style.cursor = 'default';
@@ -599,18 +592,19 @@ function SceneContent({
     };
     const onLeave = () => {
       pointerDown.current = null;
+      if (controlsRef.current) controlsRef.current.enabled = true;
       setIsDragging(false);
       setHoveredObject(undefined);
       canvas.style.cursor = 'default';
     };
     const onContextMenu = (e: MouseEvent) => e.preventDefault();
-    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointerdown', onDown, true);
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointerleave', onLeave);
     canvas.addEventListener('contextmenu', onContextMenu);
     return () => {
-      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointerdown', onDown, true);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointerleave', onLeave);
@@ -630,8 +624,14 @@ function SceneContent({
 
   return (
     <>
-      <ambientLight intensity={variant === 'presentation' ? 0.8 : 0.4} />
-      <directionalLight position={[10, 15, 10]} intensity={variant === 'presentation' ? 1.1 : 0.8} />
+      <ambientLight intensity={variant === 'presentation' ? 0.8 : 1.45} />
+      <directionalLight
+        position={variant === 'presentation' ? [10, 15, 10] : [45, 65, 90]}
+        intensity={variant === 'presentation' ? 1.1 : 2.2}
+      />
+      {variant === 'editor' && (
+        <directionalLight position={[-55, -25, 35]} intensity={0.8} />
+      )}
       <TrackballControls
         ref={controlsRef}
         makeDefault
@@ -641,15 +641,11 @@ function SceneContent({
         panSpeed={0.8}
         staticMoving={false}
         dynamicDampingFactor={0.16}
-        mouseButtons={{
-          LEFT: variant === 'presentation' ? THREE.MOUSE.ROTATE : -1 as THREE.MOUSE,
-          MIDDLE: variant === 'presentation' ? THREE.MOUSE.DOLLY : THREE.MOUSE.PAN,
-          RIGHT: variant === 'presentation' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
-        }}
+        mouseButtons={viewerMouseButtons(variant)}
       />
       <GizmoHelper alignment="bottom-right" margin={[72, 72]}>
         <GizmoViewcube
-          color={variant === 'presentation' ? '#e2e8f0' : '#475569'}
+          color="#e2e8f0"
           hoverColor="#38bdf8"
           textColor="#0f172a"
           strokeColor="#94a3b8"
@@ -666,10 +662,10 @@ function SceneContent({
             args={[30, 30]}
             cellSize={1}
             cellThickness={0.6}
-            cellColor="#4a4a6a"
+            cellColor="#dbe4ee"
             sectionSize={5}
             sectionThickness={1.2}
-            sectionColor="#6a6a8a"
+            sectionColor="#aab9ca"
             fadeDistance={50}
             fadeStrength={1}
             infiniteGrid
@@ -731,7 +727,7 @@ export default function ViewerCanvas({
         camera={{ position: [5, 4, 8], fov: 50 }}
         dpr={isPresentation ? [1, 1.25] : [1, 2]}
         gl={isPresentation ? { antialias: false, powerPreference: 'low-power' } : undefined}
-        style={{ background: isPresentation ? '#ffffff' : '#1a1a2e' }}
+        style={{ background: isPresentation ? '#ffffff' : '#f8fafc' }}
       >
         <SceneContent
           variant={variant}

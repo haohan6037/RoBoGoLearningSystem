@@ -1,28 +1,31 @@
 'use client';
 
-import { Canvas, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Grid, Html, TrackballControls, TransformControls } from '@react-three/drei';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import * as THREE from 'three';
 import {
   buildLibraryConnectors,
   buildManualHoleConnectors,
+  buildManualSquareHoleConnectors,
   centerLibraryConnectors,
   type ConnectorAxis,
   type LibraryConnector,
 } from '@/lib/mate/libraryConnectors';
 import { loadStepModel } from '@/lib/mate/loadStep';
-import type { PartLibraryItem } from '@/types/partLibrary';
+import type { AssemblyPartInstance } from '@/types/assembly';
 
-export type LibraryPartInstance = {
-  instanceId: string;
-  part: PartLibraryItem;
-  color: THREE.ColorRepresentation;
-  position: [number, number, number];
-  quaternion: [number, number, number, number];
-};
+export type LibraryPartInstance = AssemblyPartInstance;
 
-export type LibraryMateMode = 'pin' | 'multi-leg' | 'beam' | 'shaft';
+export type LibraryMateMode = 'pin' | 'multi-leg' | 'beam' | 'shaft' | 'hole-align';
+export type HoleMarkingShape = 'round' | 'square';
 
 export type LibraryConnectorPick = {
   instanceId: string;
@@ -44,9 +47,27 @@ function disposeObject(object: THREE.Object3D) {
   });
 }
 
+function SelectionBounds({ object, primary }: { object: THREE.Object3D; primary: boolean }) {
+  const helper = useMemo(() => {
+    const next = new THREE.BoxHelper(object, primary ? '#16a34a' : '#22c55e');
+    next.renderOrder = 1000;
+    next.material.depthTest = false;
+    next.material.transparent = true;
+    next.material.opacity = primary ? 1 : 0.72;
+    return next;
+  }, [object, primary]);
+
+  useFrame(() => helper.update());
+  useEffect(() => () => {
+    helper.geometry.dispose();
+    helper.material.dispose();
+  }, [helper]);
+  return <primitive object={helper} raycast={() => null} />;
+}
+
 function PartInstance({
   instance,
-  holeMarking,
+  holeMarkingShape,
   onSelect,
   onRegisterObject,
   onConnectorsReady,
@@ -54,7 +75,7 @@ function PartInstance({
   onHoleMarkingResult,
 }: {
   instance: LibraryPartInstance;
-  holeMarking: boolean;
+  holeMarkingShape: HoleMarkingShape | null;
   onSelect: () => void;
   onRegisterObject: (instanceId: string, object: THREE.Group | null) => void;
   onConnectorsReady: (instanceId: string, connectors: LibraryConnector[]) => void;
@@ -127,7 +148,7 @@ function PartInstance({
   ]);
 
   const markHole = async (event: ThreeEvent<MouseEvent>) => {
-    if (!holeMarking || markingBusy) return;
+    if (!holeMarkingShape || markingBusy) return;
     event.stopPropagation();
     const root = groupRef.current;
     if (!(event.object instanceof THREE.Mesh) || event.faceIndex == null || !root) {
@@ -135,28 +156,36 @@ function PartInstance({
         partName: instance.part.name,
         holeCount: manualConnectors.length / 2,
         removed: false,
-        error: 'Click the inside wall of a hole.',
+        error: holeMarkingShape === 'square'
+          ? 'Click one flat inside wall of a square hole.'
+          : 'Click the curved inside wall of a round hole.',
       });
       return;
     }
 
+    const connectorPrefix = holeMarkingShape === 'square' ? 'manual-square-hole' : 'manual-hole';
     const nextNumber = manualConnectors.reduce((largest, connector) => {
-      const match = connector.id.match(/^manual-hole-(\d+)-/);
+      const match = connector.id.match(new RegExp(`^${connectorPrefix}-(\\d+)-`));
       return Math.max(largest, Number(match?.[1] ?? 0));
     }, 0) + 1;
-    const detected = buildManualHoleConnectors(event.object, event.faceIndex, root, nextNumber);
+    const detected = holeMarkingShape === 'square'
+      ? buildManualSquareHoleConnectors(event.object, event.faceIndex, root, nextNumber)
+      : buildManualHoleConnectors(event.object, event.faceIndex, root, nextNumber);
     const center = detected[0]?.centerPosition;
     if (!center) {
       onHoleMarkingResult({
         partName: instance.part.name,
         holeCount: manualConnectors.length / 2,
         removed: false,
-        error: 'No round hole was found there. Click its curved inside wall.',
+        error: holeMarkingShape === 'square'
+          ? 'No square hole was found there. Click one of its flat inside walls.'
+          : 'No round hole was found there. Click its curved inside wall.',
       });
       return;
     }
 
-    const duplicate = manualConnectors.find((connector) => connector.centerPosition
+    const duplicate = manualConnectors.find((connector) => connector.kind === detected[0]?.kind
+      && connector.centerPosition
       && new THREE.Vector3(...connector.centerPosition).distanceTo(new THREE.Vector3(...center)) < 0.35);
     const nextManual = duplicate
       ? manualConnectors.filter((connector) => connector.id !== duplicate.id.replace(/-[ab]$/, '-a')
@@ -203,14 +232,14 @@ function PartInstance({
         category: instance.part.category,
       }}
       onClick={(event) => {
-        if (holeMarking) {
+        if (holeMarkingShape) {
           void markHole(event);
           return;
         }
         event.stopPropagation();
         onSelect();
       }}
-      onPointerOver={() => { document.body.style.cursor = holeMarking ? 'crosshair' : 'pointer'; }}
+      onPointerOver={() => { document.body.style.cursor = holeMarkingShape ? 'crosshair' : 'pointer'; }}
       onPointerOut={() => { document.body.style.cursor = 'default'; }}
     >
       {model && <primitive object={model} />}
@@ -230,7 +259,8 @@ function PartInstance({
 
 function connectorKindsForMode(mode: LibraryMateMode): LibraryConnector['kind'][] {
   if (mode === 'pin' || mode === 'multi-leg') return ['hole', 'pin-ring'];
-  if (mode === 'shaft') return ['hole', 'shaft-end'];
+  if (mode === 'shaft') return ['hole', 'square-hole', 'shaft-end'];
+  if (mode === 'hole-align') return ['hole', 'square-hole'];
   return ['hole'];
 }
 
@@ -270,6 +300,7 @@ function ConnectorMarkers({
         );
         const idleColor = connector.kind === 'hole'
           ? '#2563eb'
+          : connector.kind === 'square-hole' ? '#9333ea'
           : connector.kind === 'pin-ring' ? '#f97316' : '#f59e0b';
 
         return (
@@ -299,12 +330,17 @@ function ConnectorMarkers({
                 document.body.style.cursor = 'default';
               }}
             >
-              <torusGeometry args={[connector.radius, selected ? 0.72 : hovered ? 0.64 : 0.46, 14, 40]} />
+              {connector.kind === 'square-hole' ? (
+                <boxGeometry args={[connector.radius * 2, connector.radius * 2, selected ? 0.72 : 0.5]} />
+              ) : (
+                <torusGeometry args={[connector.radius, selected ? 1 : hovered ? 0.9 : 0.75, 14, 40]} />
+              )}
               <meshBasicMaterial
                 color={selected
                   ? (selectedIndex % 2 === 0 ? '#22c55e' : '#a855f7')
                   : hovered ? '#facc15' : idleColor}
                 depthTest={false}
+                wireframe={connector.kind === 'square-hole'}
               />
             </mesh>
             {selected && (
@@ -331,14 +367,18 @@ function ConnectorMarkers({
 export default function LibraryAssemblyCanvas({
   instances,
   selectedInstanceId,
+  selectedInstanceIds,
   mode,
   mateMode,
   holeMarkingInstanceId,
+  holeMarkingShape,
   connectorPicks,
   shaftAdjustment,
   assemblyName,
   mateRecords,
   onSelect,
+  onLassoSelect,
+  onClearSelection,
   onTransformChange,
   onConnectorPick,
   onHoleMarkingResult,
@@ -347,14 +387,18 @@ export default function LibraryAssemblyCanvas({
 }: {
   instances: LibraryPartInstance[];
   selectedInstanceId: string | null;
+  selectedInstanceIds: string[];
   mode: 'translate' | 'rotate';
   mateMode: LibraryMateMode | null;
   holeMarkingInstanceId: string | null;
+  holeMarkingShape: HoleMarkingShape | null;
   connectorPicks: LibraryConnectorPick[];
   shaftAdjustment: ShaftAdjustment | null;
   assemblyName: string;
   mateRecords: unknown[];
-  onSelect: (instanceId: string | null) => void;
+  onSelect: (instanceId: string, additive: boolean) => void;
+  onLassoSelect: (instanceIds: string[]) => void;
+  onClearSelection: () => void;
   onTransformChange: (
     instanceId: string,
     position: [number, number, number],
@@ -368,6 +412,15 @@ export default function LibraryAssemblyCanvas({
   const [objects, setObjects] = useState<Record<string, THREE.Group>>({});
   const [connectorsByInstance, setConnectorsByInstance] = useState<Record<string, LibraryConnector[]>>({});
   const [loadedIds, setLoadedIds] = useState<Set<string>>(() => new Set());
+  const [lasso, setLasso] = useState<{
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    pointerId: number;
+  } | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
 
   const registerObject = useCallback((instanceId: string, object: THREE.Group | null) => {
     setObjects((current) => {
@@ -426,13 +479,123 @@ export default function LibraryAssemblyCanvas({
     );
   };
 
+  const pointerPosition = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+  };
+
+  const projectObjectBounds = (object: THREE.Object3D, width: number, height: number) => {
+    const bounds = new THREE.Box3().setFromObject(object);
+    if (bounds.isEmpty() || !cameraRef.current) return null;
+    const screenPoints = [
+      [bounds.min.x, bounds.min.y, bounds.min.z],
+      [bounds.min.x, bounds.min.y, bounds.max.z],
+      [bounds.min.x, bounds.max.y, bounds.min.z],
+      [bounds.min.x, bounds.max.y, bounds.max.z],
+      [bounds.max.x, bounds.min.y, bounds.min.z],
+      [bounds.max.x, bounds.min.y, bounds.max.z],
+      [bounds.max.x, bounds.max.y, bounds.min.z],
+      [bounds.max.x, bounds.max.y, bounds.max.z],
+    ].map(([x, y, z]) => new THREE.Vector3(x, y, z).project(cameraRef.current!));
+    return {
+      minX: Math.min(...screenPoints.map((point) => (point.x + 1) * width / 2)),
+      maxX: Math.max(...screenPoints.map((point) => (point.x + 1) * width / 2)),
+      minY: Math.min(...screenPoints.map((point) => (1 - point.y) * height / 2)),
+      maxY: Math.max(...screenPoints.map((point) => (1 - point.y) * height / 2)),
+    };
+  };
+
+  const selectAtPoint = (x: number, y: number) => {
+    const wrapper = wrapperRef.current;
+    const camera = cameraRef.current;
+    if (!wrapper || !camera) return;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(
+      x / wrapper.clientWidth * 2 - 1,
+      -(y / wrapper.clientHeight) * 2 + 1,
+    ), camera);
+    const hit = raycaster.intersectObjects(Object.values(objects), true)[0]?.object;
+    let candidate: THREE.Object3D | null = hit ?? null;
+    while (candidate && typeof candidate.userData.robogoInstanceId !== 'string') {
+      candidate = candidate.parent;
+    }
+    if (candidate) onSelect(candidate.userData.robogoInstanceId as string, true);
+  };
+
+  const finishLasso = (nextLasso: NonNullable<typeof lasso>) => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const distance = Math.hypot(
+      nextLasso.currentX - nextLasso.startX,
+      nextLasso.currentY - nextLasso.startY,
+    );
+    if (distance < 5) {
+      selectAtPoint(nextLasso.currentX, nextLasso.currentY);
+      return;
+    }
+    const minX = Math.min(nextLasso.startX, nextLasso.currentX);
+    const maxX = Math.max(nextLasso.startX, nextLasso.currentX);
+    const minY = Math.min(nextLasso.startY, nextLasso.currentY);
+    const maxY = Math.max(nextLasso.startY, nextLasso.currentY);
+    const selectedIds = Object.entries(objects).flatMap(([instanceId, object]) => {
+      const projected = projectObjectBounds(object, wrapper.clientWidth, wrapper.clientHeight);
+      if (!projected) return [];
+      const intersects = projected.maxX >= minX && projected.minX <= maxX
+        && projected.maxY >= minY && projected.minY <= maxY;
+      return intersects ? [instanceId] : [];
+    });
+    onLassoSelect(selectedIds);
+  };
+
+  const beginCommandSelection = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if ((!event.metaKey && !event.ctrlKey) || event.button !== 0 || mateMode || holeMarkingInstanceId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const position = pointerPosition(event);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setLasso({
+      startX: position.x,
+      startY: position.y,
+      currentX: position.x,
+      currentY: position.y,
+      pointerId: event.pointerId,
+    });
+  };
+
   return (
-    <Canvas
-      camera={{ position: [115, 95, 145], fov: 40 }}
-      dpr={[1, 1.6]}
-      shadows
-      onPointerMissed={() => { if (!holeMarkingInstanceId) onSelect(null); }}
+    <div
+      ref={wrapperRef}
+      className="relative h-full w-full"
+      onPointerDownCapture={beginCommandSelection}
+      onPointerMoveCapture={(event) => {
+        if (!lasso || event.pointerId !== lasso.pointerId) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const position = pointerPosition(event);
+        setLasso((current) => current ? {
+          ...current,
+          currentX: position.x,
+          currentY: position.y,
+        } : null);
+      }}
+      onPointerUpCapture={(event) => {
+        if (!lasso || event.pointerId !== lasso.pointerId) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const position = pointerPosition(event);
+        const completed = { ...lasso, currentX: position.x, currentY: position.y };
+        event.currentTarget.releasePointerCapture(event.pointerId);
+        setLasso(null);
+        finishLasso(completed);
+      }}
     >
+      <Canvas
+        camera={{ position: [115, 95, 145], fov: 40 }}
+        dpr={[1, 1.6]}
+        shadows
+        onCreated={({ camera }) => { cameraRef.current = camera; }}
+        onPointerMissed={() => { if (!holeMarkingInstanceId) onClearSelection(); }}
+      >
       <color attach="background" args={['#f8fafc']} />
       <ambientLight intensity={1.45} />
       <directionalLight position={[45, 65, 90]} intensity={2.2} castShadow />
@@ -447,8 +610,8 @@ export default function LibraryAssemblyCanvas({
           <PartInstance
             key={instance.instanceId}
             instance={instance}
-            holeMarking={holeMarkingInstanceId === instance.instanceId}
-            onSelect={() => onSelect(instance.instanceId)}
+            holeMarkingShape={holeMarkingInstanceId === instance.instanceId ? holeMarkingShape : null}
+            onSelect={() => onSelect(instance.instanceId, false)}
             onRegisterObject={registerObject}
             onConnectorsReady={handleConnectorsReady}
             onLoadState={handleLoadState}
@@ -456,6 +619,14 @@ export default function LibraryAssemblyCanvas({
           />
         ))}
       </group>
+
+      {selectedInstanceIds.map((instanceId) => objects[instanceId] && (
+        <SelectionBounds
+          key={`selection-${instanceId}`}
+          object={objects[instanceId]}
+          primary={instanceId === selectedInstanceId}
+        />
+      ))}
 
       {mateMode && instances.map((instance) => (
         <ConnectorMarkers
@@ -475,9 +646,11 @@ export default function LibraryAssemblyCanvas({
           key={`hole-markers-${instance.instanceId}`}
           instance={instance}
           connectors={(connectorsByInstance[instance.instanceId] ?? []).filter(
-            (connector) => connector.id.startsWith('manual-hole-'),
+            (connector) => connector.id.startsWith(
+              holeMarkingShape === 'square' ? 'manual-square-hole-' : 'manual-hole-',
+            ),
           )}
-          mode="beam"
+          mode={holeMarkingShape === 'square' ? 'hole-align' : 'beam'}
           picks={[]}
           onPick={() => {}}
           interactive={false}
@@ -515,7 +688,25 @@ export default function LibraryAssemblyCanvas({
         fadeDistance={280}
         infiniteGrid
       />
-      <TrackballControls makeDefault rotateSpeed={3.2} panSpeed={0.9} zoomSpeed={1.15} />
-    </Canvas>
+        <TrackballControls
+          makeDefault
+          enabled={!lasso}
+          rotateSpeed={3.2}
+          panSpeed={0.9}
+          zoomSpeed={1.15}
+        />
+      </Canvas>
+      {lasso && Math.hypot(lasso.currentX - lasso.startX, lasso.currentY - lasso.startY) >= 5 && (
+        <div
+          className="pointer-events-none absolute border-2 border-emerald-500 bg-emerald-200/20"
+          style={{
+            left: Math.min(lasso.startX, lasso.currentX),
+            top: Math.min(lasso.startY, lasso.currentY),
+            width: Math.abs(lasso.currentX - lasso.startX),
+            height: Math.abs(lasso.currentY - lasso.startY),
+          }}
+        />
+      )}
+    </div>
   );
 }

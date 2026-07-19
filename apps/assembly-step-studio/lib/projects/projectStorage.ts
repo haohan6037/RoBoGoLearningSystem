@@ -1,6 +1,11 @@
 'use client';
 
-import type { AssemblyProject, StudioProjectRecord } from '@/types/assembly';
+import type { AssemblyProject, StudioProjectRecord, StudioProjectType } from '@/types/assembly';
+import {
+  buildInstructionsFromAssemblyRecord,
+  buildStudioProjectRecord,
+  normalizeStudioProjectRecord,
+} from '@/lib/projects/projectRecords';
 
 const DB_NAME = 'assembly-step-studio-projects';
 const DB_VERSION = 1;
@@ -42,35 +47,6 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
   });
 }
 
-function buildEmptyAssemblyProject(name: string): AssemblyProject {
-  return {
-    version: '0.1.0',
-    projectName: name,
-    modelObjectTree: [],
-    disassemblySteps: [],
-    assemblySteps: [],
-  };
-}
-
-function normalizeRecord(record: StudioProjectRecord): StudioProjectRecord {
-  return {
-    ...record,
-    status: record.status ?? 'Published',
-    owner: record.owner || 'Admin',
-    tags: record.tags ?? [],
-    data: {
-      ...record.data,
-      projectName: record.name,
-      version: '0.1.0',
-      modelObjectTree: record.data.modelObjectTree ?? [],
-      disassemblySteps: record.data.disassemblySteps ?? [],
-      assemblySteps: record.data.assemblySteps ?? [],
-    },
-    modelAsset: record.modelAsset ?? null,
-    coverAsset: record.coverAsset ?? null,
-  };
-}
-
 function cloneProjectData(project: AssemblyProject): AssemblyProject {
   return JSON.parse(JSON.stringify(project)) as AssemblyProject;
 }
@@ -92,7 +68,7 @@ export async function listStudioProjects(): Promise<StudioProjectRecord[]> {
   const records = await requestToPromise(store.getAll());
   await transactionDone(transaction);
   return (records as StudioProjectRecord[])
-    .map(normalizeRecord)
+    .map(normalizeStudioProjectRecord)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
@@ -102,11 +78,11 @@ export async function loadStudioProject(projectId: string): Promise<StudioProjec
   const store = transaction.objectStore(PROJECT_STORE);
   const record = await requestToPromise(store.get(projectId));
   await transactionDone(transaction);
-  return record ? normalizeRecord(record as StudioProjectRecord) : null;
+  return record ? normalizeStudioProjectRecord(record as StudioProjectRecord) : null;
 }
 
 export async function saveStudioProject(record: StudioProjectRecord): Promise<StudioProjectRecord> {
-  const nextRecord = normalizeRecord({
+  const nextRecord = normalizeStudioProjectRecord({
     ...record,
     updatedAt: record.updatedAt || new Date().toISOString(),
   });
@@ -118,21 +94,18 @@ export async function saveStudioProject(record: StudioProjectRecord): Promise<St
   return nextRecord;
 }
 
-export async function createStudioProject(name: string): Promise<StudioProjectRecord> {
-  const now = new Date().toISOString();
-  const record: StudioProjectRecord = {
-    id: crypto.randomUUID(),
-    name,
-    status: 'Published',
-    createdAt: now,
-    updatedAt: now,
-    owner: 'Admin',
-    tags: [],
-    data: buildEmptyAssemblyProject(name),
-    modelAsset: null,
-    coverAsset: null,
-  };
-  return saveStudioProject(record);
+export async function createStudioProject(
+  name: string,
+  projectType: StudioProjectType,
+): Promise<StudioProjectRecord> {
+  return saveStudioProject(buildStudioProjectRecord(name, projectType));
+}
+
+export async function createBuildInstructionsProject(
+  source: StudioProjectRecord,
+  modelBlob: Blob,
+): Promise<StudioProjectRecord> {
+  return saveStudioProject(buildInstructionsFromAssemblyRecord(source, modelBlob));
 }
 
 export async function deleteStudioProject(projectId: string): Promise<void> {
