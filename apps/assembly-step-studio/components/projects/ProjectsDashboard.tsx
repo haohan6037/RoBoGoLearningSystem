@@ -11,6 +11,8 @@ interface Props {
   onDeleteProject: (projectId: string) => Promise<void> | void;
   onCopyProjectLink: (projectId: string) => Promise<void> | void;
   onPreviewProject: (projectId: string) => void;
+  onPublishProject: (projectId: string) => Promise<void> | void;
+  onRevokeProject: (projectId: string) => Promise<void> | void;
 }
 
 function formatProjectDate(value: string): string {
@@ -47,6 +49,8 @@ export default function ProjectsDashboard({
   onDeleteProject,
   onCopyProjectLink,
   onPreviewProject,
+  onPublishProject,
+  onRevokeProject,
 }: Props) {
   const [query, setQuery] = useState('');
   const [projectType, setProjectType] = useState<StudioProjectType>('assembly');
@@ -308,7 +312,18 @@ export default function ProjectsDashboard({
                                         }}
                                         className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
                                       >
-                                        Preview Build View
+                                        Review Draft
+                                      </button>
+                                    )}
+                                    {project.projectType === 'build-instructions' && !project.publishedBuildId && (
+                                      <button
+                                        onClick={async () => {
+                                          setMenuProjectId(null);
+                                          await onPublishProject(project.id);
+                                        }}
+                                        className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                                      >
+                                        Publish Student Link
                                       </button>
                                     )}
                                     <button
@@ -320,7 +335,7 @@ export default function ProjectsDashboard({
                                     >
                                       Duplicate
                                     </button>
-                                    {project.projectType === 'build-instructions' && (
+                                    {project.projectType === 'build-instructions' && project.publishedBuildId && (
                                       <button
                                         onClick={async () => {
                                           setMenuProjectId(null);
@@ -330,6 +345,28 @@ export default function ProjectsDashboard({
                                       >
                                         Copy Build Link
                                       </button>
+                                    )}
+                                    {project.projectType === 'build-instructions' && project.publishedBuildId && (
+                                      <>
+                                        <button
+                                          onClick={async () => {
+                                            setMenuProjectId(null);
+                                            await onPublishProject(project.id);
+                                          }}
+                                          className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                                        >
+                                          Publish New Version
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            setMenuProjectId(null);
+                                            await onRevokeProject(project.id);
+                                          }}
+                                          className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-amber-700 transition hover:bg-amber-50"
+                                        >
+                                          Withdraw Student Link
+                                        </button>
+                                      </>
                                     )}
                                     <button
                                       onClick={async () => {

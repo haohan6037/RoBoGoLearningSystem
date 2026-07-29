@@ -15,6 +15,7 @@ export default function StepList({ mode }: Props) {
   const applyStep = useAssemblyStore((s) => s.applyStep);
   const deleteStep = useAssemblyStore((s) => s.deleteStep);
   const reorderStep = useAssemblyStore((s) => s.reorderStep);
+  const updateStepDescription = useAssemblyStore((s) => s.updateStepDescription);
 
   return (
     <div className="p-2 space-y-1">
@@ -34,6 +35,7 @@ export default function StepList({ mode }: Props) {
           onMoveDown={() => reorderStep(mode, step.id, 'down')}
           canMoveUp={index > 0}
           canMoveDown={index < steps.length - 1}
+          onDescriptionChange={mode === 'assembly' ? (description) => updateStepDescription(step.id, description) : undefined}
         />
       ))}
     </div>

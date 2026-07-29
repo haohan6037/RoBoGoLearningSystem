@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import LibraryAssemblyCanvas, {
   type HoleMarkingShape,
@@ -11,13 +11,18 @@ import LibraryAssemblyCanvas, {
   type ShaftAdjustment,
 } from '@/components/library/LibraryAssemblyCanvas';
 import {
+  applyOrderedLibraryMates,
   applySingleLibraryMate,
   applyTwoHoleLibraryMate,
 } from '@/lib/mate/applyLibraryMate';
 import {
   applyRigidGroupTransform,
   expandCustomGroupMemberIds,
+  findNextPartSpawnPosition,
+  measureAssemblyInstanceVolumes,
+  mergeConnectedRigidGroups,
   removeSelectedMembersFromGroups,
+  resolveAutomaticMateDirection,
 } from '@/lib/mate/assemblyGroups';
 import { createAssemblyGlbBlob, downloadAssemblyGlb } from '@/lib/partLibrary/exportAssembly';
 import {
@@ -26,26 +31,23 @@ import {
 } from '@/lib/partLibrary/search';
 import {
   createBuildInstructionsProject,
+  listStudioProjects,
   loadStudioProject,
   saveStudioProject,
 } from '@/lib/projects/projectStorage';
-import type { AssemblyMateRecord, AssemblyRigidGroup } from '@/types/assembly';
+import { refreshBuildInstructionsFromAssemblyRecord } from '@/lib/projects/projectRecords';
+import type { AssemblyMateRecord, AssemblyRigidGroup, CoverCapture } from '@/types/assembly';
 import type { PartLibraryCatalog, PartLibraryItem } from '@/types/partLibrary';
 
 const PART_COLORS = ['#356fe3', '#f47a32', '#7c3aed', '#0f9f76', '#db2777', '#d69e2e'];
 
-function connectorNormalsMatch(first: LibraryConnectorPick, second: LibraryConnectorPick): boolean {
-  return new THREE.Vector3(...first.connector.normal)
-    .dot(new THREE.Vector3(...second.connector.normal)) > 0.99;
-}
-
 function mateGuide(mode: LibraryMateMode, picks: LibraryConnectorPick[]): string {
   const pickCount = picks.length;
   if (mode === 'hole-align') {
-    if (pickCount === 0) return '1. Select a square or round hole on the fixed part.';
+    if (pickCount === 0) return '1. Select a square or round hole on the first part.';
     return picks[0].connector.kind === 'square-hole'
-      ? '2. Select a round hole on the moving part.'
-      : '2. Select a square hole on the moving part.';
+      ? '2. Select a round hole on the other part.'
+      : '2. Select a square hole on the other part.';
   }
   if (mode === 'pin') {
     return pickCount === 0 ? '1. Select a blue hole face.' : '2. Select an orange Pin stop-ring face.';
@@ -53,20 +55,18 @@ function mateGuide(mode: LibraryMateMode, picks: LibraryConnectorPick[]): string
   if (mode === 'multi-leg') {
     const holes = picks.filter((pick) => pick.connector.kind === 'hole').length;
     const legs = picks.filter((pick) => pick.connector.kind === 'pin-ring').length;
-    if (holes < 2) return `1. Select at least two matching holes (${holes} selected).`;
-    if (legs === 0) return `2. Select ${holes} orange leg rings in the same order, or add more holes first.`;
-    if (legs < holes) return `2. Select matching leg ring ${legs + 1} of ${holes}.`;
-    return `${holes} hole-and-leg pairs selected. Ready to connect.`;
+    if (holes < 2) return `1. Select at least two holes in connection order (${holes} selected).`;
+    if (legs === 0) return `2. Select ${holes} connector legs in matching order, or add more holes first.`;
+    if (legs < holes) return `2. Select connector C${legs + 1} for hole H${legs + 1}.`;
+    return `${holes} ordered pairs selected: H1↔C1 through H${holes}↔C${holes}.`;
   }
   if (mode === 'shaft') {
     return pickCount === 0
       ? '1. Select a blue hole face.'
       : '2. Select a yellow Shaft end. It will center automatically.';
   }
-  if (pickCount === 0) return '1. Select hole 1 on the fixed Beam or Plate.';
-  if (pickCount === 1) return '2. Select hole 2 on the same face.';
-  if (pickCount === 2) return '3. Select matching hole 1 on the moving part.';
-  return '4. Select matching hole 2 on the same face.';
+  if (pickCount === 0) return '1. Select the hole face on the fixed part.';
+  return '2. Select the hole face on the Spacer or other part.';
 }
 
 function connectorWorldPosition(
@@ -110,6 +110,8 @@ export default function ModelLibraryLab({
   const [exportError, setExportError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const [coverCaptureRequest, setCoverCaptureRequest] = useState(0);
+  const [coverStatus, setCoverStatus] = useState<'idle' | 'capturing' | 'saved'>('idle');
 
   useEffect(() => {
     void loadStudioProject(projectId).then((record) => {
@@ -174,13 +176,11 @@ export default function ModelLibraryLab({
   const addPart = (part: PartLibraryItem) => {
     const instanceId = crypto.randomUUID();
     const index = instances.length;
-    const column = index % 4;
-    const row = Math.floor(index / 4);
     const next: LibraryPartInstance = {
       instanceId,
       part,
       color: PART_COLORS[index % PART_COLORS.length],
-      position: [(column - 1.5) * 38, (row - 0.5) * 34, 0],
+      position: findNextPartSpawnPosition(assemblyRoot),
       quaternion: [0, 0, 0, 1],
     };
     setAssemblyReady(false);
@@ -230,12 +230,13 @@ export default function ModelLibraryLab({
     quaternion: [number, number, number, number],
   ) => {
     const rigidGroup = groups.find((group) => group.instanceIds.includes(instanceId));
+    const isShaftFineAdjustment = shaftAdjustment?.instanceId === instanceId;
     setInstances((current) => applyRigidGroupTransform(
       current,
       instanceId,
       position,
       quaternion,
-      rigidGroup?.instanceIds ?? [instanceId],
+      isShaftFineAdjustment ? [instanceId] : rigidGroup?.instanceIds ?? [instanceId],
     ));
   };
 
@@ -288,7 +289,6 @@ export default function ModelLibraryLab({
     setConnectorPicks([]);
     setMateError(null);
     setShaftAdjustment(null);
-    setSelectedInstanceIds([]);
   };
 
   const startHoleMarking = (shape: HoleMarkingShape) => {
@@ -327,47 +327,104 @@ export default function ModelLibraryLab({
     const multiLegFixedCount = nextMode === 'multi-leg'
       ? picks.findIndex((pick) => pick.connector.kind === 'pin-ring')
       : 0;
-    const fixedInstance = instances.find((instance) => instance.instanceId === picks[0]?.instanceId);
-    const movingPickIndex = nextMode === 'beam' ? 2 : nextMode === 'multi-leg' ? multiLegFixedCount : 1;
-    const movingInstance = instances.find(
-      (instance) => instance.instanceId === picks[movingPickIndex]?.instanceId,
-    );
-    if (!fixedInstance || !movingInstance) {
+    const secondSideIndex = nextMode === 'multi-leg' ? multiLegFixedCount : 1;
+    const firstSidePicks = picks.slice(0, secondSideIndex);
+    const secondSidePicks = picks.slice(secondSideIndex);
+    if (nextMode === 'multi-leg') {
+      const holePartIds = new Set(firstSidePicks.map((pick) => pick.instanceId));
+      const connectorPartIds = new Set(secondSidePicks.map((pick) => pick.instanceId));
+      const isOriginalTwoPartConnection = holePartIds.size === 1 && connectorPartIds.size === 1;
+      if (!isOriginalTwoPartConnection) {
+        try {
+          const result = applyOrderedLibraryMates({
+            instances,
+            groups,
+            holePicks: firstSidePicks,
+            connectorPicks: secondSidePicks,
+            instanceVolumes: assemblyRoot ? measureAssemblyInstanceVolumes(assemblyRoot) : {},
+          });
+          const createdAt = new Date().toISOString();
+          setInstances(result.instances);
+          setGroups(result.groups);
+          setMateRecords((current) => [
+            ...current,
+            ...result.connections.map((connection) => {
+              const holeIsFixed = connection.fixedInstanceId === connection.hole.instanceId;
+              return {
+                id: crypto.randomUUID(),
+                type: 'multi-leg' as const,
+                fixedInstanceId: connection.fixedInstanceId,
+                movingInstanceId: connection.movingInstanceId,
+                fixedConnectorIds: [
+                  holeIsFixed ? connection.hole.connector.id : connection.connector.connector.id,
+                ],
+                movingConnectorIds: [
+                  holeIsFixed ? connection.connector.connector.id : connection.hole.connector.id,
+                ],
+                createdAt,
+              };
+            }),
+          ]);
+          setSelectedInstanceIds([secondSidePicks.at(-1)?.instanceId ?? firstSidePicks.at(-1)!.instanceId]);
+          setConnectorPicks([]);
+          setMateMode(null);
+          setMateError(null);
+          setShaftAdjustment(null);
+        } catch (error: unknown) {
+          setMateError(error instanceof Error ? error.message : 'Unable to connect the ordered pairs.');
+        }
+        return;
+      }
+    }
+    const firstInstance = instances.find((instance) => instance.instanceId === firstSidePicks[0]?.instanceId);
+    const secondInstance = instances.find((instance) => instance.instanceId === secondSidePicks[0]?.instanceId);
+    if (!firstInstance || !secondInstance) {
       setMateError('The selected parts are no longer available.');
       return;
     }
 
     try {
-      const transform = nextMode === 'beam'
-        ? applyTwoHoleLibraryMate(
-            fixedInstance,
-            movingInstance,
-            picks[0].connector,
-            picks[1].connector,
-            picks[2].connector,
-            picks[3].connector,
-          )
-        : nextMode === 'multi-leg'
+      const sharedGroup = groups.find((group) => (
+        group.instanceIds.includes(firstInstance.instanceId)
+        && group.instanceIds.includes(secondInstance.instanceId)
+      ));
+      if (sharedGroup) throw new Error('These parts are already in the same group.');
+
+      const direction = resolveAutomaticMateDirection(
+        firstInstance.instanceId,
+        secondInstance.instanceId,
+        groups,
+        assemblyRoot ? measureAssemblyInstanceVolumes(assemblyRoot) : {},
+      );
+      const firstSideIsFixed = direction.fixedInstanceId === firstInstance.instanceId;
+      const fixedInstance = firstSideIsFixed ? firstInstance : secondInstance;
+      const movingInstance = firstSideIsFixed ? secondInstance : firstInstance;
+      const fixedPicks = firstSideIsFixed ? firstSidePicks : secondSidePicks;
+      const movingPicks = firstSideIsFixed ? secondSidePicks : firstSidePicks;
+      const transform = nextMode === 'multi-leg'
           ? applyTwoHoleLibraryMate(
               fixedInstance,
               movingInstance,
-              picks[0].connector,
-              picks[1].connector,
-              picks[multiLegFixedCount].connector,
-              picks[multiLegFixedCount + 1].connector,
+              fixedPicks[0].connector,
+              fixedPicks[1].connector,
+              movingPicks[0].connector,
+              movingPicks[1].connector,
             )
         : applySingleLibraryMate(
             fixedInstance,
             movingInstance,
-            picks[0].connector,
-            picks[1].connector,
-            { centerFixedConnector: nextMode === 'shaft' },
+            fixedPicks[0].connector,
+            movingPicks[0].connector,
+            {
+              centerFixedConnector: nextMode === 'shaft',
+              centerMovingConnector: nextMode === 'shaft',
+            },
           );
 
       if (nextMode === 'multi-leg') {
-        for (let index = 0; index < multiLegFixedCount; index += 1) {
-          const fixedPosition = connectorWorldPosition(fixedInstance, picks[index]);
-          const movingPosition = connectorWorldPosition(transform, picks[multiLegFixedCount + index]);
+        for (let index = 0; index < fixedPicks.length; index += 1) {
+          const fixedPosition = connectorWorldPosition(fixedInstance, fixedPicks[index]);
+          const movingPosition = connectorWorldPosition(transform, movingPicks[index]);
           if (fixedPosition.distanceTo(movingPosition) > 0.15) {
             throw new Error('The selected hole and leg order does not match. Select each leg in the same order as its hole.');
           }
@@ -375,29 +432,29 @@ export default function ModelLibraryLab({
       }
 
       updateInstanceTransform(movingInstance.instanceId, transform.position, transform.quaternion);
+      setGroups((current) => mergeConnectedRigidGroups(
+        current,
+        fixedInstance.instanceId,
+        movingInstance.instanceId,
+      ));
       setMateRecords((current) => [...current, {
         id: crypto.randomUUID(),
         type: nextMode,
         fixedInstanceId: fixedInstance.instanceId,
         movingInstanceId: movingInstance.instanceId,
-        fixedConnectorIds: nextMode === 'beam'
-          ? [picks[0].connector.id, picks[1].connector.id]
-          : nextMode === 'multi-leg'
-            ? picks.slice(0, multiLegFixedCount).map((pick) => pick.connector.id)
-          : [picks[0].connector.id],
-        movingConnectorIds: nextMode === 'beam'
-          ? [picks[2].connector.id, picks[3].connector.id]
-          : nextMode === 'multi-leg'
-            ? picks.slice(multiLegFixedCount).map((pick) => pick.connector.id)
-          : [picks[1].connector.id],
+        fixedConnectorIds: fixedPicks.map((pick) => pick.connector.id),
+        movingConnectorIds: movingPicks.map((pick) => pick.connector.id),
         createdAt: new Date().toISOString(),
       }]);
-      setSelectedInstanceIds([movingInstance.instanceId]);
+      const shaftPick = nextMode === 'shaft'
+        ? picks.find((pick) => pick.connector.kind === 'shaft-end')
+        : undefined;
+      setSelectedInstanceIds([shaftPick?.instanceId ?? movingInstance.instanceId]);
       setConnectorPicks([]);
       setMateMode(null);
       setMateError(null);
-      setShaftAdjustment(nextMode === 'shaft'
-        ? { instanceId: movingInstance.instanceId, axis: picks[1].connector.axis }
+      setShaftAdjustment(nextMode === 'shaft' && shaftPick
+        ? { instanceId: shaftPick.instanceId, axis: shaftPick.connector.axis }
         : null);
     } catch (error: unknown) {
       setMateError(error instanceof Error ? error.message : 'Unable to connect these parts.');
@@ -479,13 +536,6 @@ export default function ModelLibraryLab({
       const legCount = selectingLegs ? connectorPicks.length - firstLegIndex : 0;
 
       if (!selectingLegs && pick.connector.kind === 'hole') {
-        if (connectorPicks.length > 0 && (
-          pick.instanceId !== connectorPicks[0].instanceId
-          || !connectorNormalsMatch(connectorPicks[0], pick)
-        )) {
-          setMateError('Select holes on the same face of the same fixed part.');
-          return;
-        }
         setConnectorPicks([...connectorPicks, pick]);
         return;
       }
@@ -496,7 +546,7 @@ export default function ModelLibraryLab({
           return;
         }
         if (pick.instanceId === connectorPicks[0].instanceId) {
-          setMateError('Select orange leg rings on a different moving part.');
+          setMateError('C1 cannot connect H1 to the same part.');
           return;
         }
         setConnectorPicks([...connectorPicks, pick]);
@@ -505,13 +555,16 @@ export default function ModelLibraryLab({
 
       if (
         pick.connector.kind !== 'pin-ring'
-        || pick.instanceId !== connectorPicks[firstLegIndex].instanceId
       ) {
-        setMateError('Continue selecting orange leg rings on the same moving part.');
+        setMateError('Continue selecting orange connector legs.');
         return;
       }
       if (legCount >= holeCount) {
         setMateError('The number of selected legs already matches the selected holes.');
+        return;
+      }
+      if (pick.instanceId === connectorPicks[legCount].instanceId) {
+        setMateError(`C${legCount + 1} cannot connect H${legCount + 1} to the same part.`);
         return;
       }
       setConnectorPicks([...connectorPicks, pick]);
@@ -526,32 +579,8 @@ export default function ModelLibraryLab({
       setConnectorPicks([pick]);
       return;
     }
-    if (connectorPicks.length === 1) {
-      if (
-        pick.instanceId !== connectorPicks[0].instanceId
-        || pick.connector.id === connectorPicks[0].connector.id
-        || !connectorNormalsMatch(connectorPicks[0], pick)
-      ) {
-        setMateError('Select a different hole on the same face of the fixed part.');
-        return;
-      }
-      setConnectorPicks([...connectorPicks, pick]);
-      return;
-    }
-    if (connectorPicks.length === 2) {
-      if (pick.instanceId === connectorPicks[0].instanceId) {
-        setMateError('Select the matching hole on a different moving part.');
-        return;
-      }
-      setConnectorPicks([...connectorPicks, pick]);
-      return;
-    }
-    if (
-      pick.instanceId !== connectorPicks[2].instanceId
-      || pick.connector.id === connectorPicks[2].connector.id
-      || !connectorNormalsMatch(connectorPicks[2], pick)
-    ) {
-      setMateError('Select a different hole on the same face of the moving part.');
+    if (pick.instanceId === connectorPicks[0].instanceId) {
+      setMateError('Select a hole face on a different part.');
       return;
     }
     setConnectorPicks([...connectorPicks, pick]);
@@ -570,6 +599,19 @@ export default function ModelLibraryLab({
     }
   };
 
+  const syncLinkedBuildInstructions = async (source: NonNullable<Awaited<ReturnType<typeof loadStudioProject>>>) => {
+    const linkedProjects = (await listStudioProjects()).filter((project) => (
+      project.projectType === 'build-instructions'
+      && project.sourceAssemblyProjectId === source.id
+    ));
+    await Promise.all(linkedProjects.map(async (summary) => {
+      const project = await loadStudioProject(summary.id);
+      if (project) {
+        await saveStudioProject(refreshBuildInstructionsFromAssemblyRecord(project, source));
+      }
+    }));
+  };
+
   const saveAssembly = async () => {
     const record = await loadStudioProject(projectId);
     if (!record || record.projectType !== 'assembly') return null;
@@ -581,6 +623,7 @@ export default function ModelLibraryLab({
         updatedAt: new Date().toISOString(),
         assemblyData: { instances, mateRecords, groups },
       });
+      await syncLinkedBuildInstructions(saved);
       setSaveStatus('saved');
       window.setTimeout(() => setSaveStatus('idle'), 1800);
       return saved;
@@ -588,6 +631,50 @@ export default function ModelLibraryLab({
       setSaving(false);
     }
   };
+
+  const captureCover = () => {
+    if (!assemblyReady) return;
+    setExportError(null);
+    setCoverStatus('capturing');
+    setCoverCaptureRequest((current) => current + 1);
+  };
+
+  const handleCoverCaptured = useCallback(async ({ blob, camera }: CoverCapture) => {
+    try {
+      const record = await loadStudioProject(projectId);
+      if (!record || record.projectType !== 'assembly') {
+        throw new Error('Unable to save a cover for this Assembly Project.');
+      }
+      const updatedAt = new Date().toISOString();
+      const saved = await saveStudioProject({
+        ...record,
+        name: assemblyName.trim() || 'Untitled Assembly',
+        updatedAt,
+        assemblyData: { instances, mateRecords, groups },
+        coverAsset: {
+          blob,
+          camera,
+          type: blob.type || 'image/webp',
+          updatedAt,
+        },
+      });
+      await syncLinkedBuildInstructions(saved);
+      setSaveStatus('saved');
+      setCoverStatus('saved');
+      window.setTimeout(() => {
+        setSaveStatus('idle');
+        setCoverStatus('idle');
+      }, 1800);
+    } catch (error: unknown) {
+      setCoverStatus('idle');
+      setExportError(error instanceof Error ? error.message : 'Unable to save the model cover.');
+    }
+  }, [assemblyName, groups, instances, mateRecords, projectId]);
+
+  const handleCoverCaptureError = useCallback((message: string) => {
+    setCoverStatus('idle');
+    setExportError(message);
+  }, []);
 
   const startBuildInstructions = async () => {
     if (!assemblyRoot || !assemblyReady) return;
@@ -613,7 +700,7 @@ export default function ModelLibraryLab({
           const firstLegIndex = connectorPicks.findIndex((pick) => pick.connector.kind === 'pin-ring');
           return firstLegIndex >= 2 && connectorPicks.length === firstLegIndex * 2;
         })()
-    : mateMode === 'beam' && connectorPicks.length === 4;
+    : mateMode === 'beam' && connectorPicks.length === 2;
 
   return (
     <main className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-white text-slate-900">
@@ -646,6 +733,13 @@ export default function ModelLibraryLab({
             className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {exporting ? 'Exporting...' : 'Export GLB'}
+          </button>
+          <button
+            disabled={!assemblyReady || coverStatus === 'capturing'}
+            onClick={captureCover}
+            className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            {coverStatus === 'capturing' ? 'Capturing...' : coverStatus === 'saved' ? 'Cover Saved' : 'Set Cover'}
           </button>
           <button
             disabled={!assemblyReady || exporting}
@@ -859,6 +953,9 @@ export default function ModelLibraryLab({
             onHoleMarkingResult={handleHoleMarkingResult}
             onAssemblyRootChange={setAssemblyRoot}
             onReadyChange={setAssemblyReady}
+            coverCaptureRequest={coverCaptureRequest}
+            onCoverCaptured={handleCoverCaptured}
+            onCoverCaptureError={handleCoverCaptureError}
           />
         </section>
       </div>

@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-16T09:15:00.083Z",
+  "generatedAt": "2026-07-28T11:42:38.891Z",
   "sourceDirectory": "CAD Files",
-  "total": 467,
+  "total": 468,
   "categories": [
     "Beams",
     "Connectors",
@@ -915,6 +915,14 @@
       "category": "Panels",
       "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2.5x5 Asymmetric End Flat Panel (228-2500-2017).step",
       "thumbnailUrl": "/part-library/thumbnails/2-5x5-asymmetric-end-flat-panel-228-2500-2017.png"
+    },
+    {
+      "id": "228-2536",
+      "name": "200mm Travel Omni-Directional Wheel",
+      "partNumber": "228-2536",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/200mm Travel Omni-Directional Wheel (228-2536).step",
+      "thumbnailUrl": "/part-library/thumbnails/200mm-travel-omni-directional-wheel-228-2536.png"
     },
     {
       "id": "228-2500-164",

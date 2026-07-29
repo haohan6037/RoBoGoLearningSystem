@@ -36,6 +36,45 @@ export function buildStudioProjectRecord(
   };
 }
 
+function buildPartsListFromAssemblyRecord(
+  source: StudioProjectRecord,
+): NonNullable<AssemblyProject['partsList']> {
+  const partCounts = new Map<string, NonNullable<AssemblyProject['partsList']>[number]>();
+  for (const instance of source.assemblyData?.instances ?? []) {
+    const existing = partCounts.get(instance.part.id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      partCounts.set(instance.part.id, {
+        id: instance.part.id,
+        name: instance.part.name,
+        partNumber: instance.part.partNumber,
+        thumbnailUrl: instance.part.thumbnailUrl,
+        quantity: 1,
+      });
+    }
+  }
+  return [...partCounts.values()].sort((a, b) => (
+    a.name.localeCompare(b.name, undefined, { numeric: true })
+  ));
+}
+
+export function refreshBuildInstructionsFromAssemblyRecord(
+  instructions: StudioProjectRecord,
+  source: StudioProjectRecord,
+): StudioProjectRecord {
+  return {
+    ...instructions,
+    sourceAssemblyProjectId: source.id,
+    updatedAt: new Date().toISOString(),
+    data: {
+      ...instructions.data,
+      partsList: buildPartsListFromAssemblyRecord(source),
+    },
+    coverAsset: source.coverAsset ? { ...source.coverAsset } : null,
+  };
+}
+
 export function buildInstructionsFromAssemblyRecord(
   source: StudioProjectRecord,
   modelBlob: Blob,
@@ -43,10 +82,13 @@ export function buildInstructionsFromAssemblyRecord(
 ): StudioProjectRecord {
   const record = buildStudioProjectRecord(`${source.name} Build Instructions`, 'build-instructions', id);
   const modelName = `${source.name.replace(/[^a-z0-9-_]+/gi, '_') || 'assembly'}.glb`;
+  const refreshed = refreshBuildInstructionsFromAssemblyRecord(record, source);
   return {
-    ...record,
-    sourceAssemblyProjectId: source.id,
-    data: { ...record.data, modelFileName: modelName },
+    ...refreshed,
+    data: {
+      ...refreshed.data,
+      modelFileName: modelName,
+    },
     modelAsset: {
       name: modelName,
       type: 'model/gltf-binary',
@@ -72,6 +114,7 @@ export function normalizeStudioProjectRecord(
       modelObjectTree: record.data?.modelObjectTree ?? [],
       disassemblySteps: record.data?.disassemblySteps ?? [],
       assemblySteps: record.data?.assemblySteps ?? [],
+      partsList: record.data?.partsList ?? [],
     },
     assemblyData: projectType === 'assembly'
       ? {

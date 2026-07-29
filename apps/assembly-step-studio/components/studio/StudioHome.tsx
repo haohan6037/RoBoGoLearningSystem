@@ -10,8 +10,10 @@ import {
   createStudioProject,
   deleteStudioProject,
   duplicateStudioProject,
+  getPublishedBuildLink,
   listStudioProjects,
-  makeStudioProjectLink,
+  publishStudioProject,
+  revokeStudioPublication,
 } from '@/lib/projects/projectStorage';
 import type { StudioProjectRecord, StudioProjectType } from '@/types/assembly';
 
@@ -96,13 +98,36 @@ export default function StudioHome() {
   };
 
   const handleCopyProjectLink = async (nextProjectId: string) => {
-    const link = makeStudioProjectLink(nextProjectId);
+    const project = projects.find((candidate) => candidate.id === nextProjectId);
+    if (!project?.publishedBuildId) {
+      setNotice('Publish this project before copying its student link');
+      return;
+    }
+    const link = await getPublishedBuildLink(project.publishedBuildId);
     await copyTextToClipboard(link);
     setNotice('Student build link copied to clipboard');
   };
 
   const handlePreviewProject = (nextProjectId: string) => {
-    window.open(makeStudioProjectLink(nextProjectId), '_blank', 'noopener,noreferrer');
+    const url = new URL('/', window.location.origin);
+    url.searchParams.set('projectId', nextProjectId);
+    url.searchParams.set('view', 'build');
+    window.open(url.toString(), '_blank', 'noopener,noreferrer');
+  };
+
+  const handlePublishProject = async (nextProjectId: string) => {
+    const publication = await publishStudioProject(nextProjectId);
+    await refreshProjects();
+    await copyTextToClipboard(await getPublishedBuildLink(publication.id));
+    setNotice('Published — student link copied to clipboard');
+  };
+
+  const handleRevokeProject = async (nextProjectId: string) => {
+    const project = projects.find((candidate) => candidate.id === nextProjectId);
+    if (!project?.publishedBuildId) return;
+    await revokeStudioPublication(project.publishedBuildId);
+    await refreshProjects();
+    setNotice('Student link withdrawn');
   };
 
   return (
@@ -141,6 +166,8 @@ export default function StudioHome() {
             onDeleteProject={handleDeleteProject}
             onCopyProjectLink={handleCopyProjectLink}
             onPreviewProject={handlePreviewProject}
+            onPublishProject={handlePublishProject}
+            onRevokeProject={handleRevokeProject}
           />
         )
       ) : (

@@ -28,6 +28,15 @@ export type AssemblyStep = {
   selectedObjectUuids: string[];
   camera?: CameraView;
   createdAt: string;
+  sourceStepId?: string;
+};
+
+export type BuildPartSummary = {
+  id: string;
+  name: string;
+  partNumber?: string;
+  thumbnailUrl?: string | null;
+  quantity: number;
 };
 
 export type AssemblyProject = {
@@ -38,6 +47,7 @@ export type AssemblyProject = {
   disassemblySteps: AssemblyStep[];
   assemblySteps: AssemblyStep[];
   currentStepId?: string;
+  partsList?: BuildPartSummary[];
 };
 
 export type StudioProjectStatus = 'In Progress' | 'Published';
@@ -102,10 +112,20 @@ export type StudioProjectRecord = {
   data: AssemblyProject;
   assemblyData?: AssemblyWorkspaceData | null;
   sourceAssemblyProjectId?: string;
+  publishedBuildId?: string;
+  publishedAt?: string;
   modelAsset?: {
     name: string;
     type: string;
     blob: Blob;
   } | null;
   coverAsset?: ProjectCoverAsset | null;
+};
+
+export type PublishedBuildRecord = {
+  id: string;
+  projectId: string;
+  publishedAt: string;
+  revokedAt?: string;
+  project: StudioProjectRecord;
 };

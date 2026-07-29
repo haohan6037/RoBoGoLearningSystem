@@ -11,7 +11,7 @@ interface Props {
   stepCount: number;
   coverImageUrl: string | null;
   coverCamera?: CameraView;
-  onBackToProjects: () => void;
+  onBackToProjects?: () => void;
 }
 
 export default function BuildStepsPresentation({
@@ -22,6 +22,7 @@ export default function BuildStepsPresentation({
   onBackToProjects,
 }: Props) {
   const steps = useAssemblyStore((s) => s.assemblySteps);
+  const partsList = useAssemblyStore((s) => s.partsList);
   const currentStepId = useAssemblyStore((s) => s.currentStepId);
   const applyStep = useAssemblyStore((s) => s.applyStep);
   const deselectAll = useAssemblyStore((s) => s.deselectAll);
@@ -29,6 +30,10 @@ export default function BuildStepsPresentation({
   const [stepBrowserOpen, setStepBrowserOpen] = useState(false);
   const [stepThumbnailUrls, setStepThumbnailUrls] = useState<Record<string, string>>({});
   const [thumbnailRequest, setThumbnailRequest] = useState<StepThumbnailCaptureRequest>();
+  const [partsOpen, setPartsOpen] = useState(false);
+  const [cameraResetToken, setCameraResetToken] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const firstStepApplied = useRef(false);
   const thumbnailUrlsRef = useRef<Record<string, string>>({});
   const thumbnailTokenRef = useRef(0);
@@ -63,6 +68,12 @@ export default function BuildStepsPresentation({
     Object.values(thumbnailUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
   }, []);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => setFullscreen(document.fullscreenElement === containerRef.current);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   const selectStep = useCallback((stepId: string) => {
     applyStep(stepId);
     deselectAll();
@@ -82,16 +93,31 @@ export default function BuildStepsPresentation({
     if (nextStep) selectStep(nextStep.id);
   };
 
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await containerRef.current?.requestFullscreen();
+    }
+  };
+
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-white text-slate-900">
+    <div ref={containerRef} className="flex h-dvh min-h-0 flex-col overflow-hidden bg-white text-slate-900">
       <header className="flex min-h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">RoBoGo Build Instruction</p>
           <h1 className="truncate text-lg font-semibold text-slate-900">{projectName}</h1>
         </div>
-        <button onClick={onBackToProjects} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-          Projects
+        <div className="flex items-center gap-2">
+        <button type="button" onClick={() => void toggleFullscreen()} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+          {fullscreen ? 'Exit Full Screen' : 'Full Screen'}
         </button>
+        {onBackToProjects && (
+          <button onClick={onBackToProjects} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+            Projects
+          </button>
+        )}
+        </div>
       </header>
 
       {!started ? (
@@ -122,6 +148,25 @@ export default function BuildStepsPresentation({
               <p className="mt-3 text-sm leading-6 text-slate-600">
                 {stepCount > 0 ? `${stepCount} guided build steps` : 'Build steps have not been generated yet.'}
               </p>
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">Parts checklist</p>
+                    <p className="mt-1 text-xs text-slate-500">{partsList.reduce((total, part) => total + part.quantity, 0)} parts · {partsList.length} types</p>
+                  </div>
+                  <button type="button" onClick={() => setPartsOpen(true)} disabled={partsList.length === 0} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-blue-600 disabled:text-slate-400">
+                    View Details
+                  </button>
+                </div>
+                {partsList.length > 0 ? (
+                  <ul className="mt-3 space-y-1.5 text-xs text-slate-600">
+                    {partsList.slice(0, 4).map((part) => <li key={part.id}>{part.name} × {part.quantity}</li>)}
+                    {partsList.length > 4 && <li className="font-medium text-slate-400">+ {partsList.length - 4} more part types</li>}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-xs leading-5 text-slate-500">No structured parts list is available for this older project.</p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setStarted(true)}
@@ -141,10 +186,24 @@ export default function BuildStepsPresentation({
             initialCameraView={coverCamera}
             stepThumbnailRequest={thumbnailRequest}
             onStepThumbnailCaptured={handleStepThumbnailCaptured}
+            cameraResetToken={cameraResetToken}
           />
           <div className="pointer-events-none absolute left-4 top-4 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-sm">
             Left drag to rotate · Right drag to move · Scroll to zoom · Click a part to see its name
           </div>
+          <button
+            type="button"
+            onClick={() => setCameraResetToken((token) => token + 1)}
+            className="absolute right-4 top-4 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-blue-50 hover:text-blue-600"
+          >
+            Reset View
+          </button>
+          {activeStep?.description && (
+            <aside className="absolute bottom-4 left-4 max-w-md rounded-2xl border border-amber-200 bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-lg">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">Teacher tip</p>
+              <p className="mt-1 leading-5">{activeStep.description}</p>
+            </aside>
+          )}
         </section>
 
         {stepBrowserOpen && (
@@ -268,6 +327,37 @@ export default function BuildStepsPresentation({
           </button>
         </nav>
       </main>
+      )}
+      {partsOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setPartsOpen(false)}>
+          <section className="max-h-[88vh] w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+              <div>
+                <h2 className="text-xl font-semibold">Parts Checklist</h2>
+                <p className="mt-1 text-sm text-slate-500">Prepare these parts before starting the build.</p>
+              </div>
+              <button type="button" onClick={() => setPartsOpen(false)} className="rounded-full border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600">Close</button>
+            </header>
+            <div className="grid max-h-[calc(88vh-88px)] grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-3 sm:p-6 lg:grid-cols-4">
+              {partsList.map((part) => (
+                <article key={part.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                  <div className="relative aspect-[4/3] bg-slate-50">
+                    {part.thumbnailUrl ? (
+                      <Image src={part.thumbnailUrl} alt={part.name} fill sizes="220px" className="object-contain p-3" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-3 text-center text-xs text-slate-400">No preview available</div>
+                    )}
+                    <span className="absolute right-2 top-2 rounded-full bg-blue-600 px-2.5 py-1 text-sm font-bold text-white">× {part.quantity}</span>
+                  </div>
+                  <div className="border-t border-slate-200 p-3">
+                    <p className="text-sm font-semibold leading-5 text-slate-800">{part.name}</p>
+                    {part.partNumber && <p className="mt-1 text-xs text-slate-400">{part.partNumber}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

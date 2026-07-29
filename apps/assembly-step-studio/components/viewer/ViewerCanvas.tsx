@@ -158,6 +158,7 @@ interface SceneContentProps {
   initialCameraView?: CameraView;
   stepThumbnailRequest?: StepThumbnailCaptureRequest;
   onStepThumbnailCaptured?: (stepId: string, blob: Blob) => void;
+  cameraResetToken?: number;
 }
 
 function SceneContent({
@@ -168,11 +169,15 @@ function SceneContent({
   initialCameraView,
   stepThumbnailRequest,
   onStepThumbnailCaptured,
+  cameraResetToken = 0,
 }: SceneContentProps) {
   const modelUrl = useAssemblyStore((s) => s.modelUrl);
   const initialObjectStates = useAssemblyStore((s) => s.initialObjectStates);
   const selectedUuids = useAssemblyStore((s) => s.selectedObjectUuids);
   const stepTransitionToken = useAssemblyStore((s) => s.stepTransitionToken);
+  const currentStepId = useAssemblyStore((s) => s.currentStepId);
+  const assemblySteps = useAssemblyStore((s) => s.assemblySteps);
+  const setCurrentCameraView = useAssemblyStore((s) => s.setCurrentCameraView);
   const updateObjectPositions = useAssemblyStore((s) => s.updateObjectPositions);
   const selectObject = useAssemblyStore((s) => s.selectObject);
   const deselectAll = useAssemblyStore((s) => s.deselectAll);
@@ -189,7 +194,6 @@ function SceneContent({
   const lastThumbnailRequest = useRef(0);
   const initialCameraApplied = useRef(false);
   const initialModelFitApplied = useRef(false);
-  const initialStepFitApplied = useRef(false);
   const modelSceneRef = useRef<THREE.Object3D | null>(null);
   useEffect(() => {
     if (!initialCameraView || initialCameraApplied.current || !controlsRef.current) return;
@@ -199,6 +203,16 @@ function SceneContent({
     controlsRef.current.update();
     initialCameraApplied.current = true;
   }, [camera, initialCameraView]);
+
+  const rememberCameraView = useCallback(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    setCurrentCameraView({
+      position: camera.position.toArray(),
+      target: controls.target.toArray(),
+      up: camera.up.toArray(),
+    });
+  }, [camera, setCurrentCameraView]);
 
   useEffect(() => {
     if (
@@ -446,19 +460,21 @@ function SceneContent({
   }, [fitVisibleModel, selectedUuids, variant]);
 
   useEffect(() => {
-    if (
-      variant !== 'presentation' ||
-      !modelSceneRef.current ||
-      stepTransitionToken === 0 ||
-      initialStepFitApplied.current
-    ) return;
-    initialStepFitApplied.current = true;
-    const timer = window.setTimeout(
-      () => modelSceneRef.current && fitVisibleModel(modelSceneRef.current),
-      560,
-    );
+    if (variant !== 'presentation' || !modelSceneRef.current || stepTransitionToken === 0) return;
+    const timer = window.setTimeout(() => {
+      const recommended = assemblySteps.find((step) => step.id === currentStepId)?.camera;
+      const controls = controlsRef.current;
+      if (recommended && controls) {
+        camera.position.fromArray(recommended.position);
+        if (recommended.up) camera.up.fromArray(recommended.up);
+        controls.target.fromArray(recommended.target);
+        controls.update();
+      } else if (modelSceneRef.current) {
+        fitVisibleModel(modelSceneRef.current);
+      }
+    }, 120);
     return () => window.clearTimeout(timer);
-  }, [fitVisibleModel, stepTransitionToken, variant]);
+  }, [assemblySteps, camera, cameraResetToken, currentStepId, fitVisibleModel, stepTransitionToken, variant]);
 
   useEffect(() => {
     if (variant !== 'presentation' || !modelSceneRef.current || !initialModelFitApplied.current) return;
@@ -642,6 +658,7 @@ function SceneContent({
         staticMoving={false}
         dynamicDampingFactor={0.16}
         mouseButtons={viewerMouseButtons(variant)}
+        onChange={rememberCameraView}
       />
       <GizmoHelper alignment="bottom-right" margin={[72, 72]}>
         <GizmoViewcube
@@ -687,6 +704,7 @@ interface ViewerCanvasProps {
   initialCameraView?: CameraView;
   stepThumbnailRequest?: StepThumbnailCaptureRequest;
   onStepThumbnailCaptured?: (stepId: string, blob: Blob) => void;
+  cameraResetToken?: number;
 }
 
 export default function ViewerCanvas({
@@ -695,6 +713,7 @@ export default function ViewerCanvas({
   initialCameraView,
   stepThumbnailRequest,
   onStepThumbnailCaptured,
+  cameraResetToken,
 }: ViewerCanvasProps) {
   const isPresentation = variant === 'presentation';
   const modelUrl = useAssemblyStore((s) => s.modelUrl);
@@ -737,6 +756,7 @@ export default function ViewerCanvas({
           initialCameraView={initialCameraView}
           stepThumbnailRequest={stepThumbnailRequest}
           onStepThumbnailCaptured={onStepThumbnailCaptured}
+          cameraResetToken={cameraResetToken}
         />
       </Canvas>
       {variant === 'editor' && onCoverCaptured && (

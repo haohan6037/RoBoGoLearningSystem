@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 
 let occtPromise: ReturnType<(typeof import('occt-import-js'))['default']> | null = null;
+type OcctInstance = Awaited<ReturnType<typeof getOcct>>;
+type StepResult = ReturnType<OcctInstance['ReadStepFile']>;
+const stepResultCache = new Map<string, Promise<StepResult>>();
 
 async function getOcct() {
   if (!occtPromise) {
@@ -13,12 +16,25 @@ async function getOcct() {
   return occtPromise;
 }
 
-export async function loadStepModel(url: string, color: THREE.ColorRepresentation) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Unable to load STEP file: ${response.status}`);
+async function loadStepResult(url: string): Promise<StepResult> {
+  const cached = stepResultCache.get(url);
+  if (cached) return cached;
 
-  const occt = await getOcct();
-  const result = occt.ReadStepFile(new Uint8Array(await response.arrayBuffer()), null);
+  const pending = Promise.all([fetch(url), getOcct()]).then(async ([response, occt]) => {
+    if (!response.ok) throw new Error(`Unable to load STEP file: ${response.status}`);
+    return occt.ReadStepFile(new Uint8Array(await response.arrayBuffer()), null);
+  });
+  stepResultCache.set(url, pending);
+  try {
+    return await pending;
+  } catch (error) {
+    stepResultCache.delete(url);
+    throw error;
+  }
+}
+
+export async function loadStepModel(url: string, color: THREE.ColorRepresentation) {
+  const result = await loadStepResult(url);
   if (!result.success || result.meshes.length === 0) {
     throw new Error('The STEP file did not contain a usable mesh.');
   }

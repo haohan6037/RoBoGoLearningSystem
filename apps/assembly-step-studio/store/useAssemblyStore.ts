@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ModelNode, ObjectState, AssemblyStep, AssemblyProject } from '@/types/assembly';
+import type { ModelNode, ObjectState, AssemblyStep, AssemblyProject, BuildPartSummary, CameraView } from '@/types/assembly';
 
 let stepCounter = 0;
 function makeId(): string {
@@ -18,6 +18,8 @@ interface AssemblyStore {
   initialObjectStates: Record<string, ObjectState>;
   disassemblySteps: AssemblyStep[];
   assemblySteps: AssemblyStep[];
+  partsList: BuildPartSummary[];
+  currentCameraView?: CameraView;
   currentStepId?: string;
   currentMode: 'edit' | 'disassembly-preview' | 'assembly-preview';
   stepTransitionToken: number;
@@ -39,7 +41,9 @@ interface AssemblyStore {
   showAll: () => void;
   moveSelected: (axis: 'x' | 'y' | 'z', delta: number) => void;
   resetSelectedTransform: () => void;
-  saveCurrentStep: (title: string, description?: string) => void;
+  saveCurrentStep: () => void;
+  updateStepDescription: (stepId: string, description: string) => void;
+  setCurrentCameraView: (camera: CameraView) => void;
   deleteStep: (stepId: string) => void;
   reorderStep: (mode: 'disassembly' | 'assembly', stepId: string, direction: 'up' | 'down') => void;
   applyStep: (stepId: string) => void;
@@ -144,6 +148,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   initialObjectStates: {},
   disassemblySteps: [],
   assemblySteps: [],
+  partsList: [],
   currentMode: 'edit',
   stepTransitionToken: 0,
 
@@ -161,6 +166,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
       initialObjectStates: {},
       disassemblySteps: [],
       assemblySteps: [],
+      partsList: [],
+      currentCameraView: undefined,
       currentStepId: undefined,
       currentMode: 'edit',
       stepTransitionToken: 0,
@@ -175,6 +182,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
       initialObjectStates: {},
       disassemblySteps: [],
       assemblySteps: [],
+      partsList: [],
+      currentCameraView: undefined,
       selectedObjectUuids: [],
       hoveredObjectUuid: undefined,
       activeMoveAxis: 'x',
@@ -284,19 +293,31 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
     set({ objectStates: updated, selectedObjectUuids: resettableSelection });
   },
 
-  saveCurrentStep: (title, description) => {
+  setCurrentCameraView: (camera) => set({ currentCameraView: camera }),
+
+  saveCurrentStep: () => {
     const state = get();
     const step: AssemblyStep = {
       id: makeId(),
       index: state.disassemblySteps.length + 1,
-      title,
-      description,
+      title: `Disassembly Step ${state.disassemblySteps.length + 1}`,
       mode: 'disassembly',
       objectStates: JSON.parse(JSON.stringify(state.objectStates)),
       selectedObjectUuids: [...state.selectedObjectUuids],
+      camera: state.currentCameraView,
       createdAt: new Date().toISOString(),
     };
     set({ disassemblySteps: [...state.disassemblySteps, step] });
+  },
+
+  updateStepDescription: (stepId, description) => {
+    const update = (steps: AssemblyStep[]) => steps.map((step) => (
+      step.id === stepId ? { ...step, description: description.trim() || undefined } : step
+    ));
+    set({
+      disassemblySteps: update(get().disassemblySteps),
+      assemblySteps: update(get().assemblySteps),
+    });
   },
 
   deleteStep: (stepId) => {
@@ -334,12 +355,15 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
 
   generateAssemblySteps: () => {
     const disassembly = get().disassemblySteps;
+    const existingBySource = new Map(get().assemblySteps.map((step) => [step.sourceStepId, step]));
     const reversed = [...disassembly].reverse().map((step, i) => ({
       ...step,
-      id: makeId(),
+      id: existingBySource.get(step.id)?.id ?? makeId(),
       index: i + 1,
       mode: 'assembly' as const,
       title: `Build Step ${i + 1}`,
+      description: existingBySource.get(step.id)?.description,
+      sourceStepId: step.id,
       createdAt: new Date().toISOString(),
     }));
     set({ assemblySteps: reversed });
@@ -352,6 +376,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
     modelObjectTree: get().objectTree,
     disassemblySteps: get().disassemblySteps,
     assemblySteps: get().assemblySteps,
+    partsList: get().partsList,
     currentStepId: get().currentStepId,
   }),
 
@@ -373,6 +398,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
       assemblySteps: reindexSteps(
         shouldRemap ? project.assemblySteps.map((step) => remapStep(step, uuidRemap)) : project.assemblySteps
       ),
+      partsList: project.partsList ?? [],
       currentStepId: project.currentStepId,
       hoveredObjectUuid: undefined,
       selectedObjectUuids: [],

@@ -1,6 +1,6 @@
 'use client';
 
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Grid, Html, TrackballControls, TransformControls } from '@react-three/drei';
 import {
   useCallback,
@@ -9,8 +9,10 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
+  type RefObject,
 } from 'react';
 import * as THREE from 'three';
+import type { TrackballControls as TrackballControlsImpl } from 'three-stdlib';
 import {
   buildLibraryConnectors,
   buildManualHoleConnectors,
@@ -20,7 +22,34 @@ import {
   type LibraryConnector,
 } from '@/lib/mate/libraryConnectors';
 import { loadStepModel } from '@/lib/mate/loadStep';
-import type { AssemblyPartInstance } from '@/types/assembly';
+import type { AssemblyPartInstance, CameraView, CoverCapture } from '@/types/assembly';
+
+const COVER_WIDTH = 1200;
+const COVER_HEIGHT = 675;
+
+function pixelsToWebp(pixels: Uint8Array, width: number, height: number): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return Promise.reject(new Error('Canvas 2D is unavailable.'));
+
+  const image = context.createImageData(width, height);
+  const rowSize = width * 4;
+  for (let y = 0; y < height; y += 1) {
+    const sourceStart = (height - y - 1) * rowSize;
+    image.data.set(pixels.subarray(sourceStart, sourceStart + rowSize), y * rowSize);
+  }
+  context.putImageData(image, 0, 0);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => blob ? resolve(blob) : reject(new Error('Failed to encode cover image.')),
+      'image/webp',
+      0.88,
+    );
+  });
+}
 
 export type LibraryPartInstance = AssemblyPartInstance;
 
@@ -346,7 +375,7 @@ function ConnectorMarkers({
             {selected && (
               <Html center position={[0, 0, 2.4]}>
                 <span className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-black text-white shadow-lg ${mode === 'multi-leg' && connector.kind === 'pin-ring' ? 'bg-purple-500' : 'bg-emerald-500'}`}>
-                  {mode === 'multi-leg' ? `${connector.kind === 'hole' ? 'H' : 'L'}${pairNumber}` : selectedIndex + 1}
+                  {mode === 'multi-leg' ? `${connector.kind === 'hole' ? 'H' : 'C'}${pairNumber}` : selectedIndex + 1}
                 </span>
               </Html>
             )}
@@ -362,6 +391,112 @@ function ConnectorMarkers({
       })}
     </group>
   );
+}
+
+function AssemblyCoverCapture({
+  request,
+  assemblyRoot,
+  controlsRef,
+  onCaptured,
+  onError,
+}: {
+  request: number;
+  assemblyRoot: THREE.Group | null;
+  controlsRef: RefObject<TrackballControlsImpl | null>;
+  onCaptured: (capture: CoverCapture) => void | Promise<void>;
+  onError: (message: string) => void;
+}) {
+  const { camera, gl, scene } = useThree();
+  const lastRequest = useRef(0);
+
+  useEffect(() => {
+    if (
+      request === 0
+      || request === lastRequest.current
+      || !assemblyRoot
+      || !(camera instanceof THREE.PerspectiveCamera)
+    ) return;
+    lastRequest.current = request;
+
+    const capture = async () => {
+      const bounds = new THREE.Box3().setFromObject(assemblyRoot);
+      if (bounds.isEmpty()) throw new Error('The assembled model is not ready for a cover yet.');
+
+      const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+      const controls = controlsRef.current;
+      const previousPosition = camera.position.clone();
+      const previousUp = camera.up.clone();
+      const previousTarget = controls?.target.clone() ?? new THREE.Vector3();
+      const previousAspect = camera.aspect;
+      const previousNear = camera.near;
+      const previousFar = camera.far;
+      const direction = camera.position.clone().sub(previousTarget);
+      if (direction.lengthSq() < 0.0001) direction.set(1, 0.75, 1);
+      direction.normalize();
+
+      const aspect = COVER_WIDTH / COVER_HEIGHT;
+      const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect);
+      const fitFov = Math.min(verticalFov, horizontalFov);
+      const distance = Math.max(1, sphere.radius / Math.sin(fitFov / 2) * 1.16);
+      const capturePosition = sphere.center.clone().add(direction.multiplyScalar(distance));
+      const cameraView: CameraView = {
+        position: capturePosition.toArray(),
+        target: sphere.center.toArray(),
+        up: camera.up.toArray(),
+      };
+
+      const visibility = scene.children.map((child) => ({ child, visible: child.visible }));
+      const renderTarget = new THREE.WebGLRenderTarget(COVER_WIDTH, COVER_HEIGHT, { depthBuffer: true });
+      renderTarget.texture.colorSpace = THREE.SRGBColorSpace;
+      const previousRenderTarget = gl.getRenderTarget();
+      const previousClearColor = gl.getClearColor(new THREE.Color());
+      const previousClearAlpha = gl.getClearAlpha();
+      const pixels = new Uint8Array(COVER_WIDTH * COVER_HEIGHT * 4);
+
+      try {
+        visibility.forEach(({ child }) => {
+          child.visible = child === assemblyRoot || child instanceof THREE.Light;
+        });
+        camera.position.copy(capturePosition);
+        camera.aspect = aspect;
+        camera.near = Math.max(0.01, distance - sphere.radius * 2.5);
+        camera.far = Math.max(camera.near + 1, distance + sphere.radius * 2.5);
+        camera.lookAt(sphere.center);
+        camera.updateProjectionMatrix();
+        scene.updateMatrixWorld(true);
+        camera.updateMatrixWorld(true);
+        gl.setRenderTarget(renderTarget);
+        gl.setClearColor('#f8fafc', 1);
+        gl.clear(true, true, true);
+        gl.render(scene, camera);
+        gl.readRenderTargetPixels(renderTarget, 0, 0, COVER_WIDTH, COVER_HEIGHT, pixels);
+      } finally {
+        visibility.forEach(({ child, visible }) => { child.visible = visible; });
+        camera.position.copy(previousPosition);
+        camera.up.copy(previousUp);
+        camera.aspect = previousAspect;
+        camera.near = previousNear;
+        camera.far = previousFar;
+        if (controls) controls.target.copy(previousTarget);
+        camera.lookAt(previousTarget);
+        camera.updateProjectionMatrix();
+        controls?.update();
+        gl.setRenderTarget(previousRenderTarget);
+        gl.setClearColor(previousClearColor, previousClearAlpha);
+        renderTarget.dispose();
+      }
+
+      const blob = await pixelsToWebp(pixels, COVER_WIDTH, COVER_HEIGHT);
+      await onCaptured({ blob, camera: cameraView });
+    };
+
+    void capture().catch((error: unknown) => {
+      onError(error instanceof Error ? error.message : 'Unable to capture the model cover.');
+    });
+  }, [assemblyRoot, camera, controlsRef, gl, onCaptured, onError, request, scene]);
+
+  return null;
 }
 
 export default function LibraryAssemblyCanvas({
@@ -384,6 +519,9 @@ export default function LibraryAssemblyCanvas({
   onHoleMarkingResult,
   onAssemblyRootChange,
   onReadyChange,
+  coverCaptureRequest,
+  onCoverCaptured,
+  onCoverCaptureError,
 }: {
   instances: LibraryPartInstance[];
   selectedInstanceId: string | null;
@@ -408,10 +546,14 @@ export default function LibraryAssemblyCanvas({
   onHoleMarkingResult: (result: { partName: string; holeCount: number; removed: boolean; error?: string }) => void;
   onAssemblyRootChange: (root: THREE.Group | null) => void;
   onReadyChange: (ready: boolean) => void;
+  coverCaptureRequest: number;
+  onCoverCaptured: (capture: CoverCapture) => void | Promise<void>;
+  onCoverCaptureError: (message: string) => void;
 }) {
   const [objects, setObjects] = useState<Record<string, THREE.Group>>({});
   const [connectorsByInstance, setConnectorsByInstance] = useState<Record<string, LibraryConnector[]>>({});
   const [loadedIds, setLoadedIds] = useState<Set<string>>(() => new Set());
+  const [assemblyRoot, setAssemblyRoot] = useState<THREE.Group | null>(null);
   const [lasso, setLasso] = useState<{
     startX: number;
     startY: number;
@@ -421,6 +563,23 @@ export default function LibraryAssemblyCanvas({
   } | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
+  const controlsRef = useRef<TrackballControlsImpl>(null);
+
+  const restoreCameraInteraction = useCallback(() => {
+    setLasso(null);
+    if (controlsRef.current) controlsRef.current.enabled = true;
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('pointerup', restoreCameraInteraction);
+    window.addEventListener('pointercancel', restoreCameraInteraction);
+    window.addEventListener('blur', restoreCameraInteraction);
+    return () => {
+      window.removeEventListener('pointerup', restoreCameraInteraction);
+      window.removeEventListener('pointercancel', restoreCameraInteraction);
+      window.removeEventListener('blur', restoreCameraInteraction);
+    };
+  }, [restoreCameraInteraction]);
 
   const registerObject = useCallback((instanceId: string, object: THREE.Group | null) => {
     setObjects((current) => {
@@ -452,6 +611,7 @@ export default function LibraryAssemblyCanvas({
   }, []);
 
   const assignAssemblyRoot = useCallback((root: THREE.Group | null) => {
+    setAssemblyRoot(root);
     onAssemblyRootChange(root);
   }, [onAssemblyRootChange]);
 
@@ -588,6 +748,14 @@ export default function LibraryAssemblyCanvas({
         setLasso(null);
         finishLasso(completed);
       }}
+      onPointerCancelCapture={(event) => {
+        if (!lasso || event.pointerId !== lasso.pointerId) return;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+        restoreCameraInteraction();
+      }}
+      onLostPointerCapture={restoreCameraInteraction}
     >
       <Canvas
         camera={{ position: [115, 95, 145], fov: 40 }}
@@ -600,6 +768,14 @@ export default function LibraryAssemblyCanvas({
       <ambientLight intensity={1.45} />
       <directionalLight position={[45, 65, 90]} intensity={2.2} castShadow />
       <directionalLight position={[-55, -25, 35]} intensity={0.8} />
+
+      <AssemblyCoverCapture
+        request={coverCaptureRequest}
+        assemblyRoot={assemblyRoot}
+        controlsRef={controlsRef}
+        onCaptured={onCoverCaptured}
+        onError={onCoverCaptureError}
+      />
 
       <group
         ref={assignAssemblyRoot}
@@ -628,11 +804,20 @@ export default function LibraryAssemblyCanvas({
         />
       ))}
 
-      {mateMode && instances.map((instance) => (
+      {mateMode && instances.filter((instance) => (
+        selectedInstanceIds.includes(instance.instanceId)
+        || connectorPicks.some((pick) => pick.instanceId === instance.instanceId)
+      )).map((instance) => (
         <ConnectorMarkers
           key={`markers-${instance.instanceId}`}
           instance={instance}
-          connectors={connectorsByInstance[instance.instanceId] ?? []}
+          connectors={selectedInstanceIds.includes(instance.instanceId)
+            ? connectorsByInstance[instance.instanceId] ?? []
+            : (connectorsByInstance[instance.instanceId] ?? []).filter((connector) => (
+                connectorPicks.some((pick) => (
+                  pick.instanceId === instance.instanceId && pick.connector.id === connector.id
+                ))
+              ))}
           mode={mateMode}
           picks={connectorPicks}
           onPick={onConnectorPick}
@@ -689,6 +874,7 @@ export default function LibraryAssemblyCanvas({
         infiniteGrid
       />
         <TrackballControls
+          ref={controlsRef}
           makeDefault
           enabled={!lasso}
           rotateSpeed={3.2}
