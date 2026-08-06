@@ -11,7 +11,11 @@ registerHooks({
   },
 });
 
-const { applyOrderedLibraryMates, applySingleLibraryMate } = await import('./applyLibraryMate.ts');
+const {
+  applyOrderedLibraryMates,
+  applySingleLibraryMate,
+  inferUnifiedLibraryMate,
+} = await import('./applyLibraryMate.ts');
 
 const hole = (id, position = [0, 0, 0]) => ({
   id,
@@ -33,6 +37,77 @@ const leg = (id, position = [0, 0, 0]) => ({
   normal: [1, 0, 0],
   radius: 3,
   axis: 'x',
+});
+
+const pick = (instanceId, connector) => ({ instanceId, connector });
+
+test('unified connect recognizes each two-point connection type in either selection direction', () => {
+  const squareHole = { ...hole('square'), kind: 'square-hole' };
+  const shaftEnd = { ...leg('shaft'), kind: 'shaft-end' };
+
+  assert.deepEqual(
+    inferUnifiedLibraryMate([pick('beam', hole('h')), pick('pin', leg('p'))]),
+    { status: 'ready', mode: 'pin', autoConnect: true },
+  );
+  assert.deepEqual(
+    inferUnifiedLibraryMate([pick('pin', leg('p')), pick('beam', hole('h'))]),
+    { status: 'ready', mode: 'pin', autoConnect: true },
+  );
+  assert.deepEqual(
+    inferUnifiedLibraryMate([pick('beam-a', hole('a')), pick('beam-b', hole('b'))]),
+    { status: 'ready', mode: 'beam', autoConnect: false },
+  );
+  assert.deepEqual(
+    inferUnifiedLibraryMate([pick('plate', squareHole), pick('beam', hole('h'))]),
+    { status: 'ready', mode: 'hole-align', autoConnect: true },
+  );
+  assert.deepEqual(
+    inferUnifiedLibraryMate([pick('shaft', shaftEnd), pick('beam', hole('h'))]),
+    { status: 'ready', mode: 'shaft', autoConnect: true },
+  );
+});
+
+test('unified connect keeps ordered holes open until the same number of legs is selected', () => {
+  assert.equal(
+    inferUnifiedLibraryMate([
+      pick('beam-a', hole('h1')),
+      pick('beam-b', hole('h2')),
+      pick('beam-c', hole('h3')),
+    ]).status,
+    'selecting',
+  );
+  assert.equal(
+    inferUnifiedLibraryMate([
+      pick('beam-a', hole('h1')),
+      pick('beam-b', hole('h2')),
+      pick('connector', leg('c1')),
+    ]).status,
+    'selecting',
+  );
+  assert.deepEqual(
+    inferUnifiedLibraryMate([
+      pick('beam-a', hole('h1')),
+      pick('beam-b', hole('h2')),
+      pick('connector', leg('c1')),
+      pick('connector', leg('c2')),
+    ]),
+    { status: 'ready', mode: 'multi-leg', autoConnect: false },
+  );
+});
+
+test('unified connect rejects incompatible and same-part pairs', () => {
+  assert.equal(
+    inferUnifiedLibraryMate([pick('part', hole('h')), pick('part', leg('p'))]).status,
+    'invalid',
+  );
+  assert.equal(
+    inferUnifiedLibraryMate([
+      pick('beam-a', hole('h1')),
+      pick('connector', leg('c1')),
+      pick('beam-b', hole('h2')),
+    ]).status,
+    'invalid',
+  );
 });
 
 test('two selected hole faces stack a spacer flush against a beam', () => {

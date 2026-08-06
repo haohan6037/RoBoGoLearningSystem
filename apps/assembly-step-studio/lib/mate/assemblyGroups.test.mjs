@@ -4,13 +4,64 @@ import * as THREE from 'three';
 
 import {
   applyRigidGroupTransform,
+  duplicateAssemblyGroup,
   expandCustomGroupMemberIds,
   findNextPartSpawnPosition,
   removeSelectedMembersFromGroups,
+  rotateInstanceAroundLocalAxis,
   resolveAutomaticMateDirection,
   mergeConnectedRigidGroups,
   measureAssemblyInstanceVolumes,
 } from './assemblyGroups.ts';
+
+test('copying a group creates an independent grouped assembly with preserved relative positions', () => {
+  const ids = ['beam-copy', 'pin-copy', 'group-copy', 'mate-copy'];
+  const result = duplicateAssemblyGroup({
+    instances: [
+      { instanceId: 'beam', position: [10, 20, 30], quaternion: [0, 0, 0, 1], part: { id: 'beam' }, color: 'blue' },
+      { instanceId: 'pin', position: [20, 20, 30], quaternion: [0, 0, 0, 1], part: { id: 'pin' }, color: 'orange' },
+      { instanceId: 'outside', position: [0, 0, 0], quaternion: [0, 0, 0, 1], part: { id: 'outside' }, color: 'green' },
+    ],
+    mateRecords: [{
+      id: 'mate',
+      type: 'pin',
+      fixedInstanceId: 'beam',
+      movingInstanceId: 'pin',
+      fixedConnectorIds: ['h1'],
+      movingConnectorIds: ['p1'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+    }],
+    group: {
+      id: 'group',
+      name: 'Wheel module',
+      instanceIds: ['beam', 'pin'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+    anchorPosition: [100, 50, 30],
+    createId: () => ids.shift(),
+    createdAt: '2026-07-29T00:00:00.000Z',
+  });
+
+  assert.deepEqual(result.instances.map((item) => [item.instanceId, item.position]), [
+    ['beam-copy', [100, 50, 30]],
+    ['pin-copy', [110, 50, 30]],
+  ]);
+  assert.deepEqual(result.group, {
+    id: 'group-copy',
+    name: 'Wheel module Copy',
+    instanceIds: ['beam-copy', 'pin-copy'],
+    createdAt: '2026-07-29T00:00:00.000Z',
+  });
+  assert.deepEqual(result.mateRecords[0], {
+    id: 'mate-copy',
+    type: 'pin',
+    fixedInstanceId: 'beam-copy',
+    movingInstanceId: 'pin-copy',
+    fixedConnectorIds: ['h1'],
+    movingConnectorIds: ['p1'],
+    createdAt: '2026-07-29T00:00:00.000Z',
+  });
+});
 
 test('a new part spawns beside the current assembly instead of on a world-origin grid', () => {
   const root = new THREE.Group();
@@ -140,4 +191,16 @@ test('moving and rotating one group member preserves every relative position', (
   assert.deepEqual(transformed.find((item) => item.instanceId === 'beam').position, [5, 0, 0]);
   assert.deepEqual(transformed.find((item) => item.instanceId === 'gear').position, [5, 10, 0]);
   assert.deepEqual(transformed.find((item) => item.instanceId === 'outside').position, [50, 0, 0]);
+});
+
+test('a selected part can rotate by an exact angle around its local axis', () => {
+  const quarterTurn = rotateInstanceAroundLocalAxis(
+    { instanceId: 'beam', position: [10, 20, 30], quaternion: [0, 0, 0, 1] },
+    'z',
+    90,
+  );
+
+  assert.deepEqual(quarterTurn.position, [10, 20, 30]);
+  assert.ok(Math.abs(quarterTurn.quaternion[2] - Math.SQRT1_2) < 1e-10);
+  assert.ok(Math.abs(quarterTurn.quaternion[3] - Math.SQRT1_2) < 1e-10);
 });

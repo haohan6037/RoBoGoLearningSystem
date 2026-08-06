@@ -91,6 +91,81 @@ export type OrderedLibraryMatePick = {
   connector: LibraryConnector;
 };
 
+export type UnifiedLibraryMateMode = 'pin' | 'multi-leg' | 'beam' | 'shaft' | 'hole-align';
+export type UnifiedLibraryMateResult =
+  | { status: 'selecting' }
+  | { status: 'ready'; mode: UnifiedLibraryMateMode; autoConnect: boolean }
+  | { status: 'invalid'; message: string };
+
+const APERTURE_KINDS: LibraryConnector['kind'][] = ['hole', 'square-hole'];
+
+export function inferUnifiedLibraryMate(
+  picks: OrderedLibraryMatePick[],
+): UnifiedLibraryMateResult {
+  if (picks.length < 2) return { status: 'selecting' };
+
+  const [first, second] = picks;
+  const samePart = first.instanceId === second.instanceId;
+  const kinds = picks.map((pick) => pick.connector.kind);
+
+  if (picks.length === 2) {
+    const has = (kind: LibraryConnector['kind']) => kinds.includes(kind);
+    if (samePart) {
+      return { status: 'invalid', message: 'Select connection points on different parts.' };
+    }
+    if (has('pin-ring') && has('hole')) {
+      return { status: 'ready', mode: 'pin', autoConnect: true };
+    }
+    if (has('shaft-end') && kinds.some((kind) => APERTURE_KINDS.includes(kind))) {
+      return { status: 'ready', mode: 'shaft', autoConnect: true };
+    }
+    if (has('square-hole') && has('hole')) {
+      return { status: 'ready', mode: 'hole-align', autoConnect: true };
+    }
+    if (kinds.every((kind) => kind === 'hole')) {
+      return { status: 'ready', mode: 'beam', autoConnect: false };
+    }
+    return { status: 'invalid', message: 'These two connection points are not compatible.' };
+  }
+
+  const firstLegIndex = kinds.findIndex((kind) => kind === 'pin-ring');
+  if (kinds.every((kind) => kind === 'hole')) return { status: 'selecting' };
+  if (firstLegIndex < 2) {
+    return {
+      status: 'invalid',
+      message: 'For multiple connectors, select at least two holes first, then the matching legs.',
+    };
+  }
+  if (
+    !kinds.slice(0, firstLegIndex).every((kind) => kind === 'hole')
+    || !kinds.slice(firstLegIndex).every((kind) => kind === 'pin-ring')
+  ) {
+    return {
+      status: 'invalid',
+      message: 'Finish selecting holes before selecting connector legs.',
+    };
+  }
+
+  const holes = picks.slice(0, firstLegIndex);
+  const legs = picks.slice(firstLegIndex);
+  const invalidPair = legs.findIndex((legPick, index) => (
+    holes[index]?.instanceId === legPick.instanceId
+  ));
+  if (invalidPair >= 0) {
+    return {
+      status: 'invalid',
+      message: `C${invalidPair + 1} cannot connect H${invalidPair + 1} on the same part.`,
+    };
+  }
+  if (legs.length > holes.length) {
+    return { status: 'invalid', message: 'The selected connector legs outnumber the holes.' };
+  }
+  if (legs.length === holes.length) {
+    return { status: 'ready', mode: 'multi-leg', autoConnect: false };
+  }
+  return { status: 'selecting' };
+}
+
 type OrderedMateInstance = Pick<AssemblyPartInstance, 'instanceId' | 'position' | 'quaternion'>;
 
 export type OrderedLibraryMateConnection = {

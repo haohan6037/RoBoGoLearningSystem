@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type {
+  AssemblyMateRecord,
   AssemblyPartInstance,
   AssemblyRigidGroup,
 } from '../../types/assembly.ts';
@@ -139,7 +140,78 @@ export function removeSelectedMembersFromGroups<T extends RigidGroupMembers>(
     .filter((group) => group.instanceIds.length >= 2);
 }
 
+export function duplicateAssemblyGroup<T extends AssemblyPartInstance>({
+  instances,
+  mateRecords,
+  group,
+  anchorPosition,
+  createId,
+  createdAt,
+}: {
+  instances: T[];
+  mateRecords: AssemblyMateRecord[];
+  group: AssemblyRigidGroup;
+  anchorPosition: [number, number, number];
+  createId: () => string;
+  createdAt: string;
+}): {
+  instances: T[];
+  mateRecords: AssemblyMateRecord[];
+  group: AssemblyRigidGroup;
+} {
+  const members = group.instanceIds
+    .map((instanceId) => instances.find((instance) => instance.instanceId === instanceId))
+    .filter((instance): instance is T => Boolean(instance));
+  if (members.length < 2) throw new Error('This group no longer has enough parts to copy.');
+
+  const sourceAnchor = members[0].position;
+  const offset: [number, number, number] = [
+    anchorPosition[0] - sourceAnchor[0],
+    anchorPosition[1] - sourceAnchor[1],
+    anchorPosition[2] - sourceAnchor[2],
+  ];
+  const idMap = new Map<string, string>();
+  const copiedInstances = members.map((instance) => {
+    const instanceId = createId();
+    idMap.set(instance.instanceId, instanceId);
+    return {
+      ...instance,
+      instanceId,
+      position: [
+        clean(instance.position[0] + offset[0]),
+        clean(instance.position[1] + offset[1]),
+        clean(instance.position[2] + offset[2]),
+      ] as [number, number, number],
+    };
+  });
+  const copiedGroupId = createId();
+  const copiedMateRecords = mateRecords.flatMap((mate) => {
+    const fixedInstanceId = idMap.get(mate.fixedInstanceId);
+    const movingInstanceId = idMap.get(mate.movingInstanceId);
+    if (!fixedInstanceId || !movingInstanceId) return [];
+    return [{
+      ...mate,
+      id: createId(),
+      fixedInstanceId,
+      movingInstanceId,
+      createdAt,
+    }];
+  });
+
+  return {
+    instances: copiedInstances,
+    mateRecords: copiedMateRecords,
+    group: {
+      id: copiedGroupId,
+      name: `${group.name} Copy`,
+      instanceIds: copiedInstances.map((instance) => instance.instanceId),
+      createdAt,
+    },
+  };
+}
+
 type TransformableInstance = Pick<AssemblyPartInstance, 'instanceId' | 'position' | 'quaternion'>;
+export type RotationAxis = 'x' | 'y' | 'z';
 
 function instanceMatrix(instance: TransformableInstance): THREE.Matrix4 {
   return new THREE.Matrix4().compose(
@@ -152,6 +224,35 @@ function instanceMatrix(instance: TransformableInstance): THREE.Matrix4 {
 function clean(value: number): number {
   const normalized = Math.abs(value) < 1e-10 ? 0 : value;
   return Number(normalized.toFixed(10));
+}
+
+export function rotateInstanceAroundLocalAxis<T extends TransformableInstance>(
+  instance: T,
+  axis: RotationAxis,
+  degrees: number,
+): T {
+  const axisVector = axis === 'x'
+    ? new THREE.Vector3(1, 0, 0)
+    : axis === 'y'
+      ? new THREE.Vector3(0, 1, 0)
+      : new THREE.Vector3(0, 0, 1);
+  const rotation = new THREE.Quaternion().setFromAxisAngle(
+    axisVector,
+    THREE.MathUtils.degToRad(degrees),
+  );
+  const quaternion = new THREE.Quaternion(...instance.quaternion)
+    .normalize()
+    .multiply(rotation)
+    .normalize();
+  return {
+    ...instance,
+    quaternion: [
+      clean(quaternion.x),
+      clean(quaternion.y),
+      clean(quaternion.z),
+      clean(quaternion.w),
+    ],
+  };
 }
 
 export function applyRigidGroupTransform<T extends TransformableInstance>(

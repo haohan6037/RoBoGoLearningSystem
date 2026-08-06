@@ -53,7 +53,7 @@ function pixelsToWebp(pixels: Uint8Array, width: number, height: number): Promis
 
 export type LibraryPartInstance = AssemblyPartInstance;
 
-export type LibraryMateMode = 'pin' | 'multi-leg' | 'beam' | 'shaft' | 'hole-align';
+export type LibraryMateMode = 'connect' | 'pin' | 'multi-leg' | 'beam' | 'shaft' | 'hole-align';
 export type HoleMarkingShape = 'round' | 'square';
 
 export type LibraryConnectorPick = {
@@ -287,6 +287,7 @@ function PartInstance({
 }
 
 function connectorKindsForMode(mode: LibraryMateMode): LibraryConnector['kind'][] {
+  if (mode === 'connect') return ['hole', 'square-hole', 'pin-ring', 'shaft-end'];
   if (mode === 'pin' || mode === 'multi-leg') return ['hole', 'pin-ring'];
   if (mode === 'shaft') return ['hole', 'square-hole', 'shaft-end'];
   if (mode === 'hole-align') return ['hole', 'square-hole'];

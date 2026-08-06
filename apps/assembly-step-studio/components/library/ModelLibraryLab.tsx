@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import LibraryAssemblyCanvas, {
   type HoleMarkingShape,
@@ -14,15 +14,20 @@ import {
   applyOrderedLibraryMates,
   applySingleLibraryMate,
   applyTwoHoleLibraryMate,
+  inferUnifiedLibraryMate,
+  type UnifiedLibraryMateMode,
 } from '@/lib/mate/applyLibraryMate';
 import {
   applyRigidGroupTransform,
+  duplicateAssemblyGroup,
   expandCustomGroupMemberIds,
   findNextPartSpawnPosition,
   measureAssemblyInstanceVolumes,
   mergeConnectedRigidGroups,
   removeSelectedMembersFromGroups,
   resolveAutomaticMateDirection,
+  rotateInstanceAroundLocalAxis,
+  type RotationAxis,
 } from '@/lib/mate/assemblyGroups';
 import { createAssemblyGlbBlob, downloadAssemblyGlb } from '@/lib/partLibrary/exportAssembly';
 import {
@@ -35,38 +40,34 @@ import {
   loadStudioProject,
   saveStudioProject,
 } from '@/lib/projects/projectStorage';
+import {
+  appendAssemblySnapshot,
+  assemblySnapshotsEqual,
+  undoAssemblySnapshot,
+  type AssemblyUndoSnapshot,
+} from '@/lib/projects/assemblyUndo';
 import { refreshBuildInstructionsFromAssemblyRecord } from '@/lib/projects/projectRecords';
 import type { AssemblyMateRecord, AssemblyRigidGroup, CoverCapture } from '@/types/assembly';
 import type { PartLibraryCatalog, PartLibraryItem } from '@/types/partLibrary';
 
 const PART_COLORS = ['#356fe3', '#f47a32', '#7c3aed', '#0f9f76', '#db2777', '#d69e2e'];
 
-function mateGuide(mode: LibraryMateMode, picks: LibraryConnectorPick[]): string {
+function mateGuide(picks: LibraryConnectorPick[]): string {
   const pickCount = picks.length;
-  if (mode === 'hole-align') {
-    if (pickCount === 0) return '1. Select a square or round hole on the first part.';
-    return picks[0].connector.kind === 'square-hole'
-      ? '2. Select a round hole on the other part.'
-      : '2. Select a square hole on the other part.';
+  if (pickCount === 0) return 'Select a hole, Pin ring, or Shaft end on the first part.';
+  const firstLegIndex = picks.findIndex((pick) => pick.connector.kind === 'pin-ring');
+  if (firstLegIndex >= 2) {
+    const legCount = pickCount - firstLegIndex;
+    return legCount < firstLegIndex
+      ? `Select connector C${legCount + 1} for hole H${legCount + 1}.`
+      : `${firstLegIndex} ordered pairs selected: H1↔C1 through H${firstLegIndex}↔C${firstLegIndex}.`;
   }
-  if (mode === 'pin') {
-    return pickCount === 0 ? '1. Select a blue hole face.' : '2. Select an orange Pin stop-ring face.';
+  if (picks.every((pick) => pick.connector.kind === 'hole')) {
+    return pickCount === 1
+      ? 'Select another hole to stack, or continue selecting holes for a multi-connector.'
+      : `${pickCount} holes selected. Connect these two now, or select the first matching Pin leg.`;
   }
-  if (mode === 'multi-leg') {
-    const holes = picks.filter((pick) => pick.connector.kind === 'hole').length;
-    const legs = picks.filter((pick) => pick.connector.kind === 'pin-ring').length;
-    if (holes < 2) return `1. Select at least two holes in connection order (${holes} selected).`;
-    if (legs === 0) return `2. Select ${holes} connector legs in matching order, or add more holes first.`;
-    if (legs < holes) return `2. Select connector C${legs + 1} for hole H${legs + 1}.`;
-    return `${holes} ordered pairs selected: H1↔C1 through H${holes}↔C${holes}.`;
-  }
-  if (mode === 'shaft') {
-    return pickCount === 0
-      ? '1. Select a blue hole face.'
-      : '2. Select a yellow Shaft end. It will center automatically.';
-  }
-  if (pickCount === 0) return '1. Select the hole face on the fixed part.';
-  return '2. Select the hole face on the Spacer or other part.';
+  return 'Select a compatible point on a different part.';
 }
 
 function connectorWorldPosition(
@@ -95,6 +96,8 @@ export default function ModelLibraryLab({
   const [instances, setInstances] = useState<LibraryPartInstance[]>([]);
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const [mode, setMode] = useState<'translate' | 'rotate'>('translate');
+  const [rotationAxis, setRotationAxis] = useState<RotationAxis>('z');
+  const [rotationDegrees, setRotationDegrees] = useState('90');
   const [mateMode, setMateMode] = useState<LibraryMateMode | null>(null);
   const [holeMarkingInstanceId, setHoleMarkingInstanceId] = useState<string | null>(null);
   const [holeMarkingShape, setHoleMarkingShape] = useState<HoleMarkingShape | null>(null);
@@ -112,16 +115,76 @@ export default function ModelLibraryLab({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
   const [coverCaptureRequest, setCoverCaptureRequest] = useState(0);
   const [coverStatus, setCoverStatus] = useState<'idle' | 'capturing' | 'saved'>('idle');
+  const [undoAvailable, setUndoAvailable] = useState(false);
+  const projectLoadedRef = useRef(false);
+  const undoHistoryRef = useRef<AssemblyUndoSnapshot[]>([]);
+  const undoTimerRef = useRef<number | null>(null);
+  const suppressUndoRecordingRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+    projectLoadedRef.current = false;
+    undoHistoryRef.current = [];
+    if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current);
     void loadStudioProject(projectId).then((record) => {
-      if (!record || record.projectType !== 'assembly') return;
-      setAssemblyName(record.name);
-      setInstances(record.assemblyData?.instances ?? []);
-      setMateRecords(record.assemblyData?.mateRecords ?? []);
-      setGroups(record.assemblyData?.groups ?? []);
+      if (cancelled) return;
+      const loadedInstances = record?.projectType === 'assembly'
+        ? record.assemblyData?.instances ?? []
+        : [];
+      const loadedMateRecords = record?.projectType === 'assembly'
+        ? record.assemblyData?.mateRecords ?? []
+        : [];
+      const loadedGroups = record?.projectType === 'assembly'
+        ? record.assemblyData?.groups ?? []
+        : [];
+      undoHistoryRef.current = appendAssemblySnapshot([], {
+        instances: loadedInstances,
+        mateRecords: loadedMateRecords,
+        groups: loadedGroups,
+      });
+      suppressUndoRecordingRef.current = true;
+      projectLoadedRef.current = true;
+      if (record?.projectType === 'assembly') {
+        setAssemblyName(record.name);
+      }
+      setInstances(loadedInstances);
+      setMateRecords(loadedMateRecords);
+      setGroups(loadedGroups);
+      setUndoAvailable(false);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
+
+  useEffect(() => {
+    if (!projectLoadedRef.current) return;
+    const snapshot = { instances, mateRecords, groups };
+    if (suppressUndoRecordingRef.current) {
+      suppressUndoRecordingRef.current = false;
+      setUndoAvailable(undoHistoryRef.current.length > 1);
+      return;
+    }
+    if (undoHistoryRef.current.length === 0) {
+      undoHistoryRef.current = appendAssemblySnapshot([], snapshot);
+      setUndoAvailable(false);
+      return;
+    }
+
+    const latest = undoHistoryRef.current.at(-1)!;
+    setUndoAvailable(
+      undoHistoryRef.current.length > 1 || !assemblySnapshotsEqual(latest, snapshot),
+    );
+    if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = window.setTimeout(() => {
+      undoHistoryRef.current = appendAssemblySnapshot(undoHistoryRef.current, snapshot);
+      setUndoAvailable(undoHistoryRef.current.length > 1);
+      undoTimerRef.current = null;
+    }, 300);
+    return () => {
+      if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current);
+    };
+  }, [groups, instances, mateRecords]);
 
   useEffect(() => {
     void fetch('/part-library/catalog.json')
@@ -240,6 +303,22 @@ export default function ModelLibraryLab({
     ));
   };
 
+  const rotateSelectionBy = (direction: 1 | -1) => {
+    if (!selectedInstance) return;
+    const degrees = Number(rotationDegrees);
+    if (!Number.isFinite(degrees) || degrees <= 0) return;
+    const rotated = rotateInstanceAroundLocalAxis(
+      selectedInstance,
+      rotationAxis,
+      degrees * direction,
+    );
+    updateInstanceTransform(
+      selectedInstance.instanceId,
+      rotated.position,
+      rotated.quaternion,
+    );
+  };
+
   const makeOrUpdateGroup = () => {
     if (selectedInstanceIds.length < 2 || groupCandidateIds.length < 2) return;
     const memberIds = new Set(groupCandidateIds);
@@ -270,6 +349,30 @@ export default function ModelLibraryLab({
     setGroups((current) => removeSelectedMembersFromGroups(current, selectedInstanceIds));
   };
 
+  const copySelectedGroup = () => {
+    if (!selectedGroup) return;
+    try {
+      const copied = duplicateAssemblyGroup({
+        instances,
+        mateRecords,
+        group: selectedGroup,
+        anchorPosition: findNextPartSpawnPosition(assemblyRoot),
+        createId: () => crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      });
+      setAssemblyReady(false);
+      setInstances((current) => [...current, ...copied.instances]);
+      setMateRecords((current) => [...current, ...copied.mateRecords]);
+      setGroups((current) => [...current, copied.group]);
+      setSelectedInstanceIds(copied.group.instanceIds);
+      setConnectorPicks([]);
+      setMateMode(null);
+      setShaftAdjustment(null);
+    } catch (error: unknown) {
+      setMateError(error instanceof Error ? error.message : 'Unable to copy this group.');
+    }
+  };
+
   const startTransformMode = (nextMode: 'translate' | 'rotate') => {
     setMode(nextMode);
     setMateMode(null);
@@ -281,8 +384,8 @@ export default function ModelLibraryLab({
     setShaftAdjustment(null);
   };
 
-  const startMateMode = (nextMode: LibraryMateMode) => {
-    setMateMode(nextMode);
+  const startConnectMode = () => {
+    setMateMode('connect');
     setHoleMarkingInstanceId(null);
     setHoleMarkingShape(null);
     setHoleMarkingStatus(null);
@@ -323,7 +426,7 @@ export default function ModelLibraryLab({
         });
   };
 
-  const connectPickedParts = (nextMode: LibraryMateMode, picks: LibraryConnectorPick[]) => {
+  const connectPickedParts = (nextMode: UnifiedLibraryMateMode, picks: LibraryConnectorPick[]) => {
     const multiLegFixedCount = nextMode === 'multi-leg'
       ? picks.findIndex((pick) => pick.connector.kind === 'pin-ring')
       : 0;
@@ -462,7 +565,7 @@ export default function ModelLibraryLab({
   };
 
   const handleConnectorPick = (pick: LibraryConnectorPick) => {
-    if (!mateMode) return;
+    if (mateMode !== 'connect') return;
     setMateError(null);
 
     const selectedIndex = connectorPicks.findIndex(
@@ -474,116 +577,17 @@ export default function ModelLibraryLab({
       return;
     }
 
-    if (mateMode === 'hole-align') {
-      const apertureKinds = ['hole', 'square-hole'];
-      if (!apertureKinds.includes(pick.connector.kind)) {
-        setMateError('Select a square or round hole.');
-        return;
-      }
-      if (connectorPicks.length === 0) {
-        setConnectorPicks([pick]);
-        return;
-      }
-      const fixedPick = connectorPicks[0];
-      if (pick.instanceId === fixedPick.instanceId || pick.connector.kind === fixedPick.connector.kind) {
-        setMateError('Select the other hole shape on a different part. One hole must be square and one round.');
-        return;
-      }
-      connectPickedParts('hole-align', [fixedPick, pick]);
+    const nextPicks = [...connectorPicks, pick];
+    const inferred = inferUnifiedLibraryMate(nextPicks);
+    if (inferred.status === 'invalid') {
+      setMateError(inferred.message);
       return;
     }
-
-    if (mateMode === 'pin') {
-      if (connectorPicks.length === 0) {
-        if (pick.connector.kind !== 'hole') {
-          setMateError('Select a blue hole face first.');
-          return;
-        }
-        setConnectorPicks([pick]);
-        return;
-      }
-      if (pick.connector.kind !== 'pin-ring' || pick.instanceId === connectorPicks[0].instanceId) {
-        setMateError('Now select an orange stop-ring face on a different Pin.');
-        return;
-      }
-      setConnectorPicks([...connectorPicks, pick]);
+    if (inferred.status === 'ready' && inferred.autoConnect) {
+      connectPickedParts(inferred.mode, nextPicks);
       return;
     }
-
-    if (mateMode === 'shaft') {
-      if (connectorPicks.length === 0) {
-        if (!['hole', 'square-hole'].includes(pick.connector.kind)) {
-          setMateError('Select a blue round hole or purple square hole first.');
-          return;
-        }
-        setConnectorPicks([pick]);
-        return;
-      }
-      if (pick.connector.kind !== 'shaft-end' || pick.instanceId === connectorPicks[0].instanceId) {
-        setMateError('Now select a yellow end on a different Shaft or Idler Pin.');
-        return;
-      }
-      connectPickedParts('shaft', [...connectorPicks, pick]);
-      return;
-    }
-
-    if (mateMode === 'multi-leg') {
-      const firstLegIndex = connectorPicks.findIndex(
-        (selected) => selected.connector.kind === 'pin-ring',
-      );
-      const selectingLegs = firstLegIndex >= 0;
-      const holeCount = selectingLegs ? firstLegIndex : connectorPicks.length;
-      const legCount = selectingLegs ? connectorPicks.length - firstLegIndex : 0;
-
-      if (!selectingLegs && pick.connector.kind === 'hole') {
-        setConnectorPicks([...connectorPicks, pick]);
-        return;
-      }
-
-      if (!selectingLegs) {
-        if (pick.connector.kind !== 'pin-ring' || holeCount < 2) {
-          setMateError('Select at least two blue holes before selecting connector legs.');
-          return;
-        }
-        if (pick.instanceId === connectorPicks[0].instanceId) {
-          setMateError('C1 cannot connect H1 to the same part.');
-          return;
-        }
-        setConnectorPicks([...connectorPicks, pick]);
-        return;
-      }
-
-      if (
-        pick.connector.kind !== 'pin-ring'
-      ) {
-        setMateError('Continue selecting orange connector legs.');
-        return;
-      }
-      if (legCount >= holeCount) {
-        setMateError('The number of selected legs already matches the selected holes.');
-        return;
-      }
-      if (pick.instanceId === connectorPicks[legCount].instanceId) {
-        setMateError(`C${legCount + 1} cannot connect H${legCount + 1} to the same part.`);
-        return;
-      }
-      setConnectorPicks([...connectorPicks, pick]);
-      return;
-    }
-
-    if (pick.connector.kind !== 'hole') {
-      setMateError('Beam stacking only uses hole faces.');
-      return;
-    }
-    if (connectorPicks.length === 0) {
-      setConnectorPicks([pick]);
-      return;
-    }
-    if (pick.instanceId === connectorPicks[0].instanceId) {
-      setMateError('Select a hole face on a different part.');
-      return;
-    }
-    setConnectorPicks([...connectorPicks, pick]);
+    setConnectorPicks(nextPicks);
   };
 
   const exportAssembly = async () => {
@@ -693,14 +697,48 @@ export default function ModelLibraryLab({
     }
   };
 
-  const canConnect = mateMode === 'pin'
-    ? connectorPicks.length === 2
-    : mateMode === 'multi-leg'
-      ? (() => {
-          const firstLegIndex = connectorPicks.findIndex((pick) => pick.connector.kind === 'pin-ring');
-          return firstLegIndex >= 2 && connectorPicks.length === firstLegIndex * 2;
-        })()
-    : mateMode === 'beam' && connectorPicks.length === 2;
+  const inferredConnection = inferUnifiedLibraryMate(connectorPicks);
+  const canConnect = inferredConnection.status === 'ready';
+
+  const undoLastAssemblyChange = () => {
+    if (undoTimerRef.current) {
+      window.clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+    const result = undoAssemblySnapshot(
+      undoHistoryRef.current,
+      { instances, mateRecords, groups },
+    );
+    if (!result) return;
+    suppressUndoRecordingRef.current = true;
+    undoHistoryRef.current = result.history;
+    setInstances(result.snapshot.instances);
+    setMateRecords(result.snapshot.mateRecords);
+    setGroups(result.snapshot.groups);
+    setSelectedInstanceIds([]);
+    setConnectorPicks([]);
+    setMateMode(null);
+    setHoleMarkingInstanceId(null);
+    setHoleMarkingShape(null);
+    setShaftAdjustment(null);
+    setUndoAvailable(result.history.length > 1);
+  };
+
+  useEffect(() => {
+    const handleUndoShortcut = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z' || event.shiftKey) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement
+        || target instanceof HTMLTextAreaElement
+        || (target instanceof HTMLElement && target.isContentEditable)
+      ) return;
+      event.preventDefault();
+      undoLastAssemblyChange();
+    };
+    window.addEventListener('keydown', handleUndoShortcut);
+    return () => window.removeEventListener('keydown', handleUndoShortcut);
+  });
 
   return (
     <main className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-white text-slate-900">
@@ -720,6 +758,12 @@ export default function ModelLibraryLab({
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <span className="text-sm font-semibold text-slate-500">{instances.length} parts · {mateRecords.length} connections · {groups.length} groups</span>
+          <button
+            disabled={!undoAvailable}
+            onClick={undoLastAssemblyChange}
+            title="Undo last assembly change (⌘Z / Ctrl+Z)"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >Undo</button>
           <button
             disabled={saving}
             onClick={() => void saveAssembly()}
@@ -757,11 +801,7 @@ export default function ModelLibraryLab({
         <button onClick={() => startTransformMode('rotate')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${!mateMode && mode === 'rotate' && !shaftAdjustment ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-100'}`}>Rotate</button>
         <div className="mx-2 h-7 w-px bg-slate-200" />
         <span className="mr-1 text-xs font-bold uppercase tracking-wider text-slate-400">Connect</span>
-        <button onClick={() => startMateMode('pin')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'pin' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Pin to Hole</button>
-        <button onClick={() => startMateMode('multi-leg')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'multi-leg' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Multi-leg Connect</button>
-        <button onClick={() => startMateMode('beam')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'beam' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Stack by 2 Holes</button>
-        <button onClick={() => startMateMode('hole-align')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'hole-align' ? 'bg-purple-600 text-white' : 'border border-purple-200 bg-white text-purple-700 hover:bg-purple-50'}`}>Align Square + Round</button>
-        <button onClick={() => startMateMode('shaft')} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'shaft' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Shaft / Idler Through Hole</button>
+        <button onClick={startConnectMode} className={`rounded-xl px-4 py-2 text-sm font-semibold ${mateMode === 'connect' ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white hover:bg-blue-50'}`}>Connect Parts</button>
         <div className="mx-2 h-7 w-px bg-slate-200" />
         <button
           disabled={!selectedInstance}
@@ -844,17 +884,63 @@ export default function ModelLibraryLab({
                   ? `${selectedGroup.name} currently has ${selectedGroup.instanceIds.length} parts.`
                   : 'Select at least two parts to make a rigid group.'}
               </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-2">
                 <button
                   disabled={selectedInstanceIds.length < 2 || groupCandidateIds.length < 2}
                   onClick={makeOrUpdateGroup}
                   className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >Make Group</button>
                 <button
+                  disabled={!selectedGroup}
+                  onClick={copySelectedGroup}
+                  className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >Copy Group</button>
+                <button
                   disabled={selectedGroupedMemberCount === 0}
                   onClick={removeSelectionFromGroups}
                   className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >Remove Members</button>
+              </div>
+            </div>
+          )}
+          {!mateMode && !holeMarkingInstanceId && !shaftAdjustment && mode === 'rotate' && selectedInstance && (
+            <div className="absolute left-4 top-4 z-20 w-72 rounded-2xl border border-indigo-200 bg-white/95 p-4 shadow-xl backdrop-blur">
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Precise Rotation</p>
+              <p className="mt-1 truncate text-sm font-bold text-slate-900">
+                {selectedGroup ? `${selectedGroup.name} · around selected part` : selectedInstance.part.name}
+              </p>
+              <p className="mt-2 text-xs text-slate-500">Choose a local axis and enter the rotation angle.</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {(['x', 'y', 'z'] as RotationAxis[]).map((axis) => (
+                  <button
+                    key={axis}
+                    onClick={() => setRotationAxis(axis)}
+                    className={`rounded-xl px-3 py-2 text-xs font-bold uppercase ${rotationAxis === axis ? 'bg-indigo-600 text-white' : 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'}`}
+                  >{axis} Axis</button>
+                ))}
+              </div>
+              <label className="mt-3 block text-xs font-semibold text-slate-600">
+                Angle in degrees
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={rotationDegrees}
+                  onChange={(event) => setRotationDegrees(event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold outline-none focus:border-indigo-400 focus:bg-white"
+                />
+              </label>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  disabled={!Number.isFinite(Number(rotationDegrees)) || Number(rotationDegrees) <= 0}
+                  onClick={() => rotateSelectionBy(-1)}
+                  className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >−{rotationDegrees || '0'}°</button>
+                <button
+                  disabled={!Number.isFinite(Number(rotationDegrees)) || Number(rotationDegrees) <= 0}
+                  onClick={() => rotateSelectionBy(1)}
+                  className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >+{rotationDegrees || '0'}°</button>
               </div>
             </div>
           )}
@@ -876,20 +962,25 @@ export default function ModelLibraryLab({
             <div className="absolute left-4 top-4 z-20 w-80 rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-xl backdrop-blur">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-blue-600">{mateMode === 'pin' ? 'Pin to Hole' : mateMode === 'multi-leg' ? 'Multi-leg Connect' : mateMode === 'beam' ? 'Two-hole Stack' : mateMode === 'hole-align' ? 'Align Square + Round' : 'Shaft / Idler Through Hole'}</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{mateGuide(mateMode, connectorPicks)}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-blue-600">Connect Parts</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{mateGuide(connectorPicks)}</p>
                 </div>
                 <button onClick={() => { setMateMode(null); setConnectorPicks([]); setMateError(null); }} className="text-xs font-bold text-slate-400 hover:text-slate-700">Cancel</button>
               </div>
               <p className="mt-2 text-xs text-slate-500">Blue = round hole · Purple = square hole · Orange = Pin ring · Yellow = Shaft/Idler end</p>
               {mateError && <p className="mt-3 rounded-xl bg-red-50 p-2 text-xs font-semibold text-red-600">{mateError}</p>}
-              {!['shaft', 'hole-align'].includes(mateMode) && (
+              {canConnect && (
                 <button
-                  disabled={!canConnect}
-                  onClick={() => connectPickedParts(mateMode, connectorPicks)}
+                  onClick={() => {
+                    if (inferredConnection.status === 'ready') {
+                      connectPickedParts(inferredConnection.mode, connectorPicks);
+                    }
+                  }}
                   className="mt-3 w-full rounded-xl bg-blue-600 px-3 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {mateMode === 'beam' ? 'Align and Stack' : mateMode === 'multi-leg' ? 'Connect Legs' : 'Connect Pin'}
+                  {inferredConnection.status === 'ready' && inferredConnection.mode === 'beam'
+                    ? 'Align and Stack'
+                    : 'Connect Selected Points'}
                 </button>
               )}
             </div>
