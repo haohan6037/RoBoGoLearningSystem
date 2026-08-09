@@ -28,6 +28,19 @@ MATERIAL_DEFAULT_EXTENSIONS = {
     "other": ".bin",
 }
 
+# 赛季导出规范只保存官方来源与版本；学生仍然决定正式条目的内容和组织方式。
+ENGINEERING_NOTEBOOK_SEASON_SPECS = {
+    "2026-2027": {
+        "competition": "VEX IQ Robotics Competition",
+        "game": "Level Up",
+        "manualVersion": "0.2",
+        "manualPublishedAt": "2026-06-04",
+        "manualUrl": "https://content.vexrobotics.com/docs/2026-2027/level-up/files/levelup-v0.2.pdf",
+        "rubricVersion": "2025-08-20",
+        "rubricUrl": "https://kb.roboticseducation.org/hc/en-us/articles/4461349729047-Judging-Resource-Engineering-Notebook-Rubric",
+    }
+}
+
 
 class User(BaseModel):
     id: str
@@ -197,6 +210,43 @@ class PasswordChangeRequest(BaseModel):
     new_password: str
 
 
+class EngineeringTeamCreateRequest(BaseModel):
+    name: str
+    team_number: str
+    season: str
+
+
+class EngineeringTeamUpdateRequest(BaseModel):
+    name: str
+    status: Literal["active", "archived"]
+
+
+class EngineeringTeamMemberRequest(BaseModel):
+    student_id: str
+    role: Literal["member", "notebooker"] = "member"
+
+
+class EngineeringNoteWriteRequest(BaseModel):
+    team_id: str
+    objective: str
+    work_completed: str
+    reasoning: str
+    alternatives: str = ""
+    test_evidence: str = ""
+    outcome: str
+    problems: str = ""
+    resolution_status: Literal["no_problem", "resolved", "partially_resolved", "unresolved"]
+    resolution: str = ""
+    unresolved_reason: str = ""
+    next_steps: str = ""
+
+
+class EngineeringMergeProposalCreateRequest(EngineeringNoteWriteRequest):
+    class_session_id: Optional[str] = None
+    title: str
+    source_note_ids: list[str] = Field(min_length=1)
+
+
 class MaterialOpenRequest(BaseModel):
     source: Literal["current_lesson", "review"]
     class_session_id: Optional[str] = None
@@ -219,4 +269,3 @@ class PublicUser(BaseModel):
 class SessionRecord(BaseModel):
     user_id: str
     expires_at: datetime
-

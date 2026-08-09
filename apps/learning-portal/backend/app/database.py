@@ -178,6 +178,187 @@ def init_database() -> None:
                 created_at TEXT NOT NULL,
                 UNIQUE(student_id, class_session_id)
             );
+
+            CREATE TABLE IF NOT EXISTS engineering_teams (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                team_number TEXT NOT NULL,
+                season TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                created_by TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(team_number, season)
+            );
+
+            CREATE TABLE IF NOT EXISTS engineering_team_memberships (
+                id TEXT PRIMARY KEY,
+                team_id TEXT NOT NULL,
+                student_id TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'member',
+                status TEXT NOT NULL DEFAULT 'active',
+                joined_at TEXT NOT NULL,
+                UNIQUE(team_id, student_id),
+                FOREIGN KEY (team_id) REFERENCES engineering_teams(id),
+                FOREIGN KEY (student_id) REFERENCES student_profiles(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS engineering_notes (
+                id TEXT PRIMARY KEY,
+                team_id TEXT NOT NULL,
+                student_id TEXT NOT NULL,
+                class_session_id TEXT NOT NULL,
+                objective TEXT NOT NULL,
+                work_completed TEXT NOT NULL,
+                reasoning TEXT NOT NULL,
+                alternatives TEXT NOT NULL DEFAULT '',
+                test_evidence TEXT NOT NULL DEFAULT '',
+                outcome TEXT NOT NULL,
+                problems TEXT NOT NULL DEFAULT '',
+                resolution_status TEXT NOT NULL,
+                resolution TEXT NOT NULL DEFAULT '',
+                unresolved_reason TEXT NOT NULL DEFAULT '',
+                next_steps TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'draft',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                submitted_at TEXT,
+                UNIQUE(team_id, student_id, class_session_id),
+                FOREIGN KEY (team_id) REFERENCES engineering_teams(id),
+                FOREIGN KEY (student_id) REFERENCES student_profiles(id),
+                FOREIGN KEY (class_session_id) REFERENCES class_sessions(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS engineering_note_attachments (
+                id TEXT PRIMARY KEY,
+                note_id TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                file_url TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                file_size INTEGER NOT NULL,
+                uploaded_by TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (note_id) REFERENCES engineering_notes(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS competition_engineering_records (
+                id TEXT PRIMARY KEY,
+                team_id TEXT NOT NULL,
+                student_id TEXT NOT NULL,
+                legacy_note_id TEXT UNIQUE,
+                objective TEXT NOT NULL,
+                work_completed TEXT NOT NULL,
+                reasoning TEXT NOT NULL,
+                alternatives TEXT NOT NULL DEFAULT '',
+                test_evidence TEXT NOT NULL DEFAULT '',
+                outcome TEXT NOT NULL,
+                problems TEXT NOT NULL DEFAULT '',
+                resolution_status TEXT NOT NULL,
+                resolution TEXT NOT NULL DEFAULT '',
+                unresolved_reason TEXT NOT NULL DEFAULT '',
+                next_steps TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                discarded_at TEXT,
+                FOREIGN KEY (team_id) REFERENCES engineering_teams(id),
+                FOREIGN KEY (student_id) REFERENCES student_profiles(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS competition_engineering_record_attachments (
+                id TEXT PRIMARY KEY,
+                record_id TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                file_url TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                file_size INTEGER NOT NULL,
+                uploaded_by TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (record_id) REFERENCES competition_engineering_records(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS engineering_merge_proposals (
+                id TEXT PRIMARY KEY,
+                team_id TEXT NOT NULL,
+                class_session_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                objective TEXT NOT NULL,
+                work_completed TEXT NOT NULL,
+                reasoning TEXT NOT NULL,
+                alternatives TEXT NOT NULL DEFAULT '',
+                test_evidence TEXT NOT NULL DEFAULT '',
+                outcome TEXT NOT NULL,
+                problems TEXT NOT NULL DEFAULT '',
+                resolution_status TEXT NOT NULL,
+                resolution TEXT NOT NULL DEFAULT '',
+                unresolved_reason TEXT NOT NULL DEFAULT '',
+                next_steps TEXT NOT NULL DEFAULT '',
+                proposed_by TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                sequence_number INTEGER,
+                created_at TEXT NOT NULL,
+                published_at TEXT,
+                UNIQUE(team_id, sequence_number),
+                FOREIGN KEY (team_id) REFERENCES engineering_teams(id),
+                FOREIGN KEY (class_session_id) REFERENCES class_sessions(id),
+                FOREIGN KEY (proposed_by) REFERENCES student_profiles(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS engineering_merge_sources (
+                id TEXT PRIMARY KEY,
+                proposal_id TEXT NOT NULL,
+                note_id TEXT NOT NULL,
+                UNIQUE(proposal_id, note_id),
+                UNIQUE(note_id),
+                FOREIGN KEY (proposal_id) REFERENCES engineering_merge_proposals(id),
+                FOREIGN KEY (note_id) REFERENCES engineering_notes(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS engineering_merge_confirmations (
+                id TEXT PRIMARY KEY,
+                proposal_id TEXT NOT NULL,
+                student_id TEXT NOT NULL,
+                confirmed_at TEXT NOT NULL,
+                UNIQUE(proposal_id, student_id),
+                FOREIGN KEY (proposal_id) REFERENCES engineering_merge_proposals(id),
+                FOREIGN KEY (student_id) REFERENCES student_profiles(id)
+            );
+            """
+        )
+
+        connection.execute(
+            """
+            INSERT INTO competition_engineering_records (
+                id, team_id, student_id, legacy_note_id, objective, work_completed, reasoning,
+                alternatives, test_evidence, outcome, problems, resolution_status, resolution,
+                unresolved_reason, next_steps, status, created_at, updated_at, discarded_at
+            )
+            SELECT 'competition-' || id, team_id, student_id, id, objective, work_completed, reasoning,
+                   alternatives, test_evidence, outcome, problems, resolution_status, resolution,
+                   unresolved_reason, next_steps, 'active', created_at, updated_at, NULL
+            FROM engineering_notes legacy
+            WHERE NOT EXISTS (
+                SELECT 1 FROM competition_engineering_records record
+                WHERE record.legacy_note_id = legacy.id
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO competition_engineering_record_attachments (
+                id, record_id, file_name, file_url, media_type, file_size, uploaded_by, created_at
+            )
+            SELECT 'competition-' || attachment.id, 'competition-' || attachment.note_id,
+                   attachment.file_name, attachment.file_url, attachment.media_type,
+                   attachment.file_size, attachment.uploaded_by, attachment.created_at
+            FROM engineering_note_attachments attachment
+            WHERE EXISTS (
+                SELECT 1 FROM competition_engineering_records record
+                WHERE record.id = 'competition-' || attachment.note_id
+            )
+              AND NOT EXISTS (
+                SELECT 1 FROM competition_engineering_record_attachments migrated
+                WHERE migrated.id = 'competition-' || attachment.id
+            )
             """
         )
 

@@ -14,6 +14,9 @@ const app = document.querySelector("#app");
         materialSteps: null,
         attendanceData: null,
         selectedAttendanceSessionId: null,
+        selectedEngineeringTeamId: null,
+        selectedEngineeringNoteId: null,
+        engineeringNoticeError: false,
       };
 
       const teacherSeed = {
@@ -49,6 +52,15 @@ const app = document.querySelector("#app");
           throw new Error(payload.error || payload.detail || "Request failed.");
         }
         return payload;
+      }
+
+      function escapeHTML(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
       }
 
       function materialAcceptValue(fileType) {
@@ -435,6 +447,12 @@ const app = document.querySelector("#app");
       }
 
       function renderStudentPortal(data) {
+        if (state.studentView === "engineering") {
+          loadStudentEngineeringNotebook().then(renderStudentEngineeringNotebook).catch((error) => {
+            renderStudentEngineeringNotebook({ teams: [], sessions: [], notes: [], proposals: [], publishedEntries: [], error: error.message });
+          });
+          return;
+        }
         if (state.studentView === "schedule") {
           loadStudentSchedule().then(renderStudentScheduleView).catch(() => {
             renderStudentScheduleView({ schedule: [], studentName: data.studentName });
@@ -509,6 +527,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="schedule">Schedule</a>
                 <a class="nav-item" href="#" data-view="review">Review</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Engineering Notebook</a>
               </nav>
 
             </aside>
@@ -657,6 +676,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="schedule">Schedule</a>
                 <a class="nav-item" href="#" data-view="review">Review</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Engineering Notebook</a>
               </nav>
 
             </aside>
@@ -704,6 +724,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="schedule">Schedule</a>
                 <a class="nav-item active" href="#" data-view="review">Review</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Engineering Notebook</a>
               </nav>
             </aside>
             <section class="content">
@@ -749,6 +770,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item active" href="#" data-view="schedule">Schedule</a>
                 <a class="nav-item" href="#" data-view="review">Review</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Engineering Notebook</a>
               </nav>
             </aside>
             <section class="content">
@@ -804,6 +826,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="schedule">Schedule</a>
                 <a class="nav-item" href="#" data-view="review">Review</a>
                 <a class="nav-item active" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Engineering Notebook</a>
               </nav>
             </aside>
             <section class="content">
@@ -847,10 +870,278 @@ const app = document.querySelector("#app");
         });
       }
 
+      function engineeringFieldsMarkup(values = {}) {
+        const value = (key) => escapeHTML(values[key] || "");
+        const resolutionStatus = values.resolutionStatus || (values.problems ? "unresolved" : "no_problem");
+        const hasOptionalEvidence = Boolean(values.alternatives || values.testEvidence);
+        return `
+          <div style="display:flex;align-items:center;gap:10px;margin-top:18px;"><span class="pill">1 · Plan</span><strong>What were you trying to achieve?</strong></div>
+          <label>Objective *</label>
+          <p class="muted" style="margin:0 0 8px;">One or two sentences is enough.</p>
+          <textarea name="objective" required placeholder="Example: Make the robot pick up two game objects without dropping them.">${value("objective")}</textarea>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-top:24px;"><span class="pill">2 · Build</span><strong>What did you personally contribute?</strong></div>
+          <label>What did you do? *</label>
+          <textarea name="work_completed" required placeholder="Example: I rebuilt the arm and moved its pivot point one hole lower.">${value("workCompleted")}</textarea>
+          <label>Why did you do it this way? *</label>
+          <textarea name="reasoning" required placeholder="Example: We wanted the arm to stay lower and make the robot more stable.">${value("reasoning")}</textarea>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-top:24px;"><span class="pill">3 · Test</span><strong>What happened?</strong></div>
+          <label>Result *</label>
+          <p class="muted" style="margin:0 0 8px;">Include a number or observation when you can.</p>
+          <textarea name="outcome" required placeholder="Example: It picked up 2 out of 3 objects and completed the run in 18 seconds.">${value("outcome")}</textarea>
+
+          <details class="engineering-optional" ${hasOptionalEvidence ? "open" : ""} style="margin-top:18px;border:1px solid rgba(40,38,34,.12);border-radius:12px;padding:12px 14px;">
+            <summary style="cursor:pointer;font-weight:700;">Add other ideas or test evidence <span class="muted">(optional)</span></summary>
+            <label>Other ideas we considered</label>
+            <p class="muted" style="margin:0 0 8px;">What else did you think about or try before choosing this idea?</p>
+            <textarea name="alternatives" placeholder="Example: We also tried a longer arm, but it made the robot tip forward.">${value("alternatives")}</textarea>
+            <label>How did you test it?</label>
+            <textarea name="test_evidence" placeholder="Describe the test, conditions, measurements, photos, or sketches that show what happened.">${value("testEvidence")}</textarea>
+          </details>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-top:24px;"><span class="pill">4 · Reflect</span><strong>Problems and next step</strong></div>
+          <label>Did you find a problem? *</label>
+          <select name="resolution_status" required>
+            <option value="no_problem" ${resolutionStatus === "no_problem" ? "selected" : ""}>No problem found</option>
+            <option value="unresolved" ${resolutionStatus === "unresolved" ? "selected" : ""}>Yes — not solved yet</option>
+            <option value="partially_resolved" ${resolutionStatus === "partially_resolved" ? "selected" : ""}>Yes — partly solved</option>
+            <option value="resolved" ${resolutionStatus === "resolved" ? "selected" : ""}>Yes — solved</option>
+          </select>
+          <div class="engineering-problem-fields" ${resolutionStatus === "no_problem" ? "hidden" : ""}>
+            <label>What problem did you find? *</label>
+            <textarea name="problems" placeholder="Describe what did not work or what surprised you.">${value("problems")}</textarea>
+            <div class="engineering-resolution-field" ${resolutionStatus === "unresolved" ? "hidden" : ""}>
+              <label>What did you change or try?</label>
+              <textarea name="resolution" placeholder="Explain what you changed and whether it helped.">${value("resolution")}</textarea>
+            </div>
+            <div class="engineering-unresolved-field" ${resolutionStatus === "resolved" ? "hidden" : ""}>
+              <label>What still needs to be solved?</label>
+              <textarea name="unresolved_reason" placeholder="Explain why it is not solved yet and what is getting in the way.">${value("unresolvedReason")}</textarea>
+            </div>
+          </div>
+          <label>What will you do next? *</label>
+          <textarea name="next_steps" required placeholder="Example: Next lesson we will shorten the arm and test it five times.">${value("nextSteps")}</textarea>
+        `;
+      }
+
+      function setupEngineeringFormUX(form) {
+        if (!form) return;
+        const status = form.querySelector('[name="resolution_status"]');
+        const problemFields = form.querySelector(".engineering-problem-fields");
+        const problems = form.querySelector('[name="problems"]');
+        const resolutionField = form.querySelector(".engineering-resolution-field");
+        const resolution = form.querySelector('[name="resolution"]');
+        const unresolvedField = form.querySelector(".engineering-unresolved-field");
+        const unresolvedReason = form.querySelector('[name="unresolved_reason"]');
+        const update = () => {
+          const selected = status.value;
+          const hasProblem = selected !== "no_problem";
+          problemFields.hidden = !hasProblem;
+          problems.required = hasProblem;
+          resolutionField.hidden = selected === "unresolved" || selected === "no_problem";
+          unresolvedField.hidden = selected === "resolved" || selected === "no_problem";
+          resolution.required = selected === "resolved";
+          unresolvedReason.required = selected === "unresolved";
+        };
+        status.addEventListener("change", update);
+        update();
+      }
+
+      function engineeringPayloadFromForm(form) {
+        const data = new FormData(form);
+        const resolutionStatus = data.get("resolution_status") || "no_problem";
+        return {
+          team_id: data.get("team_id"),
+          objective: data.get("objective") || "",
+          work_completed: data.get("work_completed") || "",
+          reasoning: data.get("reasoning") || "",
+          alternatives: data.get("alternatives") || "",
+          test_evidence: data.get("test_evidence") || "",
+          outcome: data.get("outcome") || "",
+          problems: resolutionStatus === "no_problem" ? "" : (data.get("problems") || ""),
+          resolution_status: resolutionStatus,
+          resolution: resolutionStatus === "no_problem" ? "" : (data.get("resolution") || ""),
+          unresolved_reason: resolutionStatus === "no_problem" ? "" : (data.get("unresolved_reason") || ""),
+          next_steps: data.get("next_steps") || "",
+        };
+      }
+
+      function engineeringEntryDetails(entry) {
+        const rows = [
+          ["Objective", entry.objective], ["Work completed", entry.workCompleted],
+          ["Reasoning", entry.reasoning], ["Alternatives", entry.alternatives],
+          ["Test evidence", entry.testEvidence], ["Outcome", entry.outcome],
+          ["Problems", entry.problems], ["Resolution", entry.resolution],
+          ["Unresolved reason", entry.unresolvedReason], ["Next steps", entry.nextSteps],
+        ].filter(([, content]) => content);
+        return rows.map(([label, content]) => `
+          <div style="margin-top:10px;"><strong>${label}</strong><div class="muted" style="white-space:pre-wrap;">${escapeHTML(content)}</div></div>
+        `).join("");
+      }
+
+      async function downloadEngineeringNotebook(teamId, teamNumber) {
+        const response = await fetch(`/api/engineering-teams/${teamId}/notebook.pdf`, {
+          headers: { Authorization: `Bearer ${state.token}` },
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.detail || "Engineering notebook could not be downloaded.");
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${teamNumber}-engineering-notebook.pdf`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      async function downloadEngineeringAttachment(url, fileName) {
+        const response = await fetch(url, { headers: { Authorization: `Bearer ${state.token}` } });
+        if (!response.ok) throw new Error("Evidence file could not be downloaded.");
+        const objectUrl = URL.createObjectURL(await response.blob());
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(objectUrl);
+      }
+
+      function renderStudentEngineeringNotebook(data) {
+        stopClassroomPolling();
+        const teams = data.teams || [];
+        if (!state.selectedEngineeringTeamId || !teams.some((team) => team.id === state.selectedEngineeringTeamId)) {
+          state.selectedEngineeringTeamId = teams[0]?.id || null;
+        }
+        const team = teams.find((item) => item.id === state.selectedEngineeringTeamId);
+        const notes = (data.notes || []).filter((note) => note.teamId === team?.id);
+        const currentRecord = notes.find((note) => note.id === state.selectedEngineeringNoteId) || null;
+        const formatRecordTime = (value) => value ? new Date(value).toLocaleString() : "";
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Student Portal</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="lesson">Current Lesson</a>
+                <a class="nav-item" href="#" data-view="schedule">Schedule</a>
+                <a class="nav-item" href="#" data-view="review">Review</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item active" href="#" data-view="engineering">Engineering Notebook</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div><h1>Engineering Notebook</h1><p class="muted">Student-authored records. RoBoGo does not rewrite or improve your content.</p></div>
+                <div class="button-row"><span class="badge">${state.user.role}</span><button class="button secondary" id="sign-out" type="button">Sign out</button></div>
+              </div>
+              ${data.error ? `<div class="banner error">${escapeHTML(data.error)}</div>` : ""}
+              ${state.studentNotice ? `<div class="banner ${state.engineeringNoticeError ? "error" : "success"}">${escapeHTML(state.studentNotice)}</div>` : ""}
+              ${!team ? `<section class="surface"><div class="empty-state">Your teacher has not assigned you to a competition team yet.</div></section>` : `
+                <section class="surface">
+                  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
+                    <div><h2 style="margin:0;">${escapeHTML(team.name)} · ${escapeHTML(team.teamNumber)}</h2><p class="muted">Season ${escapeHTML(team.season)} · ${team.members.map((member) => escapeHTML(member.studentName)).join(", ")}</p></div>
+                    <div class="button-row">
+                      ${teams.length > 1 ? `<select id="engineering-team-select">${teams.map((item) => `<option value="${item.id}" ${item.id === team.id ? "selected" : ""}>${escapeHTML(item.season)} · ${escapeHTML(item.teamNumber)}</option>`).join("")}</select>` : ""}
+                      <button class="button secondary engineering-download" data-team-id="${team.id}" data-team-number="${escapeHTML(team.teamNumber)}" type="button">Download PDF</button>
+                    </div>
+                  </div>
+                  ${team.exportSpec ? `<p class="muted" style="margin-top:10px;">Export standard: ${escapeHTML(team.exportSpec.competition)} ${escapeHTML(team.exportSpec.game)} · Game Manual ${escapeHTML(team.exportSpec.manualVersion)} · Notebook Rubric ${escapeHTML(team.exportSpec.rubricVersion)}</p>` : ""}
+                </section>
+
+                <section class="surface">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <div><h2 style="margin:0;">${currentRecord ? "Edit Engineering Record" : "New Engineering Record"}</h2><p class="muted">Write whenever your team works. You can save more than one record each day.</p></div>
+                    ${currentRecord ? `<button class="button secondary" id="engineering-new-record" type="button">+ New Record</button>` : ""}
+                  </div>
+                  ${team.status === "active" ? `<form id="engineering-note-form" data-note-id="${currentRecord?.id || ""}">
+                    <input type="hidden" name="team_id" value="${team.id}" />
+                    ${engineeringFieldsMarkup(currentRecord || {})}
+                    <label>Photos, sketches, or PDF evidence (PNG/JPG/WEBP/PDF, max 10 MB each)</label>
+                    <input name="attachments" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" multiple />
+                    ${(currentRecord?.attachments || []).length ? `<div class="button-row" style="margin-top:10px;">${currentRecord.attachments.map((attachment) => `<button class="button secondary engineering-attachment" data-url="${attachment.downloadUrl}" data-file-name="${escapeHTML(attachment.fileName)}" type="button">Evidence: ${escapeHTML(attachment.fileName)}</button>`).join("")}</div>` : ""}
+                    <div class="button-row" style="margin-top:14px;">
+                      <button class="button" type="submit">Save</button>
+                      ${currentRecord ? `<button class="button secondary engineering-record-status" data-note-id="${currentRecord.id}" data-status="discarded" type="button">Discard Record</button>` : ""}
+                    </div>
+                  </form>` : `<div class="empty-state">This team is archived. Historical records are read-only.</div>`}
+                </section>
+
+                <section class="surface"><h2>My Engineering Records</h2>
+                  <p class="muted">Each item is a separate record, not a version. Open an active record to continue editing it.</p>
+                  ${notes.length ? notes.map((note) => `<article class="session-card" style="margin-top:12px;opacity:${note.status === "discarded" ? ".65" : "1"};">
+                    <header><div><strong>${escapeHTML(formatRecordTime(note.recordedAt))} · ${escapeHTML(note.objective)}</strong><div class="session-meta">Last saved ${escapeHTML(formatRecordTime(note.updatedAt))}</div></div><span class="pill">${escapeHTML(note.status)}</span></header>
+                    <div class="button-row" style="margin-top:10px;">
+                      ${note.canEdit ? `<button class="button secondary engineering-open-record" data-note-id="${note.id}" type="button">Open</button>` : ""}
+                      ${note.status === "discarded" ? `<button class="button secondary engineering-record-status" data-note-id="${note.id}" data-status="active" type="button">Restore</button>` : ""}
+                    </div>
+                  </article>`).join("") : `<div class="empty-state">No engineering records yet. Start your first record above.</div>`}
+                </section>
+              `}
+            </section>
+          </main>`;
+
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => item.addEventListener("click", (event) => { event.preventDefault(); handleStudentNavClick(item.dataset.view); }));
+        document.querySelector("#engineering-team-select")?.addEventListener("change", (event) => { state.selectedEngineeringTeamId = event.target.value; state.selectedEngineeringNoteId = null; renderStudentEngineeringNotebook(data); });
+        document.querySelector("#engineering-new-record")?.addEventListener("click", () => { state.selectedEngineeringNoteId = null; renderStudentEngineeringNotebook(data); });
+        document.querySelectorAll(".engineering-open-record").forEach((button) => button.addEventListener("click", () => { state.selectedEngineeringNoteId = button.dataset.noteId; renderStudentEngineeringNotebook(data); }));
+        document.querySelector("#engineering-note-form")?.addEventListener("submit", handleEngineeringNoteForm);
+        setupEngineeringFormUX(document.querySelector("#engineering-note-form"));
+        document.querySelectorAll(".engineering-record-status").forEach((button) => button.addEventListener("click", async () => {
+          try { await api(`/api/student/engineering-notes/${button.dataset.noteId}/status?status=${button.dataset.status}`, { method: "PUT" }); state.selectedEngineeringNoteId = null; await refreshStudentEngineering(button.dataset.status === "active" ? "Record restored." : "Record discarded."); }
+          catch (error) { await refreshStudentEngineering(error.message, true); }
+        }));
+        document.querySelectorAll(".engineering-attachment").forEach((button) => button.addEventListener("click", async () => { try { await downloadEngineeringAttachment(button.dataset.url, button.dataset.fileName); } catch (error) { await refreshStudentEngineering(error.message, true); } }));
+        document.querySelectorAll(".engineering-download").forEach((button) => button.addEventListener("click", async () => { try { await downloadEngineeringNotebook(button.dataset.teamId, button.dataset.teamNumber); } catch (error) { state.studentNotice = error.message; } }));
+      }
+
+      async function refreshStudentEngineering(message = "", isError = false) {
+        state.studentNotice = message;
+        state.engineeringNoticeError = isError;
+        const workspace = await loadStudentEngineeringNotebook();
+        renderStudentEngineeringNotebook(workspace);
+      }
+
+      async function handleEngineeringNoteForm(event) {
+        event.preventDefault();
+        const payload = engineeringPayloadFromForm(event.currentTarget);
+        const attachmentFiles = Array.from(event.currentTarget.querySelector('[name="attachments"]')?.files || []);
+        const noteId = event.currentTarget.dataset.noteId;
+        try {
+          const result = await api(noteId ? `/api/student/engineering-notes/${noteId}` : "/api/student/engineering-notes", {
+            method: noteId ? "PUT" : "POST", body: JSON.stringify(payload),
+          });
+          for (const file of attachmentFiles) {
+            const upload = new FormData();
+            upload.append("file", file);
+            await api(`/api/student/engineering-notes/${result.note.id}/attachments`, { method: "POST", body: upload });
+          }
+          state.selectedEngineeringNoteId = result.note.id;
+          await refreshStudentEngineering("Record saved. You can edit it again at any time.");
+        } catch (error) { await refreshStudentEngineering(error.message, true); }
+      }
+
+      async function handleEngineeringProposalForm(event) {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const sourceIds = data.getAll("source_note_ids");
+        if (!sourceIds.length) { state.studentNotice = "Select at least one source record."; return; }
+        try {
+          await api("/api/student/engineering-merge-proposals", { method: "POST", body: JSON.stringify({ ...engineeringPayloadFromForm(event.currentTarget), title: data.get("title"), source_note_ids: sourceIds }) });
+          await refreshStudentEngineering("Merge proposal created. Source authors can now confirm it.");
+        } catch (error) { await refreshStudentEngineering(error.message, true); }
+      }
+
+      async function handleEngineeringAction(path, message) {
+        try { await api(path, { method: "POST" }); await refreshStudentEngineering(message); }
+        catch (error) { await refreshStudentEngineering(error.message, true); }
+      }
+
       function handleStudentNavClick(view) {
         state.studentView = view;
         state.studentNotice = "";
-        const lessonData = view === "lesson" || view === "review"
+        const lessonData = view === "lesson" || view === "review" || view === "engineering"
           ? api("/api/student/current-lesson")
           : Promise.resolve({ studentName: "" });
         lessonData.then((data) => {
@@ -865,6 +1156,10 @@ const app = document.querySelector("#app");
 
       async function loadStudentAttendance() {
         return api("/api/student/attendance");
+      }
+
+      async function loadStudentEngineeringNotebook() {
+        return api("/api/student/engineering-notebook");
       }
 
       async function handleStudentPasswordChange(event) {
@@ -924,6 +1219,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
                 <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Competition</a>
               </nav>
             </aside>
             <section class="content">
@@ -997,7 +1293,11 @@ const app = document.querySelector("#app");
           (session) => `<option value="${session.id}">${session.className} - ${session.sessionDate} ${session.startTime}</option>`
         ).join("");
 
-        if (state.teacherView === "students") {
+        if (state.teacherView === "engineering") {
+          loadTeacherEngineeringNotebooks()
+            .then((workspace) => renderTeacherEngineeringView(workspace, data.students))
+            .catch((error) => renderTeacherEngineeringView({ teams: [], proposals: [], publishedEntries: [], error: error.message }, data.students));
+        } else if (state.teacherView === "students") {
           renderStudentsView(data, classOptions);
         } else if (state.teacherView === "classes") {
           renderClassesView(data, studentOptions);
@@ -1010,6 +1310,110 @@ const app = document.querySelector("#app");
         } else if (state.teacherView === "attendance") {
           renderAttendanceView(data, sessionOptions);
         }
+      }
+
+      async function loadTeacherEngineeringNotebooks() {
+        return api("/api/teacher/engineering-notebooks");
+      }
+
+      function renderTeacherEngineeringView(workspace, students) {
+        const teams = workspace.teams || [];
+        const studentOptions = students.map((student) => `<option value="${student.id}">${escapeHTML(student.displayName)}</option>`).join("");
+        app.innerHTML = `
+          <main class="portal-shell">
+            <aside class="sidebar">
+              <div class="sidebar-title">Teacher Dashboard</div>
+              <nav class="nav-list">
+                <a class="nav-item" href="#" data-view="overview">Overview</a>
+                <a class="nav-item" href="#" data-view="students">Students</a>
+                <a class="nav-item" href="#" data-view="classes">Classes</a>
+                <a class="nav-item" href="#" data-view="sessions">Sessions</a>
+                <a class="nav-item" href="#" data-view="classroom">Classroom</a>
+                <a class="nav-item" href="#" data-view="materials">Material Library</a>
+                <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
+                <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item active" href="#" data-view="engineering">Competition</a>
+              </nav>
+            </aside>
+            <section class="content">
+              <div class="topbar">
+                <div><h1>Competition</h1><p class="muted">Manage season teams and review student-authored Engineering Records.</p></div>
+                <div class="button-row"><span class="badge">${state.user.role}</span><button class="button secondary" id="sign-out" type="button">Sign out</button></div>
+              </div>
+              ${workspace.error ? `<div class="banner error">${escapeHTML(workspace.error)}</div>` : ""}
+              ${bannerMarkup()}
+              <section class="surface">
+                <h2>Create Competition Team</h2>
+                <form id="engineering-team-form">
+                  <div class="form-grid three">
+                    <div><label>Team name *</label><input name="name" required /></div>
+                    <div><label>VEX team number *</label><input name="team_number" placeholder="IQ-12345" required /></div>
+                    <div><label>Season *</label><input name="season" value="2026-2027" pattern="[0-9]{4}-[0-9]{4}" required /></div>
+                  </div>
+                  <button class="button" style="margin-top:12px;" type="submit">Create Competition Team</button>
+                </form>
+                ${teams.length ? `<form id="engineering-member-form" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">
+                  <div class="form-grid three">
+                    <div><label>Team *</label><select name="team_id" required>${teams.map((team) => `<option value="${team.id}">${escapeHTML(team.season)} · ${escapeHTML(team.teamNumber)} · ${escapeHTML(team.name)}</option>`).join("")}</select></div>
+                    <div><label>Student *</label><select name="student_id" required><option value="">Select student</option>${studentOptions}</select></div>
+                  </div>
+                  <button class="button secondary" style="margin-top:12px;" type="submit">Add Student to Team</button>
+                </form>` : ""}
+              </section>
+              <section class="surface"><h2>Teams</h2>
+                ${teams.length ? teams.map((team) => `<article class="session-card" style="margin-top:12px;">
+                  <header><div><strong>${escapeHTML(team.teamNumber)} · ${escapeHTML(team.name)}</strong><div class="session-meta">${escapeHTML(team.season)} · ${escapeHTML(team.status)}</div></div><button class="button secondary teacher-engineering-download" data-team-id="${team.id}" data-team-number="${escapeHTML(team.teamNumber)}" type="button">Download PDF</button></header>
+                  <form class="engineering-team-edit" data-team-id="${team.id}" style="margin-top:12px;"><div class="form-grid three"><div><label>Team name</label><input name="name" value="${escapeHTML(team.name)}" required /></div><div><label>Team number</label><input value="${escapeHTML(team.teamNumber)}" disabled /></div><div><label>Status</label><select name="status"><option value="active" ${team.status === "active" ? "selected" : ""}>Active</option><option value="archived" ${team.status === "archived" ? "selected" : ""}>Archived</option></select></div></div><button class="button secondary" style="margin-top:10px;" type="submit">Save Team</button></form>
+                  <div style="margin-top:12px;">${team.members.length ? team.members.map((member) => `<span class="pill" style="margin:0 6px 6px 0;">${escapeHTML(member.studentName)} <button class="engineering-remove-member" data-team-id="${team.id}" data-student-id="${member.studentId}" type="button" aria-label="Remove ${escapeHTML(member.studentName)}" style="border:0;background:none;cursor:pointer;">×</button></span>`).join("") : "<span class=\"muted\">No students assigned.</span>"}</div>
+                  ${team.exportSpec ? `<p class="muted">${escapeHTML(team.exportSpec.game)} · Manual ${escapeHTML(team.exportSpec.manualVersion)} · Rubric ${escapeHTML(team.exportSpec.rubricVersion)}</p>` : ""}
+                </article>`).join("") : `<div class="empty-state">No competition teams yet.</div>`}
+              </section>
+              <section class="surface"><h2>Engineering Records</h2><p class="muted">Teacher view is read-only. Discarded records remain visible here and are excluded from PDF.</p>
+                ${(workspace.notes || []).length ? workspace.notes.map((note) => `<details class="session-card" style="margin-top:12px;"><summary><strong>${escapeHTML(note.teamName)} · ${escapeHTML(note.authorName)} · ${escapeHTML(new Date(note.recordedAt).toLocaleString())}</strong> <span class="pill">${escapeHTML(note.status)}</span><div class="session-meta">${escapeHTML(note.objective)}</div></summary>${engineeringEntryDetails(note)}</details>`).join("") : `<div class="empty-state">No Engineering Records yet.</div>`}
+              </section>
+            </section>
+          </main>`;
+        document.querySelector("#sign-out").addEventListener("click", signOut);
+        document.querySelectorAll("[data-view]").forEach((item) => item.addEventListener("click", (event) => { event.preventDefault(); handleNavClick(item.dataset.view); }));
+        document.querySelector("#engineering-team-form")?.addEventListener("submit", handleEngineeringTeamCreate);
+        document.querySelector("#engineering-member-form")?.addEventListener("submit", handleEngineeringMemberAdd);
+        document.querySelectorAll(".engineering-team-edit").forEach((form) => form.addEventListener("submit", handleEngineeringTeamUpdate));
+        document.querySelectorAll(".engineering-remove-member").forEach((button) => button.addEventListener("click", async () => { try { await api(`/api/teacher/engineering-teams/${button.dataset.teamId}/members/${button.dataset.studentId}`, { method: "DELETE" }); await refreshTeacherEngineering("Student removed from team. Historical records were preserved."); } catch (error) { await refreshTeacherEngineering(error.message); } }));
+        document.querySelectorAll(".teacher-engineering-download").forEach((button) => button.addEventListener("click", async () => {
+          try { await downloadEngineeringNotebook(button.dataset.teamId, button.dataset.teamNumber); }
+          catch (error) { state.flash = error.message; const dashboard = await loadTeacherDashboard(); renderTeacherPortal(dashboard); }
+        }));
+      }
+
+      async function refreshTeacherEngineering(message = "") {
+        state.flash = message;
+        const [workspace, dashboard] = await Promise.all([loadTeacherEngineeringNotebooks(), loadTeacherDashboard()]);
+        renderTeacherEngineeringView(workspace, dashboard.students);
+      }
+
+      async function handleEngineeringTeamCreate(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          await api("/api/teacher/engineering-teams", { method: "POST", body: JSON.stringify({ name: form.get("name"), team_number: form.get("team_number"), season: form.get("season") }) });
+          await refreshTeacherEngineering("Competition team created.");
+        } catch (error) { await refreshTeacherEngineering(error.message); }
+      }
+
+      async function handleEngineeringTeamUpdate(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try { await api(`/api/teacher/engineering-teams/${event.currentTarget.dataset.teamId}`, { method: "PUT", body: JSON.stringify({ name: form.get("name"), status: form.get("status") }) }); await refreshTeacherEngineering("Competition team updated."); }
+        catch (error) { await refreshTeacherEngineering(error.message); }
+      }
+
+      async function handleEngineeringMemberAdd(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          await api(`/api/teacher/engineering-teams/${form.get("team_id")}/members`, { method: "POST", body: JSON.stringify({ student_id: form.get("student_id") }) });
+          await refreshTeacherEngineering("Student added to competition team.");
+        } catch (error) { await refreshTeacherEngineering(error.message); }
       }
 
       function renderStudentsView(data, classOptions) {
@@ -1029,6 +1433,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
                 <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Competition</a>
               </nav>
             </aside>
             <section class="content">
@@ -1137,6 +1542,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
                 <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Competition</a>
               </nav>
             </aside>
             <section class="content">
@@ -1286,6 +1692,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
                 <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Competition</a>
               </nav>
             </aside>
             <section class="content">
@@ -1445,6 +1852,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
                 <a class="nav-item" href="http://localhost:3000" target="_blank">🔧 Assembly Studio</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Competition</a>
               </nav>
             </aside>
             <section class="content">
@@ -1662,6 +2070,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="classroom">Classroom</a>
                 <a class="nav-item active" href="#" data-view="materials">Material Library</a>
                 <a class="nav-item" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Competition</a>
               </nav>
             </aside>
             <section class="content">
@@ -1898,6 +2307,7 @@ const app = document.querySelector("#app");
                 <a class="nav-item" href="#" data-view="classroom">Classroom</a>
                 <a class="nav-item" href="#" data-view="materials">Material Library</a>
                 <a class="nav-item active" href="#" data-view="attendance">Attendance</a>
+                <a class="nav-item" href="#" data-view="engineering">Competition</a>
               </nav>
             </aside>
             <section class="content">
