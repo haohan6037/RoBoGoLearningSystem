@@ -68,6 +68,25 @@ Open:
 http://127.0.0.1:3001
 ```
 
+## macOS 常驻局域网服务
+
+比赛工程笔记预览可交由当前 macOS 用户的 `launchd` 常驻运行。安装后会在用户登录时启动，异常退出后自动拉起，并继续使用现有 SQLite 数据库：
+
+```bash
+bash apps/learning-portal/scripts/manage_launch_agent.sh install
+```
+
+服务地址为 `http://127.0.0.1:3002/student`；同一局域网设备使用本机当前 IP 和端口 `3002`。管理命令：
+
+```bash
+bash apps/learning-portal/scripts/manage_launch_agent.sh status
+bash apps/learning-portal/scripts/manage_launch_agent.sh restart
+bash apps/learning-portal/scripts/manage_launch_agent.sh logs
+bash apps/learning-portal/scripts/manage_launch_agent.sh uninstall
+```
+
+日志写入 `apps/learning-portal/logs/launchd.out.log` 和 `launchd.err.log`。`launchd` 能恢复退出的进程，但电脑关机或休眠期间，其他局域网设备仍无法访问。
+
 Demo accounts:
 
 ```text

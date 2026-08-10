@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================================
-# RoBoGo Learning Portal — 启动服务器（后台运行）
-# 用法: bash apps/learning-portal/scripts/start_server.sh
+# RoBoGo Learning Portal — 启动服务器
+# 用法: bash apps/learning-portal/scripts/start_server.sh [--foreground]
 # ============================================================================
 set -euo pipefail
 
@@ -20,11 +20,23 @@ LOG_DIR="logs"
 LOG_FILE="${LOG_DIR}/uvicorn.log"
 
 # 检查 Python 虚拟环境
-PYTHON_BIN="$REPO_ROOT/.venv311/bin/python"
+PYTHON_BIN="${ROBOGO_PYTHON_BIN:-$REPO_ROOT/.venv-notebook-run/bin/python}"
+if [ ! -x "$PYTHON_BIN" ] && [ -x "$REPO_ROOT/.venv311/bin/python" ]; then
+    PYTHON_BIN="$REPO_ROOT/.venv311/bin/python"
+fi
 if [ ! -x "$PYTHON_BIN" ]; then
     echo "[错误] 未找到 Python 虚拟环境: ${PYTHON_BIN}" >&2
-    echo "       请先运行: python3.11 -m venv .venv311 && .venv311/bin/pip install -r apps/learning-portal/backend/requirements.txt" >&2
+    echo "       请先创建 .venv-notebook-run 或通过 ROBOGO_PYTHON_BIN 指定 Python。" >&2
     exit 1
+fi
+
+if [ "${1:-}" = "--foreground" ]; then
+    mkdir -p "$LOG_DIR"
+    echo "[启动] 前台启动 uvicorn (host=${HOST}, port=${PORT})..."
+    exec env PYTHONUNBUFFERED=1 "$PYTHON_BIN" -u -m uvicorn backend.app.main:app \
+        --host "$HOST" \
+        --port "$PORT" \
+        --log-level info
 fi
 
 # 检查是否已在运行
