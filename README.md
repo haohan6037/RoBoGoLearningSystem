@@ -21,6 +21,26 @@ RoBoGo is a robotics education platform that combines a classroom learning porta
 - Early deterministic AI-design experiments with constrained supported mechanisms
 - Classroom publication flow for student-facing build guidance
 
+## Assembly Studio Screenshots
+
+### Dual Lift with a Motorized Claw
+
+![Dual lift with synchronized geared arms and a motorized claw](doc/assets/screenshots/assembly-dual-lift-motorized-claw.jpg)
+
+Two independent geared lift modules, a shared synchronization shaft, and a front claw shown inside the editable Assembly Studio workspace.
+
+### Advanced Drivetrain
+
+![Advanced VEX IQ drivetrain assembly with motors, gears, shafts, and structural frame](doc/assets/screenshots/assembly-drivetrain.jpg)
+
+A 130-part drivetrain project with four-motor intent, compound gearing, explicit structural connections, and editable STEP-based parts.
+
+### Gear-Driven Claw
+
+![Gear-driven claw assembly with counter-rotating jaws](doc/assets/screenshots/assembly-gear-driven-claw.jpg)
+
+A compact claw mechanism used to study gear center distance, shaft alignment, rigid motion groups, and counter-rotating jaws.
+
 ## Engineering Highlights
 
 - **Mechanical semantics, not visual placement alone.** Shafts, holes, gears, pins, and connectors are represented as relationships that can be validated.
