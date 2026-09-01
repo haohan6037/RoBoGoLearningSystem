@@ -14,6 +14,10 @@ import {
 import * as THREE from 'three';
 import type { TrackballControls as TrackballControlsImpl } from 'three-stdlib';
 import {
+  setInstanceQuaternionAroundLocalPivot,
+  type RotationAxis,
+} from '@/lib/mate/assemblyGroups';
+import {
   buildLibraryConnectors,
   buildManualHoleConnectors,
   buildManualSquareHoleConnectors,
@@ -22,7 +26,9 @@ import {
   type LibraryConnector,
 } from '@/lib/mate/libraryConnectors';
 import { loadStepModel } from '@/lib/mate/loadStep';
+import { calculateAssemblyFocus } from '@/lib/viewer/assemblyCamera';
 import type { AssemblyPartInstance, CameraView, CoverCapture } from '@/types/assembly';
+import type { PartLibraryItem } from '@/types/partLibrary';
 
 const COVER_WIDTH = 1200;
 const COVER_HEIGHT = 675;
@@ -67,6 +73,28 @@ export type ShaftAdjustment = {
   axis: ConnectorAxis;
 };
 
+export type RotationPivot = {
+  position: [number, number, number];
+  axis: RotationAxis;
+  connectorIds: string[];
+};
+
+function gearRotationPivot(
+  part: PartLibraryItem,
+  connectors: LibraryConnector[],
+): RotationPivot | null {
+  if (part.category !== 'Gears' && !/gear/i.test(part.name)) return null;
+  const shaftHole = connectors.find((connector) => connector.kind === 'square-hole');
+  if (!shaftHole) return null;
+  return {
+    position: shaftHole.centerPosition ?? shaftHole.position,
+    axis: shaftHole.axis,
+    connectorIds: connectors
+      .filter((connector) => connector.kind === 'square-hole')
+      .map((connector) => connector.id),
+  };
+}
+
 function disposeObject(object: THREE.Object3D) {
   object.traverse((child) => {
     if (!(child instanceof THREE.Mesh)) return;
@@ -107,7 +135,11 @@ function PartInstance({
   holeMarkingShape: HoleMarkingShape | null;
   onSelect: () => void;
   onRegisterObject: (instanceId: string, object: THREE.Group | null) => void;
-  onConnectorsReady: (instanceId: string, connectors: LibraryConnector[]) => void;
+  onConnectorsReady: (
+    instanceId: string,
+    connectors: LibraryConnector[],
+    part: PartLibraryItem,
+  ) => void;
   onLoadState: (instanceId: string, loaded: boolean) => void;
   onHoleMarkingResult: (result: { partName: string; holeCount: number; removed: boolean; error?: string }) => void;
 }) {
@@ -152,7 +184,7 @@ function PartInstance({
         setModel(nextModel);
         setAutomaticConnectors(detected);
         setManualConnectors(saved.connectors);
-        onConnectorsReady(instance.instanceId, [...detected, ...saved.connectors]);
+        onConnectorsReady(instance.instanceId, [...detected, ...saved.connectors], instance.part);
         onLoadState(instance.instanceId, true);
       })
       .catch((error: unknown) => {
@@ -162,7 +194,7 @@ function PartInstance({
 
     return () => {
       cancelled = true;
-      onConnectorsReady(instance.instanceId, []);
+      onConnectorsReady(instance.instanceId, [], instance.part);
       onLoadState(instance.instanceId, false);
       onRegisterObject(instance.instanceId, null);
       if (loaded) disposeObject(loaded);
@@ -230,7 +262,7 @@ function PartInstance({
       });
       if (!response.ok) throw new Error('Unable to save this hole.');
       setManualConnectors(nextManual);
-      onConnectorsReady(instance.instanceId, [...automaticConnectors, ...nextManual]);
+      onConnectorsReady(instance.instanceId, [...automaticConnectors, ...nextManual], instance.part);
       onHoleMarkingResult({
         partName: instance.part.name,
         holeCount: nextManual.length / 2,
@@ -500,6 +532,72 @@ function AssemblyCoverCapture({
   return null;
 }
 
+function AssemblyFocusController({
+  objects,
+  ready,
+  request,
+  controlsRef,
+}: {
+  objects: THREE.Group[];
+  ready: boolean;
+  request: number;
+  controlsRef: RefObject<TrackballControlsImpl | null>;
+}) {
+  const autoFocused = useRef(false);
+  const lastRequest = useRef(0);
+
+  useFrame(({ camera }) => {
+    if (!ready || objects.length === 0 || !(camera instanceof THREE.PerspectiveCamera)) return;
+    const manualRequest = request !== lastRequest.current;
+    if (!manualRequest && autoFocused.current) return;
+
+    const controls = controlsRef.current;
+    const focus = calculateAssemblyFocus(
+      objects.map((object) => new THREE.Box3().setFromObject(object)),
+      {
+        cameraPosition: camera.position,
+        currentTarget: controls?.target ?? new THREE.Vector3(),
+        verticalFovDegrees: camera.fov,
+        aspect: camera.aspect,
+      },
+    );
+    if (!focus) return;
+
+    camera.position.copy(focus.position);
+    camera.near = focus.near;
+    camera.far = focus.far;
+    camera.lookAt(focus.target);
+    camera.updateProjectionMatrix();
+    if (controls) {
+      controls.target.copy(focus.target);
+      controls.update();
+    }
+    autoFocused.current = true;
+    lastRequest.current = request;
+  });
+
+  return null;
+}
+
+function ViewportCenterReporter({
+  controlsRef,
+  onViewportCenterChange,
+}: {
+  controlsRef: RefObject<TrackballControlsImpl | null>;
+  onViewportCenterChange: (position: [number, number, number]) => void;
+}) {
+  const lastTarget = useRef(new THREE.Vector3(Number.NaN, Number.NaN, Number.NaN));
+
+  useFrame(() => {
+    const target = controlsRef.current?.target;
+    if (!target || target.distanceToSquared(lastTarget.current) < 1e-6) return;
+    lastTarget.current.copy(target);
+    onViewportCenterChange(target.toArray());
+  });
+
+  return null;
+}
+
 export default function LibraryAssemblyCanvas({
   instances,
   selectedInstanceId,
@@ -516,9 +614,11 @@ export default function LibraryAssemblyCanvas({
   onLassoSelect,
   onClearSelection,
   onTransformChange,
+  onRotationPivotChange,
   onConnectorPick,
   onHoleMarkingResult,
   onAssemblyRootChange,
+  onViewportCenterChange,
   onReadyChange,
   coverCaptureRequest,
   onCoverCaptured,
@@ -543,9 +643,11 @@ export default function LibraryAssemblyCanvas({
     position: [number, number, number],
     quaternion: [number, number, number, number],
   ) => void;
+  onRotationPivotChange: (instanceId: string, pivot: RotationPivot | null) => void;
   onConnectorPick: (pick: LibraryConnectorPick) => void;
   onHoleMarkingResult: (result: { partName: string; holeCount: number; removed: boolean; error?: string }) => void;
   onAssemblyRootChange: (root: THREE.Group | null) => void;
+  onViewportCenterChange: (position: [number, number, number]) => void;
   onReadyChange: (ready: boolean) => void;
   coverCaptureRequest: number;
   onCoverCaptured: (capture: CoverCapture) => void | Promise<void>;
@@ -555,6 +657,7 @@ export default function LibraryAssemblyCanvas({
   const [connectorsByInstance, setConnectorsByInstance] = useState<Record<string, LibraryConnector[]>>({});
   const [loadedIds, setLoadedIds] = useState<Set<string>>(() => new Set());
   const [assemblyRoot, setAssemblyRoot] = useState<THREE.Group | null>(null);
+  const [focusRequest, setFocusRequest] = useState(0);
   const [lasso, setLasso] = useState<{
     startX: number;
     startY: number;
@@ -565,6 +668,9 @@ export default function LibraryAssemblyCanvas({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
   const controlsRef = useRef<TrackballControlsImpl>(null);
+  const focusObjects = useMemo(() => Object.values(objects), [objects]);
+  const assemblyReady = instances.length > 0
+    && instances.every((instance) => loadedIds.has(instance.instanceId));
 
   const restoreCameraInteraction = useCallback(() => {
     setLasso(null);
@@ -592,7 +698,11 @@ export default function LibraryAssemblyCanvas({
     });
   }, []);
 
-  const handleConnectorsReady = useCallback((instanceId: string, connectors: LibraryConnector[]) => {
+  const handleConnectorsReady = useCallback((
+    instanceId: string,
+    connectors: LibraryConnector[],
+    part: PartLibraryItem,
+  ) => {
     setConnectorsByInstance((current) => {
       if (connectors.length > 0) return { ...current, [instanceId]: connectors };
       if (!current[instanceId]) return current;
@@ -600,7 +710,8 @@ export default function LibraryAssemblyCanvas({
       delete next[instanceId];
       return next;
     });
-  }, []);
+    onRotationPivotChange(instanceId, gearRotationPivot(part, connectors));
+  }, [onRotationPivotChange]);
 
   const handleLoadState = useCallback((instanceId: string, loaded: boolean) => {
     setLoadedIds((current) => {
@@ -617,8 +728,8 @@ export default function LibraryAssemblyCanvas({
   }, [onAssemblyRootChange]);
 
   useEffect(() => {
-    onReadyChange(instances.length > 0 && instances.every((instance) => loadedIds.has(instance.instanceId)));
-  }, [instances, loadedIds, onReadyChange]);
+    onReadyChange(assemblyReady);
+  }, [assemblyReady, onReadyChange]);
 
   const selectedObject = selectedInstanceId ? objects[selectedInstanceId] ?? null : null;
   const activeShaftAdjustment = selectedInstanceId && shaftAdjustment?.instanceId === selectedInstanceId
@@ -630,9 +741,41 @@ export default function LibraryAssemblyCanvas({
     () => instances.find((instance) => instance.instanceId === selectedInstanceId) ?? null,
     [instances, selectedInstanceId],
   );
+  const selectedRotationPivot = selectedInstance
+    ? gearRotationPivot(
+      selectedInstance.part,
+      connectorsByInstance[selectedInstance.instanceId] ?? [],
+    )
+    : null;
+  const rotationPivotObject = useMemo(() => new THREE.Object3D(), []);
+  useEffect(() => {
+    if (!selectedInstance || !selectedRotationPivot) return;
+    const quaternion = new THREE.Quaternion(...selectedInstance.quaternion).normalize();
+    rotationPivotObject.position
+      .fromArray(selectedRotationPivot.position)
+      .applyQuaternion(quaternion)
+      .add(new THREE.Vector3(...selectedInstance.position));
+    rotationPivotObject.quaternion.copy(quaternion);
+    rotationPivotObject.updateMatrixWorld(true);
+  }, [rotationPivotObject, selectedInstance, selectedRotationPivot]);
+  const activeRotationPivot = mode === 'rotate' ? selectedRotationPivot : null;
+  const transformObject = activeRotationPivot
+    ? rotationPivotObject
+    : selectedObject;
 
   const commitTransform = () => {
-    if (!selectedInstanceId || !selectedObject) return;
+    if (!selectedInstanceId || !selectedObject || !transformObject) return;
+    if (selectedInstance && activeRotationPivot) {
+      const corrected = setInstanceQuaternionAroundLocalPivot(
+        selectedInstance,
+        activeRotationPivot.position,
+        [transformObject.quaternion.x, transformObject.quaternion.y, transformObject.quaternion.z, transformObject.quaternion.w],
+      );
+      selectedObject.position.fromArray(corrected.position);
+      selectedObject.quaternion.fromArray(corrected.quaternion);
+      onTransformChange(selectedInstanceId, corrected.position, corrected.quaternion);
+      return;
+    }
     onTransformChange(
       selectedInstanceId,
       [selectedObject.position.x, selectedObject.position.y, selectedObject.position.z],
@@ -778,6 +921,18 @@ export default function LibraryAssemblyCanvas({
         onError={onCoverCaptureError}
       />
 
+      <AssemblyFocusController
+        objects={focusObjects}
+        ready={assemblyReady}
+        request={focusRequest}
+        controlsRef={controlsRef}
+      />
+
+      <ViewportCenterReporter
+        controlsRef={controlsRef}
+        onViewportCenterChange={onViewportCenterChange}
+      />
+
       <group
         ref={assignAssemblyRoot}
         name={assemblyName.trim() || 'RoBoGo Assembly'}
@@ -851,15 +1006,24 @@ export default function LibraryAssemblyCanvas({
         </group>
       )}
 
-      {selectedObject && !mateMode && !holeMarkingInstanceId && (
+      <primitive object={rotationPivotObject} visible={false} />
+
+      {selectedObject && transformObject && !mateMode && !holeMarkingInstanceId && (
         <TransformControls
-          object={selectedObject}
+          key={`${selectedInstanceId ?? 'selected-object'}-${activeRotationPivot ? 'shaft-pivot' : 'origin'}`}
+          object={transformObject}
           mode={transformMode}
           space={transformSpace}
           size={0.85}
-          showX={!activeShaftAdjustment || activeShaftAdjustment.axis === 'x'}
-          showY={!activeShaftAdjustment || activeShaftAdjustment.axis === 'y'}
-          showZ={!activeShaftAdjustment || activeShaftAdjustment.axis === 'z'}
+          showX={activeRotationPivot
+            ? activeRotationPivot.axis === 'x'
+            : (!activeShaftAdjustment || activeShaftAdjustment.axis === 'x')}
+          showY={activeRotationPivot
+            ? activeRotationPivot.axis === 'y'
+            : (!activeShaftAdjustment || activeShaftAdjustment.axis === 'y')}
+          showZ={activeRotationPivot
+            ? activeRotationPivot.axis === 'z'
+            : (!activeShaftAdjustment || activeShaftAdjustment.axis === 'z')}
           onObjectChange={commitTransform}
         />
       )}
@@ -883,6 +1047,15 @@ export default function LibraryAssemblyCanvas({
           zoomSpeed={1.15}
         />
       </Canvas>
+      <button
+        type="button"
+        className="absolute bottom-4 right-4 z-10 rounded-full border border-slate-300 bg-white/95 px-4 py-2 text-xs font-bold text-slate-700 shadow-md transition hover:border-blue-400 hover:text-blue-700 disabled:cursor-wait disabled:opacity-50"
+        disabled={!assemblyReady}
+        onPointerDown={(event) => { event.stopPropagation(); }}
+        onClick={() => { setFocusRequest((current) => current + 1); }}
+      >
+        定位模型
+      </button>
       {lasso && Math.hypot(lasso.currentX - lasso.startX, lasso.currentY - lasso.startY) >= 5 && (
         <div
           className="pointer-events-none absolute border-2 border-emerald-500 bg-emerald-200/20"

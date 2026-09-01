@@ -12,6 +12,7 @@ registerHooks({
 });
 
 const {
+  applyLibraryMateTransform,
   applyOrderedLibraryMates,
   applySingleLibraryMate,
   inferUnifiedLibraryMate,
@@ -67,7 +68,34 @@ test('unified connect recognizes each two-point connection type in either select
   );
 });
 
+test('four ordered holes align two parts as pairs 1 to 3 and 2 to 4', () => {
+  assert.deepEqual(
+    inferUnifiedLibraryMate([
+      pick('first-part', hole('h1')),
+      pick('first-part', hole('h2')),
+      pick('second-part', hole('h3')),
+      pick('second-part', hole('h4')),
+    ]),
+    { status: 'ready', mode: 'hole-align', autoConnect: false },
+  );
+});
+
 test('unified connect keeps ordered holes open until the same number of legs is selected', () => {
+  assert.deepEqual(
+    inferUnifiedLibraryMate([
+      pick('target-beam', hole('h1')),
+      pick('target-beam', hole('h2')),
+    ]),
+    { status: 'selecting' },
+  );
+  assert.equal(
+    inferUnifiedLibraryMate([
+      pick('target-beam', hole('h1')),
+      pick('target-beam', hole('h2')),
+      pick('target-beam', hole('h3')),
+    ]).status,
+    'selecting',
+  );
   assert.equal(
     inferUnifiedLibraryMate([
       pick('beam-a', hole('h1')),
@@ -131,6 +159,35 @@ test('two selected hole faces stack a spacer flush against a beam', () => {
 
   assert.deepEqual(result.position, [0, 0, 7]);
   assert.deepEqual(result.quaternion, [0, 0, 0, 1]);
+});
+
+test('applying a mate transform moves the connector pin rigidly with its beam', () => {
+  const result = applyLibraryMateTransform({
+    instances: [
+      { instanceId: 'chassis', position: [100, 0, 0], quaternion: [0, 0, 0, 1] },
+      { instanceId: 'beam', position: [10, 0, 0], quaternion: [0, 0, 0, 1] },
+      { instanceId: 'pin', position: [20, 0, 0], quaternion: [0, 0, 0, 1] },
+    ],
+    groups: [{
+      id: 'beam-group',
+      name: 'Beam Group',
+      instanceIds: ['beam', 'pin'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+    }],
+    fixedInstanceId: 'chassis',
+    movingInstanceId: 'beam',
+    transform: { position: [100, 0, 0], quaternion: [0, 0, 0, 1] },
+  });
+
+  assert.deepEqual(
+    result.instances.map((instance) => [instance.instanceId, instance.position]),
+    [
+      ['chassis', [100, 0, 0]],
+      ['beam', [100, 0, 0]],
+      ['pin', [110, 0, 0]],
+    ],
+  );
+  assert.deepEqual(result.groups[0].instanceIds, ['beam', 'chassis', 'pin']);
 });
 
 test('ordered pairs can connect one multi-connector part to holes on different parts', () => {

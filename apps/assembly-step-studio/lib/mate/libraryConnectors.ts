@@ -252,7 +252,11 @@ function collectLocalVertices(model: THREE.Object3D): THREE.Vector3[] {
   return points;
 }
 
-function buildPinConnectors(model: THREE.Object3D, bounds: THREE.Box3): LibraryConnector[] {
+function buildPinConnectors(
+  part: ConnectorPart,
+  model: THREE.Object3D,
+  bounds: THREE.Box3,
+): LibraryConnector[] {
   const axis = rankedAxes(bounds)[0];
   const radialAxes = AXES.filter((candidate) => candidate !== axis);
   const center = bounds.getCenter(new THREE.Vector3());
@@ -289,6 +293,37 @@ function buildPinConnectors(model: THREE.Object3D, bounds: THREE.Box3): LibraryC
   candidates = clustered.length > 6
     ? [...clustered].sort((left, right) => right.count - left.count).slice(0, 6).sort((left, right) => left.coordinate - right.coordinate)
     : clustered;
+
+  const directionalPinMatch = part.name.match(/^0x([23]) Connector Pin$/i);
+  if (directionalPinMatch && candidates.length > 0) {
+    const layerCount = Number(directionalPinMatch[1]);
+    const minimum = axisValue(bounds.min, axis);
+    const maximum = axisValue(bounds.max, axis);
+    const candidateMiddle = candidates.reduce(
+      (sum, candidate) => sum + candidate.coordinate,
+      0,
+    ) / candidates.length;
+    const headAtMinimum = Math.abs(candidateMiddle - minimum) <= Math.abs(maximum - candidateMiddle);
+    const headInnerFace = headAtMinimum
+      ? candidates[candidates.length - 1]
+      : candidates[0];
+    const direction: -1 | 1 = headAtMinimum ? 1 : -1;
+
+    return Array.from({ length: layerCount }, (_, index) => {
+      const position = center.clone();
+      setAxis(position, axis, headInnerFace.coordinate + direction * index * (PITCH / 2));
+      return {
+        id: `pin-ring-${index + 1}`,
+        label: `Beam layer seat ${index + 1}`,
+        kind: 'pin-ring',
+        position: tuple(position),
+        markerPosition: tuple(position),
+        normal: tuple(axisNormal(axis, direction)),
+        radius: clean(headInnerFace.maxRadius * 1.05),
+        axis,
+      };
+    });
+  }
 
   const middle = candidates.reduce((sum, candidate) => sum + candidate.coordinate, 0) / (candidates.length || 1);
   return candidates.map((candidate, index) => {
@@ -667,7 +702,7 @@ export function buildLibraryConnectors(part: ConnectorPart, model: THREE.Object3
   const bounds = new THREE.Box3().setFromObject(model);
   if (bounds.isEmpty()) return [];
   if (part.category === 'Pins') {
-    const pinConnectors = buildPinConnectors(model, bounds);
+    const pinConnectors = buildPinConnectors(part, model, bounds);
     return /idler pin/i.test(part.name)
       ? [...pinConnectors, ...buildShaftConnectors(bounds)]
       : pinConnectors;

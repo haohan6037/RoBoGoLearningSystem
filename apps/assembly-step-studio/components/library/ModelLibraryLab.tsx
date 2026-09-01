@@ -3,14 +3,21 @@
 import Image from 'next/image';
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
+import AssemblyAiPanel from '@/components/ai-design/AssemblyAiPanel';
 import LibraryAssemblyCanvas, {
   type HoleMarkingShape,
   type LibraryConnectorPick,
   type LibraryMateMode,
   type LibraryPartInstance,
+  type RotationPivot,
   type ShaftAdjustment,
 } from '@/components/library/LibraryAssemblyCanvas';
 import {
+  buildGearDrivenClawPrototype,
+  buildRectangularChassisPrototype,
+} from '@/lib/ai-design/assemblyPrototype';
+import {
+  applyLibraryMateTransform,
   applyOrderedLibraryMates,
   applySingleLibraryMate,
   applyTwoHoleLibraryMate,
@@ -23,10 +30,11 @@ import {
   expandCustomGroupMemberIds,
   findNextPartSpawnPosition,
   measureAssemblyInstanceVolumes,
-  mergeConnectedRigidGroups,
   removeSelectedMembersFromGroups,
+  resolvePivotRotationMemberIds,
   resolveAutomaticMateDirection,
   rotateInstanceAroundLocalAxis,
+  rotateInstanceAroundLocalPivot,
   type RotationAxis,
 } from '@/lib/mate/assemblyGroups';
 import { createAssemblyGlbBlob, downloadAssemblyGlb } from '@/lib/partLibrary/exportAssembly';
@@ -47,7 +55,12 @@ import {
   type AssemblyUndoSnapshot,
 } from '@/lib/projects/assemblyUndo';
 import { refreshBuildInstructionsFromAssemblyRecord } from '@/lib/projects/projectRecords';
-import type { AssemblyMateRecord, AssemblyRigidGroup, CoverCapture } from '@/types/assembly';
+import type {
+  AssemblyMateRecord,
+  AssemblyRigidGroup,
+  AssemblyWorkspaceData,
+  CoverCapture,
+} from '@/types/assembly';
 import type { PartLibraryCatalog, PartLibraryItem } from '@/types/partLibrary';
 
 const PART_COLORS = ['#356fe3', '#f47a32', '#7c3aed', '#0f9f76', '#db2777', '#d69e2e'];
@@ -63,9 +76,13 @@ function mateGuide(picks: LibraryConnectorPick[]): string {
       : `${firstLegIndex} ordered pairs selected: H1↔C1 through H${firstLegIndex}↔C${firstLegIndex}.`;
   }
   if (picks.every((pick) => pick.connector.kind === 'hole')) {
-    return pickCount === 1
-      ? 'Select another hole to stack, or continue selecting holes for a multi-connector.'
-      : `${pickCount} holes selected. Connect these two now, or select the first matching Pin leg.`;
+    if (pickCount === 1) return 'Select hole 2 on the same part.';
+    if (pickCount === 2 && picks[0].instanceId === picks[1].instanceId) {
+      return 'Select hole 3 on the second part. It will align with hole 1.';
+    }
+    if (pickCount === 3) return 'Select hole 4 on the second part. It will align with hole 2.';
+    if (pickCount === 4) return 'Two pairs selected: hole 1↔3 and hole 2↔4.';
+    return `${pickCount} holes selected. Connect these two now, or select the first matching Pin leg.`;
   }
   return 'Select a compatible point on a different part.';
 }
@@ -98,6 +115,7 @@ export default function ModelLibraryLab({
   const [mode, setMode] = useState<'translate' | 'rotate'>('translate');
   const [rotationAxis, setRotationAxis] = useState<RotationAxis>('z');
   const [rotationDegrees, setRotationDegrees] = useState('90');
+  const [rotationPivots, setRotationPivots] = useState<Record<string, RotationPivot>>({});
   const [mateMode, setMateMode] = useState<LibraryMateMode | null>(null);
   const [holeMarkingInstanceId, setHoleMarkingInstanceId] = useState<string | null>(null);
   const [holeMarkingShape, setHoleMarkingShape] = useState<HoleMarkingShape | null>(null);
@@ -108,11 +126,21 @@ export default function ModelLibraryLab({
   const [groups, setGroups] = useState<AssemblyRigidGroup[]>([]);
   const [shaftAdjustment, setShaftAdjustment] = useState<ShaftAdjustment | null>(null);
   const [assemblyRoot, setAssemblyRoot] = useState<THREE.Group | null>(null);
+  const viewportCenterRef = useRef<[number, number, number]>([0, 0, 0]);
   const [assemblyReady, setAssemblyReady] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const handleRotationPivotChange = useCallback((instanceId: string, pivot: RotationPivot | null) => {
+    setRotationPivots((current) => {
+      if (pivot) return { ...current, [instanceId]: pivot };
+      if (!current[instanceId]) return current;
+      const next = { ...current };
+      delete next[instanceId];
+      return next;
+    });
+  }, []);
   const [coverCaptureRequest, setCoverCaptureRequest] = useState(0);
   const [coverStatus, setCoverStatus] = useState<'idle' | 'capturing' | 'saved'>('idle');
   const [undoAvailable, setUndoAvailable] = useState(false);
@@ -212,6 +240,7 @@ export default function ModelLibraryLab({
 
   const selectedInstanceId = selectedInstanceIds.at(-1) ?? null;
   const selectedInstance = instances.find((instance) => instance.instanceId === selectedInstanceId) ?? null;
+  const selectedRotationPivot = selectedInstanceId ? rotationPivots[selectedInstanceId] ?? null : null;
   const selectedGroups = groups.filter((group) => (
     group.instanceIds.some((instanceId) => selectedInstanceIds.includes(instanceId))
   ));
@@ -243,7 +272,7 @@ export default function ModelLibraryLab({
       instanceId,
       part,
       color: PART_COLORS[index % PART_COLORS.length],
-      position: findNextPartSpawnPosition(assemblyRoot),
+      position: viewportCenterRef.current,
       quaternion: [0, 0, 0, 1],
     };
     setAssemblyReady(false);
@@ -291,15 +320,26 @@ export default function ModelLibraryLab({
     instanceId: string,
     position: [number, number, number],
     quaternion: [number, number, number, number],
+    pivotRotation = false,
   ) => {
     const rigidGroup = groups.find((group) => group.instanceIds.includes(instanceId));
     const isShaftFineAdjustment = shaftAdjustment?.instanceId === instanceId;
+    const rotationPivot = pivotRotation ? rotationPivots[instanceId] : null;
+    const pivotMemberIds = rotationPivot
+      ? resolvePivotRotationMemberIds(
+        instanceId,
+        rotationPivot.connectorIds,
+        mateRecords,
+      )
+      : null;
     setInstances((current) => applyRigidGroupTransform(
       current,
       instanceId,
       position,
       quaternion,
-      isShaftFineAdjustment ? [instanceId] : rigidGroup?.instanceIds ?? [instanceId],
+      isShaftFineAdjustment
+        ? [instanceId]
+        : pivotMemberIds ?? rigidGroup?.instanceIds ?? [instanceId],
     ));
   };
 
@@ -307,15 +347,23 @@ export default function ModelLibraryLab({
     if (!selectedInstance) return;
     const degrees = Number(rotationDegrees);
     if (!Number.isFinite(degrees) || degrees <= 0) return;
-    const rotated = rotateInstanceAroundLocalAxis(
-      selectedInstance,
-      rotationAxis,
-      degrees * direction,
-    );
+    const rotated = selectedRotationPivot
+      ? rotateInstanceAroundLocalPivot(
+        selectedInstance,
+        selectedRotationPivot.position,
+        selectedRotationPivot.axis,
+        degrees * direction,
+      )
+      : rotateInstanceAroundLocalAxis(
+        selectedInstance,
+        rotationAxis,
+        degrees * direction,
+      );
     updateInstanceTransform(
       selectedInstance.instanceId,
       rotated.position,
       rotated.quaternion,
+      Boolean(selectedRotationPivot),
     );
   };
 
@@ -347,6 +395,11 @@ export default function ModelLibraryLab({
   const removeSelectionFromGroups = () => {
     if (selectedGroupedMemberCount === 0) return;
     setGroups((current) => removeSelectedMembersFromGroups(current, selectedInstanceIds));
+  };
+
+  const ungroupSelectedGroup = () => {
+    if (!selectedGroup) return;
+    setGroups((current) => removeSelectedMembersFromGroups(current, selectedGroup.instanceIds));
   };
 
   const copySelectedGroup = () => {
@@ -430,7 +483,10 @@ export default function ModelLibraryLab({
     const multiLegFixedCount = nextMode === 'multi-leg'
       ? picks.findIndex((pick) => pick.connector.kind === 'pin-ring')
       : 0;
-    const secondSideIndex = nextMode === 'multi-leg' ? multiLegFixedCount : 1;
+    const isTwoPairHoleAlignment = nextMode === 'hole-align' && picks.length === 4;
+    const secondSideIndex = nextMode === 'multi-leg'
+      ? multiLegFixedCount
+      : isTwoPairHoleAlignment ? 2 : 1;
     const firstSidePicks = picks.slice(0, secondSideIndex);
     const secondSidePicks = picks.slice(secondSideIndex);
     if (nextMode === 'multi-leg') {
@@ -504,7 +560,7 @@ export default function ModelLibraryLab({
       const movingInstance = firstSideIsFixed ? secondInstance : firstInstance;
       const fixedPicks = firstSideIsFixed ? firstSidePicks : secondSidePicks;
       const movingPicks = firstSideIsFixed ? secondSidePicks : firstSidePicks;
-      const transform = nextMode === 'multi-leg'
+      const transform = nextMode === 'multi-leg' || isTwoPairHoleAlignment
           ? applyTwoHoleLibraryMate(
               fixedInstance,
               movingInstance,
@@ -524,22 +580,27 @@ export default function ModelLibraryLab({
             },
           );
 
-      if (nextMode === 'multi-leg') {
+      if (nextMode === 'multi-leg' || isTwoPairHoleAlignment) {
         for (let index = 0; index < fixedPicks.length; index += 1) {
           const fixedPosition = connectorWorldPosition(fixedInstance, fixedPicks[index]);
           const movingPosition = connectorWorldPosition(transform, movingPicks[index]);
           if (fixedPosition.distanceTo(movingPosition) > 0.15) {
-            throw new Error('The selected hole and leg order does not match. Select each leg in the same order as its hole.');
+            throw new Error(isTwoPairHoleAlignment
+              ? 'The two hole pairs cannot align together. Check that holes 1↔3 and 2↔4 have the same spacing.'
+              : 'The selected hole and leg order does not match. Select each leg in the same order as its hole.');
           }
         }
       }
 
-      updateInstanceTransform(movingInstance.instanceId, transform.position, transform.quaternion);
-      setGroups((current) => mergeConnectedRigidGroups(
-        current,
-        fixedInstance.instanceId,
-        movingInstance.instanceId,
-      ));
+      const connectedAssembly = applyLibraryMateTransform({
+        instances,
+        groups,
+        fixedInstanceId: fixedInstance.instanceId,
+        movingInstanceId: movingInstance.instanceId,
+        transform,
+      });
+      setInstances(connectedAssembly.instances);
+      setGroups(connectedAssembly.groups);
       setMateRecords((current) => [...current, {
         id: crypto.randomUUID(),
         type: nextMode,
@@ -724,6 +785,34 @@ export default function ModelLibraryLab({
     setUndoAvailable(result.history.length > 1);
   };
 
+  const applyAiWorkspace = (workspace: AssemblyWorkspaceData) => {
+    setAssemblyReady(false);
+    setInstances(workspace.instances);
+    setMateRecords(workspace.mateRecords);
+    // AI output stays unlocked so every part can be manually fine-tuned.
+    // Mate records preserve the intended connections; teachers can Make Group when needed.
+    setGroups([]);
+    setSelectedInstanceIds([]);
+    setConnectorPicks([]);
+    setMateMode(null);
+    setHoleMarkingInstanceId(null);
+    setHoleMarkingShape(null);
+    setShaftAdjustment(null);
+    setMateError(null);
+    setExportError(null);
+    setSaveStatus('idle');
+  };
+
+  const applyAiRectangularChassis = () => {
+    if (!catalog) return;
+    applyAiWorkspace(buildRectangularChassisPrototype(catalog));
+  };
+
+  const applyAiGearDrivenClaw = () => {
+    if (!catalog) return;
+    applyAiWorkspace(buildGearDrivenClawPrototype(catalog));
+  };
+
   useEffect(() => {
     const handleUndoShortcut = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z' || event.shiftKey) return;
@@ -874,7 +963,7 @@ export default function ModelLibraryLab({
 
         <section className="relative min-w-0 flex-1">
           {!mateMode && !holeMarkingInstanceId && selectedInstanceIds.length > 0 && (
-            <div className="absolute right-4 top-4 z-20 w-64 rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-xl backdrop-blur">
+            <div className="absolute bottom-4 right-4 z-20 w-64 rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-xl backdrop-blur">
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Custom Group</p>
               <p className="mt-1 text-sm font-bold text-slate-900">
                 {selectedInstanceIds.length} {selectedInstanceIds.length === 1 ? 'part' : 'parts'} selected
@@ -882,9 +971,11 @@ export default function ModelLibraryLab({
               <p className="mt-1 text-xs text-slate-500">
                 {selectedGroup
                   ? `${selectedGroup.name} currently has ${selectedGroup.instanceIds.length} parts.`
-                  : 'Select at least two parts to make a rigid group.'}
+                  : selectedInstanceIds.length === 1
+                    ? 'This part is not grouped. Use the arrows on the model to move it.'
+                    : 'Select at least two parts to make a rigid group.'}
               </p>
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
                   disabled={selectedInstanceIds.length < 2 || groupCandidateIds.length < 2}
                   onClick={makeOrUpdateGroup}
@@ -895,6 +986,11 @@ export default function ModelLibraryLab({
                   onClick={copySelectedGroup}
                   className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >Copy Group</button>
+                <button
+                  disabled={!selectedGroup}
+                  onClick={ungroupSelectedGroup}
+                  className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >Ungroup</button>
                 <button
                   disabled={selectedGroupedMemberCount === 0}
                   onClick={removeSelectionFromGroups}
@@ -909,8 +1005,12 @@ export default function ModelLibraryLab({
               <p className="mt-1 truncate text-sm font-bold text-slate-900">
                 {selectedGroup ? `${selectedGroup.name} · around selected part` : selectedInstance.part.name}
               </p>
-              <p className="mt-2 text-xs text-slate-500">Choose a local axis and enter the rotation angle.</p>
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <p className="mt-2 text-xs text-slate-500">
+                {selectedRotationPivot
+                  ? `Gear pivot: square shaft hole · ${selectedRotationPivot.axis.toUpperCase()} axis`
+                  : 'Choose a local axis and enter the rotation angle.'}
+              </p>
+              {!selectedRotationPivot && <div className="mt-3 grid grid-cols-3 gap-2">
                 {(['x', 'y', 'z'] as RotationAxis[]).map((axis) => (
                   <button
                     key={axis}
@@ -918,7 +1018,7 @@ export default function ModelLibraryLab({
                     className={`rounded-xl px-3 py-2 text-xs font-bold uppercase ${rotationAxis === axis ? 'bg-indigo-600 text-white' : 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'}`}
                   >{axis} Axis</button>
                 ))}
-              </div>
+              </div>}
               <label className="mt-3 block text-xs font-semibold text-slate-600">
                 Angle in degrees
                 <input
@@ -980,7 +1080,11 @@ export default function ModelLibraryLab({
                 >
                   {inferredConnection.status === 'ready' && inferredConnection.mode === 'beam'
                     ? 'Align and Stack'
-                    : 'Connect Selected Points'}
+                    : inferredConnection.status === 'ready'
+                      && inferredConnection.mode === 'hole-align'
+                      && connectorPicks.length === 4
+                      ? 'Align 2 Hole Pairs and Group'
+                      : 'Connect Selected Points'}
                 </button>
               )}
             </div>
@@ -1039,16 +1143,29 @@ export default function ModelLibraryLab({
             onSelect={handleCanvasSelect}
             onLassoSelect={handleLassoSelect}
             onClearSelection={() => setSelectedInstanceIds([])}
-            onTransformChange={updateInstanceTransform}
+            onTransformChange={(instanceId, position, quaternion) => updateInstanceTransform(
+              instanceId,
+              position,
+              quaternion,
+              mode === 'rotate' && Boolean(rotationPivots[instanceId]),
+            )}
+            onRotationPivotChange={handleRotationPivotChange}
             onConnectorPick={handleConnectorPick}
             onHoleMarkingResult={handleHoleMarkingResult}
             onAssemblyRootChange={setAssemblyRoot}
+            onViewportCenterChange={(position) => { viewportCenterRef.current = position; }}
             onReadyChange={setAssemblyReady}
             coverCaptureRequest={coverCaptureRequest}
             onCoverCaptured={handleCoverCaptured}
             onCoverCaptureError={handleCoverCaptureError}
           />
         </section>
+        <AssemblyAiPanel
+          catalogReady={Boolean(catalog)}
+          partCount={instances.length}
+          onApplyRectangularChassis={applyAiRectangularChassis}
+          onApplyGearDrivenClaw={applyAiGearDrivenClaw}
+        />
       </div>
     </main>
   );

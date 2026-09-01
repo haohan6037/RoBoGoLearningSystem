@@ -8,7 +8,10 @@ import {
   expandCustomGroupMemberIds,
   findNextPartSpawnPosition,
   removeSelectedMembersFromGroups,
+  resolvePivotRotationMemberIds,
   rotateInstanceAroundLocalAxis,
+  rotateInstanceAroundLocalPivot,
+  setInstanceQuaternionAroundLocalPivot,
   resolveAutomaticMateDirection,
   mergeConnectedRigidGroups,
   measureAssemblyInstanceVolumes,
@@ -203,4 +206,43 @@ test('a selected part can rotate by an exact angle around its local axis', () =>
   assert.deepEqual(quarterTurn.position, [10, 20, 30]);
   assert.ok(Math.abs(quarterTurn.quaternion[2] - Math.SQRT1_2) < 1e-10);
   assert.ok(Math.abs(quarterTurn.quaternion[3] - Math.SQRT1_2) < 1e-10);
+});
+
+test('a crank gear rotates around its off-center shaft hole without moving that hole', () => {
+  const quarterTurn = rotateInstanceAroundLocalPivot(
+    { instanceId: 'crank-gear', position: [10, 20, 0], quaternion: [0, 0, 0, 1] },
+    [0, -15, 0],
+    'z',
+    90,
+  );
+
+  assert.deepEqual(quarterTurn.position, [-5, 5, 0]);
+  assert.ok(Math.abs(quarterTurn.quaternion[2] - Math.SQRT1_2) < 1e-10);
+  assert.ok(Math.abs(quarterTurn.quaternion[3] - Math.SQRT1_2) < 1e-10);
+});
+
+test('a rotation gizmo quaternion keeps an off-center shaft hole fixed', () => {
+  const quarterTurn = setInstanceQuaternionAroundLocalPivot(
+    { instanceId: 'crank-gear', position: [10, 20, 0], quaternion: [0, 0, 0, 1] },
+    [0, -15, 0],
+    [0, 0, Math.SQRT1_2, Math.SQRT1_2],
+  );
+
+  assert.deepEqual(quarterTurn.position, [-5, 5, 0]);
+});
+
+test('gear rotation follows its attached claw but stops at the shaft-hole joint', () => {
+  const memberIds = resolvePivotRotationMemberIds(
+    'gear',
+    ['square-a', 'square-b'],
+    [
+      { type: 'hole-align', fixedInstanceId: 'gear', movingInstanceId: 'frame', fixedConnectorIds: ['square-b'], movingConnectorIds: ['frame-hole'] },
+      { type: 'shaft', fixedInstanceId: 'gear', movingInstanceId: 'shaft', fixedConnectorIds: ['square-a'], movingConnectorIds: ['shaft-end'] },
+      { type: 'pin', fixedInstanceId: 'gear', movingInstanceId: 'jaw-pin', fixedConnectorIds: ['arm-hole'], movingConnectorIds: ['pin-ring-2'] },
+      { type: 'multi-leg', fixedInstanceId: 'jaw-pin', movingInstanceId: 'jaw', fixedConnectorIds: ['pin-ring-1'], movingConnectorIds: ['jaw-hole'] },
+      { type: 'pin', fixedInstanceId: 'frame', movingInstanceId: 'brace', fixedConnectorIds: ['frame-hole-2'], movingConnectorIds: ['brace-leg'] },
+    ],
+  );
+
+  assert.deepEqual(memberIds, ['gear', 'jaw-pin', 'jaw']);
 });

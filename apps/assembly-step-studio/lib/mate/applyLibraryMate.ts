@@ -111,6 +111,7 @@ export function inferUnifiedLibraryMate(
   if (picks.length === 2) {
     const has = (kind: LibraryConnector['kind']) => kinds.includes(kind);
     if (samePart) {
+      if (kinds.every((kind) => kind === 'hole')) return { status: 'selecting' };
       return { status: 'invalid', message: 'Select connection points on different parts.' };
     }
     if (has('pin-ring') && has('hole')) {
@@ -129,7 +130,22 @@ export function inferUnifiedLibraryMate(
   }
 
   const firstLegIndex = kinds.findIndex((kind) => kind === 'pin-ring');
-  if (kinds.every((kind) => kind === 'hole')) return { status: 'selecting' };
+  if (kinds.every((kind) => kind === 'hole')) {
+    if (picks.length === 4) {
+      const firstPartId = picks[0].instanceId;
+      const secondPartId = picks[2].instanceId;
+      const hasTwoHolesPerPart = picks[1].instanceId === firstPartId
+        && picks[3].instanceId === secondPartId
+        && firstPartId !== secondPartId;
+      return hasTwoHolesPerPart
+        ? { status: 'ready', mode: 'hole-align', autoConnect: false }
+        : {
+            status: 'invalid',
+            message: 'Select holes 1 and 2 on the first part, then holes 3 and 4 on the second part.',
+          };
+    }
+    return { status: 'selecting' };
+  }
   if (firstLegIndex < 2) {
     return {
       status: 'invalid',
@@ -167,6 +183,32 @@ export function inferUnifiedLibraryMate(
 }
 
 type OrderedMateInstance = Pick<AssemblyPartInstance, 'instanceId' | 'position' | 'quaternion'>;
+
+export function applyLibraryMateTransform<T extends OrderedMateInstance>({
+  instances,
+  groups,
+  fixedInstanceId,
+  movingInstanceId,
+  transform,
+}: {
+  instances: T[];
+  groups: AssemblyRigidGroup[];
+  fixedInstanceId: string;
+  movingInstanceId: string;
+  transform: InstanceTransform;
+}): { instances: T[]; groups: AssemblyRigidGroup[] } {
+  const movingGroup = groups.find((group) => group.instanceIds.includes(movingInstanceId));
+  return {
+    instances: applyRigidGroupTransform(
+      instances,
+      movingInstanceId,
+      transform.position,
+      transform.quaternion,
+      movingGroup?.instanceIds ?? [movingInstanceId],
+    ),
+    groups: mergeConnectedRigidGroups(groups, fixedInstanceId, movingInstanceId),
+  };
+}
 
 export type OrderedLibraryMateConnection = {
   hole: OrderedLibraryMatePick;

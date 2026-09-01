@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "partId": "228-2500-128",
+  "updatedAt": "2026-08-26T10:21:39.999Z",
+  "connectors": [
+    {
+      "id": "manual-hole-1-a",
+      "label": "Marked hole 1 · side A",
+      "kind": "hole",
+      "position": [
+        -6.35,
+        -5.461,
+        -3.144
+      ],
+      "centerPosition": [
+        -6.35,
+        -3.175,
+        -3.144
+      ],
+      "markerPosition": [
+        -6.35,
+        -5.461,
+        -3.144
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-1-b",
+      "label": "Marked hole 1 · side B",
+      "kind": "hole",
+      "position": [
+        -6.35,
+        -0.889,
+        -3.144
+      ],
+      "centerPosition": [
+        -6.35,
+        -3.175,
+        -3.144
+      ],
+      "markerPosition": [
+        -6.35,
+        -0.889,
+        -3.144
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-2-a",
+      "label": "Marked hole 2 · side A",
+      "kind": "hole",
+      "position": [
+        6.35,
+        -5.461,
+        -3.144
+      ],
+      "centerPosition": [
+        6.35,
+        -3.175,
+        -3.144
+      ],
+      "markerPosition": [
+        6.35,
+        -5.461,
+        -3.144
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-2-b",
+      "label": "Marked hole 2 · side B",
+      "kind": "hole",
+      "position": [
+        6.35,
+        -0.889,
+        -3.144
+      ],
+      "centerPosition": [
+        6.35,
+        -3.175,
+        -3.144
+      ],
+      "markerPosition": [
+        6.35,
+        -0.889,
+        -3.144
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-28T11:42:38.891Z",
+  "generatedAt": "2026-08-27T08:46:34.466Z",
   "sourceDirectory": "CAD Files",
-  "total": 468,
+  "total": 469,
   "categories": [
     "Beams",
     "Connectors",
@@ -3691,6 +3691,14 @@
       "category": "Standoffs",
       "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Truss Standoff Connector (228-2500-1109).STEP",
       "thumbnailUrl": "/part-library/thumbnails/truss-standoff-connector-228-2500-1109.png"
+    },
+    {
+      "id": "228-2560",
+      "name": "VEX IQ Smart Motor",
+      "partNumber": "228-2560",
+      "category": "Electronics",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/VEX IQ Smart Motor (228-2560).step",
+      "thumbnailUrl": "/part-library/thumbnails/vex-iq-smart-motor-228-2560.png"
     },
     {
       "id": "228-2500-112",

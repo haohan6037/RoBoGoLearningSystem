@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProjectsDashboard from '@/components/projects/ProjectsDashboard';
+import AssemblyPrototypeExperiment from '@/components/ai-design/AssemblyPrototypeExperiment';
 import StudioWorkspace from '@/components/studio/StudioWorkspace';
 import MateLab from '@/components/mate/MateLab';
 import ModelLibraryLab from '@/components/library/ModelLibraryLab';
@@ -41,6 +42,7 @@ export default function StudioHome() {
   const isMateLab = searchParams.get('view') === 'mate-lab';
   const isAssemblyProject = searchParams.get('view') === 'assembly';
   const isPartLibrary = searchParams.get('view') === 'part-library';
+  const isAiExperiment = searchParams.get('view') === 'ai-experiment';
   const [projects, setProjects] = useState<StudioProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
@@ -138,7 +140,14 @@ export default function StudioHome() {
         </div>
       )}
 
-      {isAssemblyProject && projectId ? (
+      {isAiExperiment ? (
+        <AssemblyPrototypeExperiment
+          onBack={() => router.push('/')}
+          onCreated={(createdProjectId) => {
+            router.push(`/?projectId=${createdProjectId}&view=assembly`);
+          }}
+        />
+      ) : isAssemblyProject && projectId ? (
         <ModelLibraryLab
           projectId={projectId}
           onBack={handleBackToProjects}
@@ -158,17 +167,26 @@ export default function StudioHome() {
             Loading projects...
           </div>
         ) : (
-          <ProjectsDashboard
-            projects={projects}
-            onCreateProject={handleCreateProject}
-            onOpenProject={handleOpenProject}
-            onDuplicateProject={handleDuplicateProject}
-            onDeleteProject={handleDeleteProject}
-            onCopyProjectLink={handleCopyProjectLink}
-            onPreviewProject={handlePreviewProject}
-            onPublishProject={handlePublishProject}
-            onRevokeProject={handleRevokeProject}
-          />
+          <>
+            <ProjectsDashboard
+              projects={projects}
+              onCreateProject={handleCreateProject}
+              onOpenProject={handleOpenProject}
+              onDuplicateProject={handleDuplicateProject}
+              onDeleteProject={handleDeleteProject}
+              onCopyProjectLink={handleCopyProjectLink}
+              onPreviewProject={handlePreviewProject}
+              onPublishProject={handlePublishProject}
+              onRevokeProject={handleRevokeProject}
+            />
+            <button
+              type="button"
+              onClick={() => router.push('/?view=ai-experiment')}
+              className="fixed bottom-6 right-6 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-blue-950/20 hover:bg-blue-700"
+            >
+              AI Prototype Experiment
+            </button>
+          </>
         )
       ) : (
         <StudioWorkspace

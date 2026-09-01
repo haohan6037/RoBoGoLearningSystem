@@ -231,6 +231,15 @@ export function rotateInstanceAroundLocalAxis<T extends TransformableInstance>(
   axis: RotationAxis,
   degrees: number,
 ): T {
+  return rotateInstanceAroundLocalPivot(instance, [0, 0, 0], axis, degrees);
+}
+
+export function rotateInstanceAroundLocalPivot<T extends TransformableInstance>(
+  instance: T,
+  localPivot: [number, number, number],
+  axis: RotationAxis,
+  degrees: number,
+): T {
   const axisVector = axis === 'x'
     ? new THREE.Vector3(1, 0, 0)
     : axis === 'y'
@@ -240,12 +249,31 @@ export function rotateInstanceAroundLocalAxis<T extends TransformableInstance>(
     axisVector,
     THREE.MathUtils.degToRad(degrees),
   );
-  const quaternion = new THREE.Quaternion(...instance.quaternion)
-    .normalize()
-    .multiply(rotation)
-    .normalize();
+  const originalQuaternion = new THREE.Quaternion(...instance.quaternion).normalize();
+  const quaternion = originalQuaternion.clone().multiply(rotation).normalize();
+  return setInstanceQuaternionAroundLocalPivot(
+    instance,
+    localPivot,
+    [quaternion.x, quaternion.y, quaternion.z, quaternion.w],
+  );
+}
+
+export function setInstanceQuaternionAroundLocalPivot<T extends TransformableInstance>(
+  instance: T,
+  localPivot: [number, number, number],
+  nextQuaternion: [number, number, number, number],
+): T {
+  const originalQuaternion = new THREE.Quaternion(...instance.quaternion).normalize();
+  const pivotWorld = new THREE.Vector3(...localPivot)
+    .applyQuaternion(originalQuaternion)
+    .add(new THREE.Vector3(...instance.position));
+  const quaternion = new THREE.Quaternion(...nextQuaternion).normalize();
+  const position = pivotWorld.sub(
+    new THREE.Vector3(...localPivot).applyQuaternion(quaternion),
+  );
   return {
     ...instance,
+    position: [clean(position.x), clean(position.y), clean(position.z)],
     quaternion: [
       clean(quaternion.x),
       clean(quaternion.y),
@@ -253,6 +281,42 @@ export function rotateInstanceAroundLocalAxis<T extends TransformableInstance>(
       clean(quaternion.w),
     ],
   };
+}
+
+type RotationMateRecord = Pick<
+  AssemblyMateRecord,
+  'type' | 'fixedInstanceId' | 'movingInstanceId' | 'fixedConnectorIds' | 'movingConnectorIds'
+>;
+
+export function resolvePivotRotationMemberIds(
+  pivotInstanceId: string,
+  pivotConnectorIds: string[],
+  mateRecords: RotationMateRecord[],
+): string[] {
+  const pivotConnectors = new Set(pivotConnectorIds);
+  const members = new Set([pivotInstanceId]);
+  const queue = [pivotInstanceId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    for (const mate of mateRecords) {
+      const currentIsFixed = mate.fixedInstanceId === currentId;
+      const currentIsMoving = mate.movingInstanceId === currentId;
+      if (!currentIsFixed && !currentIsMoving) continue;
+
+      const crossesPivotJoint = currentId === pivotInstanceId
+        && (currentIsFixed ? mate.fixedConnectorIds : mate.movingConnectorIds)
+          .some((connectorId) => pivotConnectors.has(connectorId));
+      if (crossesPivotJoint) continue;
+
+      const neighborId = currentIsFixed ? mate.movingInstanceId : mate.fixedInstanceId;
+      if (members.has(neighborId)) continue;
+      members.add(neighborId);
+      queue.push(neighborId);
+    }
+  }
+
+  return [...members];
 }
 
 export function applyRigidGroupTransform<T extends TransformableInstance>(

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import * as THREE from 'three';
 
@@ -225,6 +226,52 @@ test('a pin exposes both sides of its widest stop ring', () => {
   assert.deepEqual(connectors.map((connector) => connector.position[2]), [-1, 1]);
 });
 
+test('a 0x2 Connector Pin exposes two beam-layer seats pointing away from its head', () => {
+  const positions = [];
+  for (const [z, radius] of [[-6.2, 3.3], [-5.4, 3.3], [0.95, 2.4], [6.2, 1.6]]) {
+    for (let index = 0; index < 48; index += 1) {
+      const angle = (index / 48) * Math.PI * 2;
+      positions.push(Math.cos(angle) * radius, Math.sin(angle) * radius, z);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  const model = new THREE.Group();
+  model.add(new THREE.Mesh(geometry));
+
+  const connectors = buildLibraryConnectors(
+    { name: '0x2 Connector Pin', category: 'Pins' },
+    model,
+  ).filter((connector) => connector.kind === 'pin-ring');
+
+  assert.equal(connectors.length, 2);
+  assert.deepEqual(connectors.map((connector) => connector.position[2]), [-5.4, 0.95]);
+  assert.deepEqual(connectors.map((connector) => connector.normal), [[0, 0, 1], [0, 0, 1]]);
+});
+
+test('a 0x3 Connector Pin exposes three beam-layer seats pointing away from its head', () => {
+  const positions = [];
+  for (const [z, radius] of [[-12.6, 3.3], [-11.8, 3.3], [-5.45, 2.4], [0.9, 2.4], [6.2, 1.6]]) {
+    for (let index = 0; index < 48; index += 1) {
+      const angle = (index / 48) * Math.PI * 2;
+      positions.push(Math.cos(angle) * radius, Math.sin(angle) * radius, z);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  const model = new THREE.Group();
+  model.add(new THREE.Mesh(geometry));
+
+  const connectors = buildLibraryConnectors(
+    { name: '0x3 Connector Pin', category: 'Pins' },
+    model,
+  ).filter((connector) => connector.kind === 'pin-ring');
+
+  assert.equal(connectors.length, 3);
+  assert.deepEqual(connectors.map((connector) => connector.position[2]), [-11.8, -5.45, 0.9]);
+  assert.deepEqual(connectors.map((connector) => connector.normal), [[0, 0, 1], [0, 0, 1], [0, 0, 1]]);
+});
+
 test('a non-Pin library part exposes a detected built-in connection leg', () => {
   const connectors = buildLibraryConnectors(
     { name: 'Corner Connector', category: 'Connectors' },
@@ -287,4 +334,45 @@ test('selecting one flat wall marks the complete square hole on both faces', () 
   assert.deepEqual(connectors.map((connector) => connector.kind), ['square-hole', 'square-hole']);
   assert.deepEqual(connectors.map((connector) => connector.centerPosition), [[0, 0, 0], [0, 0, 0]]);
   assert.deepEqual(connectors.map((connector) => connector.position[2]).sort((a, b) => a - b), [-3, 3]);
+});
+
+test('36 tooth gear and 30 degree claw beam expose their real reusable holes', async () => {
+  const [gearMap, beamMap] = await Promise.all([
+    readFile(new URL('../../data/part-library-connectors/228-2500-214.json', import.meta.url), 'utf8'),
+    readFile(new URL('../../data/part-library-connectors/228-2500-147.json', import.meta.url), 'utf8'),
+  ]).then((files) => files.map((file) => JSON.parse(file)));
+
+  assert.equal(gearMap.connectors.filter((connector) => connector.kind === 'square-hole').length, 2);
+  assert.equal(gearMap.connectors.filter((connector) => connector.kind === 'hole').length, 16);
+  assert.equal(beamMap.connectors.filter((connector) => connector.kind === 'hole').length, 10);
+  assert.deepEqual(
+    beamMap.connectors
+      .filter((connector) => connector.id.endsWith('-a'))
+      .map((connector) => connector.centerPosition),
+    [
+      [-23.691, 6.352, 0],
+      [-12.693, 0.002, 0],
+      [-1.694, -6.348, 0],
+      [11.006, -6.348, 0],
+      [23.706, -6.348, 0],
+    ],
+  );
+});
+
+test('the claw corner exposes only its two side holes for a one-wide beam extension', async () => {
+  const cornerMap = JSON.parse(await readFile(
+    new URL('../../data/part-library-connectors/228-2500-128.json', import.meta.url),
+    'utf8',
+  ));
+
+  assert.equal(cornerMap.connectors.length, 4);
+  assert.deepEqual(
+    cornerMap.connectors
+      .filter((connector) => connector.id.endsWith('-a'))
+      .map((connector) => ({ axis: connector.axis, center: connector.centerPosition })),
+    [
+      { axis: 'y', center: [-6.35, -3.175, -3.144] },
+      { axis: 'y', center: [6.35, -3.175, -3.144] },
+    ],
+  );
 });
