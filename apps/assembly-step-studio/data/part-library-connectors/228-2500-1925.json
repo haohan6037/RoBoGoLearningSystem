@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "partId": "228-2500-1925",
+  "updatedAt": "2026-08-29T10:07:11.052Z",
+  "connectors": [
+    {
+      "id": "manual-square-hole-1-a",
+      "label": "Marked square hole 1 · side A",
+      "kind": "square-hole",
+      "position": [
+        0,
+        0.445,
+        0
+      ],
+      "centerPosition": [
+        0,
+        2.7305,
+        0
+      ],
+      "markerPosition": [
+        0,
+        0.445,
+        0
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "radius": 3.75,
+      "axis": "y"
+    },
+    {
+      "id": "manual-square-hole-1-b",
+      "label": "Marked square hole 1 · side B",
+      "kind": "square-hole",
+      "position": [
+        0,
+        5.905,
+        0
+      ],
+      "centerPosition": [
+        0,
+        2.7305,
+        0
+      ],
+      "markerPosition": [
+        0,
+        5.905,
+        0
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "radius": 3.75,
+      "axis": "y"
+    }
+  ]
+}

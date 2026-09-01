@@ -5,40 +5,19 @@ import { useAssemblyStore } from '@/store/useAssemblyStore';
 import StepList from './StepList';
 
 export default function StepPanel() {
-  const [title, setTitle] = useState('');
-  const [desc, setDesc] = useState('');
   const saveCurrentStep = useAssemblyStore((s) => s.saveCurrentStep);
   const generateAssemblySteps = useAssemblyStore((s) => s.generateAssemblySteps);
   const [tab, setTab] = useState<'disassembly' | 'assembly'>('disassembly');
 
-  const handleSave = () => {
-    if (!title.trim()) return;
-    saveCurrentStep(title.trim(), desc.trim());
-    setTitle('');
-    setDesc('');
-  };
-
   return (
     <div className="flex flex-col h-full">
       <div className="p-3 border-b border-gray-800">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">Save Step</h3>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Step title"
-          className="w-full px-2 py-1 text-xs bg-gray-800 rounded border border-gray-700 mb-1"
-        />
-        <input
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          placeholder="Description (optional)"
-          className="w-full px-2 py-1 text-xs bg-gray-800 rounded border border-gray-700 mb-2"
-        />
+        <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">Create Step</h3>
         <button
-          onClick={handleSave}
+          onClick={saveCurrentStep}
           className="w-full px-2 py-1 text-xs bg-blue-700 hover:bg-blue-600 rounded transition-colors"
         >
-          Save Current State as Step
+          Generate Step from Current State
         </button>
       </div>
 

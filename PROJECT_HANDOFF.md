@@ -1,6 +1,61 @@
 # RoBoGo Learning Portal Handoff
 
-Last updated: 2026-06-12
+Last updated: 2026-08-07
+
+## Current State: Competition Module Phase One (2026-08-09)
+
+- Competition is now independent from Classes and Class Sessions. Active team members can create multiple separately timestamped Engineering Records per day and keep editing their own records.
+- Added additive storage in `competition_engineering_records` and `competition_engineering_record_attachments`. Existing legacy `engineering_notes` rows are copied once using `legacy_note_id`; old tables remain for compatibility and rollback safety.
+- Teacher APIs support team creation, editable name/status, member add, and soft member removal. Team number and season are not accepted by the update API. A student can have only one active team per season.
+- Removed role selection from the UI. Stage Merge, confirmation, and publication are hidden and their write APIs return HTTP 410 during phase one.
+- Students can discard/restore records. Former members retain read-only access to their own historical records; Teachers see all team records read-only.
+- Team PDF now aggregates active personal records chronologically and excludes discarded records while retaining authorship and timestamps.
+- Targeted integration tests cover class-independent multiple records, team constraints/former-member history, discard/restore, and PDF exclusion.
+- Real preview SQLite migration completed after backup at `apps/learning-portal/.codex-backups/20260809-competition-module/engineering-notebook-preview.sqlite3.before-competition-migration`.
+- Portal restarted on `0.0.0.0:3002`; current checked LAN address is `192.168.68.119`.
+
+## Current State: Engineering Notebook UX + LAN Preview (2026-08-07)
+
+- The active Engineering Notebook implementation is isolated in `/Users/happyfamily/Hector/VEX/robogo-engineering-notebook-wt` on branch `codex/engineering-notebook-mvp`; its changes are intentionally uncommitted.
+- Current product rule: every Engineering Team member has one editable record per class session. There is one `Save` action, no submission lock, no per-session version list, and no `Personal and Team Source Records` UI section.
+- Selecting a class session loads that student's existing record for continued editing. The legacy submit endpoint remains compatibility-only and keeps the record editable.
+- A saved record captures: Objective, work completed, reasoning, alternatives considered, test evidence, outcome, problems, resolution state, resolution or unresolved reason, and next steps. `Objective or problem` was shortened to `Objective` to reduce ambiguity for children.
+- Stage Merge remains available for meaningful project milestones. Students author the proposal; source authors confirm; the Notebooker publishes an append-only team entry. The system must not rewrite or automatically merge student text.
+- Final PDF export is intended to follow the official VEX IQ Engineering Notebook structure for the active season, with RoBoGo generating framework text and students supplying the corresponding content.
+- Student and teacher portal routes are served by the FastAPI app. Assembly Studio is a separate Next.js app that supports shared 3D model and Build Instructions authoring.
+
+### LAN Runtime Status
+
+- Last live verification was 2026-08-06: Learning Portal on port `3002` and Assembly Studio on port `3003`, both bound to `0.0.0.0` and returning HTTP 200 through the then-current LAN IP.
+- Rechecked 2026-08-07 09:53 NZST: the Mac LAN IP had changed to `192.168.68.119`, and neither service was running. Never hand out a remembered IP without rechecking it.
+- Start the Learning Portal from the feature worktree:
+  ```bash
+  cd "/Users/happyfamily/Hector/VEX/robogo-engineering-notebook-wt/apps/learning-portal"
+  ROBOGO_DATABASE_PROVIDER=sqlite \
+  ROBOGO_SQLITE_PATH=data/engineering-notebook-preview.sqlite3 \
+  ROBOGO_MATERIALS_STORAGE_ROOT=storage/engineering-notebook-preview \
+  ../../.venv-notebook-run/bin/python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 3002
+  ```
+- Start Assembly Studio from the main checkout:
+  ```bash
+  cd "/Users/happyfamily/Hector/VEX/RoBoGo Learning system/apps/assembly-step-studio"
+  npm run start -- --hostname 0.0.0.0 --port 3003
+  ```
+- Resolve the current Wi-Fi address with `ipconfig getifaddr en1` (fall back to `en0`), then verify `/student`, `/api/health`, `/`, and `/api/studio` through that address before sharing URLs.
+- These are foreground/local services, not Dockerized or configured for restart after reboot. Keep the Mac awake and the processes running.
+- LAN exposure is acceptable for preview, but direct Internet exposure is not: portal authentication is still local-MVP quality, and Assembly Studio has no account/permission isolation. Any LAN user with the Studio URL may modify shared projects.
+
+## Previous Update: Competition Engineering Notebook MVP (2026-08-05)
+
+- Development is isolated on `codex/engineering-notebook-mvp` in `/Users/happyfamily/Hector/VEX/robogo-engineering-notebook-wt`.
+- Added season-scoped Engineering Teams, member/Notebooker roles, and per-member session submission coverage.
+- Students can save and continuously edit one Personal Engineering Record per class session and attach image/PDF evidence.
+- Students can manually author Merge Proposals from saved source records. Every source author must confirm before the team Notebooker can publish.
+- Published Team Engineering Notebook Entries are append-only, retain source attribution, and export as a deterministic PDF with the 2026–2027 Level Up manual/rubric version metadata.
+- Teachers can create teams, assign roles, monitor individual submission status, inspect proposals and published entries, and download the PDF; teacher UI has no notebook edit controls.
+- AI generation, rewriting, summarization, and auto-merging are intentionally absent to preserve student authorship.
+- Targeted API integration tests live at `apps/learning-portal/tests/test_engineering_notebook_api.py`.
+- General Academy classroom notes remain a separate follow-up item below.
 
 ## Latest Update: Assembly Studio Project Persistence + Dashboard Polish
 
@@ -175,6 +230,8 @@ student@robogo.local / Student123!
 - `PROJECT_HANDOFF.md` — This file
 
 ## Known Limitations / Future Work
+
+0. **Academy classroom notes remain a separate follow-up** — add general lesson notes after the competition-season Engineering Notebook minimum loop is stable; do not merge classroom notes into student-authored competition evidence.
 
 1. **No real database migration framework** — startup-time ALTER TABLE with try/except
 2. **Auth is local MVP level** — plain-text passwords, in-memory tokens

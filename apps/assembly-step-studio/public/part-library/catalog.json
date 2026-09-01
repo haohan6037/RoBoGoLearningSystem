@@ -1,0 +1,3776 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-27T08:46:34.466Z",
+  "sourceDirectory": "CAD Files",
+  "total": 469,
+  "categories": [
+    "Beams",
+    "Connectors",
+    "Electronics",
+    "Fasteners",
+    "Gears",
+    "Other",
+    "Panels",
+    "Pins",
+    "Plates",
+    "Pulleys",
+    "Shaft Hardware",
+    "Shafts",
+    "Standoffs",
+    "Wheels"
+  ],
+  "parts": [
+    {
+      "id": "228-2500-1413",
+      "name": ".5x Pitch Idler Pulley",
+      "partNumber": "228-2500-1413",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/.5x Pitch Idler Pulley (228-2500-1413).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/5x-pitch-idler-pulley-228-2500-1413.png"
+    },
+    {
+      "id": "228-2500-114",
+      "name": "0.25x Pitch Spacer",
+      "partNumber": "228-2500-114",
+      "category": "Shaft Hardware",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0.25x Pitch Spacer (228-2500-114).step",
+      "thumbnailUrl": "/part-library/thumbnails/0-25x-pitch-spacer-228-2500-114.png"
+    },
+    {
+      "id": "228-2500-063",
+      "name": "0.25x Pitch Standoff",
+      "partNumber": "228-2500-063",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0.25x Pitch Standoff (228-2500-063).step",
+      "thumbnailUrl": "/part-library/thumbnails/0-25x-pitch-standoff-228-2500-063.png"
+    },
+    {
+      "id": "228-2500-064",
+      "name": "0.5x Pitch Standoff",
+      "partNumber": "228-2500-064",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0.5x Pitch Standoff (228-2500-064).step",
+      "thumbnailUrl": "/part-library/thumbnails/0-5x-pitch-standoff-228-2500-064.png"
+    },
+    {
+      "id": "228-2500-2268",
+      "name": "0.5x Pitch Standoff (Weak)",
+      "partNumber": "228-2500-2268",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0.5x Pitch Standoff (Weak) (228-2500-2268).step",
+      "thumbnailUrl": "/part-library/thumbnails/0-5x-pitch-standoff-weak-228-2500-2268.png"
+    },
+    {
+      "id": "228-2500-109",
+      "name": "0.5x Pitch Standoff Extender",
+      "partNumber": "228-2500-109",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0.5x Pitch Standoff Extender (228-2500-109).step",
+      "thumbnailUrl": "/part-library/thumbnails/0-5x-pitch-standoff-extender-228-2500-109.png"
+    },
+    {
+      "id": "228-2500-1916",
+      "name": "0.75x Wide, 1.5x Pitch Diameter Rover Wheel",
+      "partNumber": "228-2500-1916",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0.75x Wide, 1.5x Pitch Diameter Rover Wheel (228-2500-1916).step",
+      "thumbnailUrl": "/part-library/thumbnails/0-75x-wide-1-5x-pitch-diameter-rover-wheel-228-2500-1916.png"
+    },
+    {
+      "id": "228-2500-099",
+      "name": "0x1 Sheet Pin",
+      "partNumber": "228-2500-099",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x1 Sheet Pin (228-2500-099).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x1-sheet-pin-228-2500-099.png"
+    },
+    {
+      "id": "228-2500-086",
+      "name": "0x2 Connector Pin",
+      "partNumber": "228-2500-086",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x2 Connector Pin (228-2500-086).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x2-connector-pin-228-2500-086.png"
+    },
+    {
+      "id": "228-2500-090",
+      "name": "0x2 Connector Pin with Spherical Cap",
+      "partNumber": "228-2500-090",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x2 Connector Pin with Spherical Cap (228-2500-090).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x2-connector-pin-with-spherical-cap-228-2500-090.png"
+    },
+    {
+      "id": "228-2500-084",
+      "name": "0x2 Idler Pin",
+      "partNumber": "228-2500-084",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x2 Idler Pin (228-2500-084).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x2-idler-pin-228-2500-084.png"
+    },
+    {
+      "id": "228-2500-2258",
+      "name": "0x2 Idler Pin (Weak)",
+      "partNumber": "228-2500-2258",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x2 Idler Pin (Weak) (228-2500-2258).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x2-idler-pin-weak-228-2500-2258.png"
+    },
+    {
+      "id": "228-2500-087",
+      "name": "0x3 Connector Pin",
+      "partNumber": "228-2500-087",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x3 Connector Pin (228-2500-087).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x3-connector-pin-228-2500-087.png"
+    },
+    {
+      "id": "228-2500-097",
+      "name": "0x3 Idler Pin",
+      "partNumber": "228-2500-097",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x3 Idler Pin (228-2500-097).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x3-idler-pin-228-2500-097.png"
+    },
+    {
+      "id": "228-2500-085",
+      "name": "0x3 Smooth Idler Pin (Weak)",
+      "partNumber": "228-2500-085",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/0x3 Smooth Idler Pin (Weak) (228-2500-085).step",
+      "thumbnailUrl": "/part-library/thumbnails/0x3-smooth-idler-pin-weak-228-2500-085.png"
+    },
+    {
+      "id": "228-2500-091",
+      "name": "1.5x Pitch Plastic Motor Snap Shaft v1",
+      "partNumber": "228-2500-091",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1.5x Pitch Plastic Motor Snap Shaft v1 (228-2500-091).step",
+      "thumbnailUrl": "/part-library/thumbnails/1-5x-pitch-plastic-motor-snap-shaft-v1-228-2500-091.png"
+    },
+    {
+      "id": "228-2500-324",
+      "name": "1.5x Pitch Screw Segment (CW)",
+      "partNumber": "228-2500-324",
+      "category": "Fasteners",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1.5x Pitch Screw Segment (CW) (228-2500-324).step",
+      "thumbnailUrl": "/part-library/thumbnails/1-5x-pitch-screw-segment-cw-228-2500-324.png"
+    },
+    {
+      "id": "228-2500-066",
+      "name": "1.5x Pitch Standoff",
+      "partNumber": "228-2500-066",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1.5x Pitch Standoff (228-2500-066).step",
+      "thumbnailUrl": "/part-library/thumbnails/1-5x-pitch-standoff-228-2500-066.png"
+    },
+    {
+      "id": "228-2500-1917",
+      "name": "1.5x Wide, 2.5x Pitch Diameter Rover Wheel",
+      "partNumber": "228-2500-1917",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1.5x Wide, 2.5x Pitch Diameter Rover Wheel (228-2500-1917).step",
+      "thumbnailUrl": "/part-library/thumbnails/1-5x-wide-2-5x-pitch-diameter-rover-wheel-228-2500-1917.png"
+    },
+    {
+      "id": "228-2500-1900",
+      "name": "1.5x3 Oblong Satellite Dish",
+      "partNumber": "228-2500-1900",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1.5x3 Oblong Satellite Dish (228-2500-1900).step",
+      "thumbnailUrl": "/part-library/thumbnails/1-5x3-oblong-satellite-dish-228-2500-1900.png"
+    },
+    {
+      "id": "228-2500-163",
+      "name": "10mm Pulley",
+      "partNumber": "228-2500-163",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/10mm Pulley (228-2500-163).step",
+      "thumbnailUrl": "/part-library/thumbnails/10mm-pulley-228-2500-163.png"
+    },
+    {
+      "id": "228-2500-2230",
+      "name": "10x Pitch Capped Shaft",
+      "partNumber": "228-2500-2230",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/10x Pitch Capped Shaft (228-2500-2230).step",
+      "thumbnailUrl": "/part-library/thumbnails/10x-pitch-capped-shaft-228-2500-2230.png"
+    },
+    {
+      "id": "228-2500-261",
+      "name": "10x Pitch Shaft",
+      "partNumber": "228-2500-261",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/10x Pitch Shaft (228-2500-261).step",
+      "thumbnailUrl": "/part-library/thumbnails/10x-pitch-shaft-228-2500-261.png"
+    },
+    {
+      "id": "228-2500-2028",
+      "name": "10x Pitch Wide Front Loader Bucket",
+      "partNumber": "228-2500-2028",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/10x Pitch Wide Front Loader Bucket (228-2500-2028).step",
+      "thumbnailUrl": "/part-library/thumbnails/10x-pitch-wide-front-loader-bucket-228-2500-2028.png"
+    },
+    {
+      "id": "228-2500-2231",
+      "name": "11x Pitch Capped Shaft",
+      "partNumber": "228-2500-2231",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/11x Pitch Capped Shaft (228-2500-2231).step",
+      "thumbnailUrl": "/part-library/thumbnails/11x-pitch-capped-shaft-228-2500-2231.png"
+    },
+    {
+      "id": "228-2500-262",
+      "name": "11x Pitch Shaft",
+      "partNumber": "228-2500-262",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/11x Pitch Shaft (228-2500-262).step",
+      "thumbnailUrl": "/part-library/thumbnails/11x-pitch-shaft-228-2500-262.png"
+    },
+    {
+      "id": "228-2500-213",
+      "name": "12 Tooth Gear",
+      "partNumber": "228-2500-213",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12 Tooth Gear (228-2500-213).step",
+      "thumbnailUrl": "/part-library/thumbnails/12-tooth-gear-228-2500-213.png"
+    },
+    {
+      "id": "228-2500-463",
+      "name": "12 Tooth High Strength Bevel Gear",
+      "partNumber": "228-2500-463",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12 Tooth High Strength Bevel Gear (228-2500-463).step",
+      "thumbnailUrl": "/part-library/thumbnails/12-tooth-high-strength-bevel-gear-228-2500-463.png"
+    },
+    {
+      "id": "228-2500-250",
+      "name": "12 Tooth Hybrid Gear",
+      "partNumber": "228-2500-250",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12 Tooth Hybrid Gear (228-2500-250).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/12-tooth-hybrid-gear-228-2500-250.png"
+    },
+    {
+      "id": "228-2500-448",
+      "name": "120x Pitch Rope",
+      "partNumber": "228-2500-448",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/120x Pitch Rope (228-2500-448).step",
+      "thumbnailUrl": "/part-library/thumbnails/120x-pitch-rope-228-2500-448.png"
+    },
+    {
+      "id": "228-2500-2232",
+      "name": "12x Pitch Capped Shaft",
+      "partNumber": "228-2500-2232",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12x Pitch Capped Shaft (228-2500-2232).step",
+      "thumbnailUrl": "/part-library/thumbnails/12x-pitch-capped-shaft-228-2500-2232.png"
+    },
+    {
+      "id": "228-2500-430",
+      "name": "12x Pitch Rope",
+      "partNumber": "228-2500-430",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12x Pitch Rope (228-2500-430).step",
+      "thumbnailUrl": "/part-library/thumbnails/12x-pitch-rope-228-2500-430.png"
+    },
+    {
+      "id": "228-2500-263",
+      "name": "12x Pitch Shaft",
+      "partNumber": "228-2500-263",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12x Pitch Shaft (228-2500-263).step",
+      "thumbnailUrl": "/part-library/thumbnails/12x-pitch-shaft-228-2500-263.png"
+    },
+    {
+      "id": "228-2500-472",
+      "name": "12x Robot Arm Beam",
+      "partNumber": "228-2500-472",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12x Robot Arm Beam (228-2500-472).step",
+      "thumbnailUrl": "/part-library/thumbnails/12x-robot-arm-beam-228-2500-472.png"
+    },
+    {
+      "id": "228-2500-059",
+      "name": "12x12 Plate",
+      "partNumber": "228-2500-059",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12x12 Plate (228-2500-059).step",
+      "thumbnailUrl": "/part-library/thumbnails/12x12-plate-228-2500-059.png"
+    },
+    {
+      "id": "228-2500-205",
+      "name": "12x12 Truss Plate",
+      "partNumber": "228-2500-205",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/12x12 Truss Plate (228-2500-205).step",
+      "thumbnailUrl": "/part-library/thumbnails/12x12-truss-plate-228-2500-205.png"
+    },
+    {
+      "id": "228-2500-264",
+      "name": "14x Pitch Shaft",
+      "partNumber": "228-2500-264",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/14x Pitch Shaft (228-2500-264).step",
+      "thumbnailUrl": "/part-library/thumbnails/14x-pitch-shaft-228-2500-264.png"
+    },
+    {
+      "id": "228-2500-1381",
+      "name": "14x14 Octagon Truss Plate",
+      "partNumber": "228-2500-1381",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/14x14 Octagon Truss Plate (228-2500-1381).step",
+      "thumbnailUrl": "/part-library/thumbnails/14x14-octagon-truss-plate-228-2500-1381.png"
+    },
+    {
+      "id": "228-2500-192",
+      "name": "15 Degree Offset Locking Angle End Standoff Connector",
+      "partNumber": "228-2500-192",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/15 Degree Offset Locking Angle End Standoff Connector (228-2500-192).step",
+      "thumbnailUrl": "/part-library/thumbnails/15-degree-offset-locking-angle-end-standoff-connector-228-2500-192.png"
+    },
+    {
+      "id": "228-2500-461",
+      "name": "15 Tooth Gear (34DP)",
+      "partNumber": "228-2500-461",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/15 Tooth Gear (34DP) (228-2500-461).step",
+      "thumbnailUrl": "/part-library/thumbnails/15-tooth-gear-34dp-228-2500-461.png"
+    },
+    {
+      "id": "228-2500-2181",
+      "name": "16 Tooth High Strength Hybrid Gear",
+      "partNumber": "228-2500-2181",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/16 Tooth High Strength Hybrid Gear (228-2500-2181).step",
+      "thumbnailUrl": "/part-library/thumbnails/16-tooth-high-strength-hybrid-gear-228-2500-2181.png"
+    },
+    {
+      "id": "228-2500-1407",
+      "name": "16 Tooth Ratchet",
+      "partNumber": "228-2500-1407",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/16 Tooth Ratchet (228-2500-1407).step",
+      "thumbnailUrl": "/part-library/thumbnails/16-tooth-ratchet-228-2500-1407.png"
+    },
+    {
+      "id": "228-2500-233",
+      "name": "16 Tooth Sprocket",
+      "partNumber": "228-2500-233",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/16 Tooth Sprocket (228-2500-233).step",
+      "thumbnailUrl": "/part-library/thumbnails/16-tooth-sprocket-228-2500-233.png"
+    },
+    {
+      "id": "228-2500-285",
+      "name": "160mm Fender Panel Left",
+      "partNumber": "228-2500-285",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/160mm Fender Panel Left (228-2500-285).step",
+      "thumbnailUrl": "/part-library/thumbnails/160mm-fender-panel-left-228-2500-285.png"
+    },
+    {
+      "id": "228-2500-286",
+      "name": "160mm Fender Panel Right",
+      "partNumber": "228-2500-286",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/160mm Fender Panel Right (228-2500-286).step",
+      "thumbnailUrl": "/part-library/thumbnails/160mm-fender-panel-right-228-2500-286.png"
+    },
+    {
+      "id": "228-2500-265",
+      "name": "16x Pitch Shaft",
+      "partNumber": "228-2500-265",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/16x Pitch Shaft (228-2500-265).step",
+      "thumbnailUrl": "/part-library/thumbnails/16x-pitch-shaft-228-2500-265.png"
+    },
+    {
+      "id": "228-2500-471",
+      "name": "17x Robot Arm Beam",
+      "partNumber": "228-2500-471",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/17x Robot Arm Beam (228-2500-471).step",
+      "thumbnailUrl": "/part-library/thumbnails/17x-robot-arm-beam-228-2500-471.png"
+    },
+    {
+      "id": "228-2500-244",
+      "name": "18 Tooth Bevel Gear",
+      "partNumber": "228-2500-244",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/18 Tooth Bevel Gear (228-2500-244).step",
+      "thumbnailUrl": "/part-library/thumbnails/18-tooth-bevel-gear-228-2500-244.png"
+    },
+    {
+      "id": "228-2500-266",
+      "name": "18x Pitch Shaft",
+      "partNumber": "228-2500-266",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/18x Pitch Shaft (228-2500-266).step",
+      "thumbnailUrl": "/part-library/thumbnails/18x-pitch-shaft-228-2500-266.png"
+    },
+    {
+      "id": "228-2500-1909",
+      "name": "1x Pitch Actuator Handle",
+      "partNumber": "228-2500-1909",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Pitch Actuator Handle (228-2500-1909).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-pitch-actuator-handle-228-2500-1909.png"
+    },
+    {
+      "id": "228-2500-1470",
+      "name": "1x Pitch Linear Motion Bracket (Snap)",
+      "partNumber": "228-2500-1470",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Pitch Linear Motion Bracket (Snap) (228-2500-1470).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/1x-pitch-linear-motion-bracket-snap-228-2500-1470.png"
+    },
+    {
+      "id": "228-2500-328",
+      "name": "1x Pitch Plastic Motor Snap Shaft",
+      "partNumber": "228-2500-328",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Pitch Plastic Motor Snap Shaft (228-2500-328).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-pitch-plastic-motor-snap-shaft-228-2500-328.png"
+    },
+    {
+      "id": "228-2500-065",
+      "name": "1x Pitch Standoff",
+      "partNumber": "228-2500-065",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Pitch Standoff (228-2500-065).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-pitch-standoff-228-2500-065.png"
+    },
+    {
+      "id": "228-2500-2269",
+      "name": "1x Pitch Standoff (Weak)",
+      "partNumber": "228-2500-2269",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Pitch Standoff (Weak) (228-2500-2269).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-pitch-standoff-weak-228-2500-2269.png"
+    },
+    {
+      "id": "228-2500-420",
+      "name": "1x Wide Spool",
+      "partNumber": "228-2500-420",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Wide Spool (228-2500-420).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-wide-spool-228-2500-420.png"
+    },
+    {
+      "id": "228-2500-129",
+      "name": "1x Wide, 1x1 Corner Connector",
+      "partNumber": "228-2500-129",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Wide, 1x1 Corner Connector (228-2500-129).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-wide-1x1-corner-connector-228-2500-129.png"
+    },
+    {
+      "id": "228-2500-2288",
+      "name": "1x Wide, 1x1 Corner Connector (Weak)",
+      "partNumber": "228-2500-2288",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Wide, 1x1 Corner Connector (Weak) (228-2500-2288).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-wide-1x1-corner-connector-weak-228-2500-2288.png"
+    },
+    {
+      "id": "228-2500-130",
+      "name": "1x Wide, 1x1 Offset Corner Connector",
+      "partNumber": "228-2500-130",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Wide, 1x1 Offset Corner Connector (228-2500-130).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-wide-1x1-offset-corner-connector-228-2500-130.png"
+    },
+    {
+      "id": "228-2500-279",
+      "name": "1x Wide, 1x2 Corner Connector",
+      "partNumber": "228-2500-279",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x Wide, 1x2 Corner Connector (228-2500-279).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x-wide-1x2-corner-connector-228-2500-279.png"
+    },
+    {
+      "id": "228-2500-154",
+      "name": "1x1 Beam",
+      "partNumber": "228-2500-154",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x1 Beam (228-2500-154).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x1-beam-228-2500-154.png"
+    },
+    {
+      "id": "228-2500-060",
+      "name": "1x1 Connector Pin",
+      "partNumber": "228-2500-060",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x1 Connector Pin (228-2500-060).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x1-connector-pin-228-2500-060.png"
+    },
+    {
+      "id": "228-2500-2260",
+      "name": "1x1 Connector Pin (Weak)",
+      "partNumber": "228-2500-2260",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x1 Connector Pin (Weak) (228-2500-2260).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x1-connector-pin-weak-228-2500-2260.png"
+    },
+    {
+      "id": "228-2500-073",
+      "name": "1x1 Idler Pin",
+      "partNumber": "228-2500-073",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x1 Idler Pin (228-2500-073).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x1-idler-pin-228-2500-073.png"
+    },
+    {
+      "id": "228-2500-391",
+      "name": "1x1 Left Corner Beam",
+      "partNumber": "228-2500-391",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x1 Left Corner Beam (228-2500-391).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/1x1-left-corner-beam-228-2500-391.png"
+    },
+    {
+      "id": "228-2500-392",
+      "name": "1x1 Right Corner Beam",
+      "partNumber": "228-2500-392",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x1 Right Corner Beam (228-2500-392).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/1x1-right-corner-beam-228-2500-392.png"
+    },
+    {
+      "id": "228-2500-510",
+      "name": "1x1 Smooth Panel",
+      "partNumber": "228-2500-510",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x1 Smooth Panel (228-2500-510).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x1-smooth-panel-228-2500-510.png"
+    },
+    {
+      "id": "228-2500-009",
+      "name": "1x10 Beam",
+      "partNumber": "228-2500-009",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x10 Beam (228-2500-009).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x10-beam-228-2500-009.png"
+    },
+    {
+      "id": "228-2500-010",
+      "name": "1x11 Beam",
+      "partNumber": "228-2500-010",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x11 Beam (228-2500-010).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x11-beam-228-2500-010.png"
+    },
+    {
+      "id": "228-2500-011",
+      "name": "1x12 Beam",
+      "partNumber": "228-2500-011",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x12 Beam (228-2500-011).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x12-beam-228-2500-011.png"
+    },
+    {
+      "id": "228-2500-012",
+      "name": "1x13 Beam",
+      "partNumber": "228-2500-012",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x13 Beam (228-2500-012).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x13-beam-228-2500-012.png"
+    },
+    {
+      "id": "228-2500-013",
+      "name": "1x14 Beam",
+      "partNumber": "228-2500-013",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x14 Beam (228-2500-013).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x14-beam-228-2500-013.png"
+    },
+    {
+      "id": "228-2500-014",
+      "name": "1x16 Beam",
+      "partNumber": "228-2500-014",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x16 Beam (228-2500-014).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x16-beam-228-2500-014.png"
+    },
+    {
+      "id": "228-2500-015",
+      "name": "1x18 Beam",
+      "partNumber": "228-2500-015",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x18 Beam (228-2500-015).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x18-beam-228-2500-015.png"
+    },
+    {
+      "id": "228-2500-001",
+      "name": "1x2 Beam",
+      "partNumber": "228-2500-001",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x2 Beam (228-2500-001).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x2-beam-228-2500-001.png"
+    },
+    {
+      "id": "228-2500-061",
+      "name": "1x2 Connector Pin",
+      "partNumber": "228-2500-061",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x2 Connector Pin (228-2500-061).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x2-connector-pin-228-2500-061.png"
+    },
+    {
+      "id": "228-2500-2261",
+      "name": "1x2 Connector Pin (Weak)",
+      "partNumber": "228-2500-2261",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x2 Connector Pin (Weak) (228-2500-2261).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x2-connector-pin-weak-228-2500-2261.png"
+    },
+    {
+      "id": "228-2500-098",
+      "name": "1x2 Idler Pin",
+      "partNumber": "228-2500-098",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x2 Idler Pin (228-2500-098).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x2-idler-pin-228-2500-098.png"
+    },
+    {
+      "id": "228-2500-1254",
+      "name": "1x2 Left Chassis Corner Connector",
+      "partNumber": "228-2500-1254",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x2 Left Chassis Corner Connector (228-2500-1254).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x2-left-chassis-corner-connector-228-2500-1254.png"
+    },
+    {
+      "id": "228-2500-1255",
+      "name": "1x2 Right Chassis Corner Connector",
+      "partNumber": "228-2500-1255",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x2 Right Chassis Corner Connector (228-2500-1255).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x2-right-chassis-corner-connector-228-2500-1255.png"
+    },
+    {
+      "id": "228-2500-511",
+      "name": "1x2 Smooth Panel",
+      "partNumber": "228-2500-511",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x2 Smooth Panel (228-2500-511).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x2-smooth-panel-228-2500-511.png"
+    },
+    {
+      "id": "228-2500-016",
+      "name": "1x20 Beam",
+      "partNumber": "228-2500-016",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x20 Beam (228-2500-016).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x20-beam-228-2500-016.png"
+    },
+    {
+      "id": "228-2500-1454",
+      "name": "1x20 Linear Motion Rack Gear",
+      "partNumber": "228-2500-1454",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x20 Linear Motion Rack Gear (228-2500-1454).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x20-linear-motion-rack-gear-228-2500-1454.png"
+    },
+    {
+      "id": "228-2500-1664",
+      "name": "1x3 Ball Socket Linkage",
+      "partNumber": "228-2500-1664",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3 Ball Socket Linkage (228-2500-1664).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-ball-socket-linkage-228-2500-1664.png"
+    },
+    {
+      "id": "228-2500-002",
+      "name": "1x3 Beam",
+      "partNumber": "228-2500-002",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3 Beam (228-2500-002).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-beam-228-2500-002.png"
+    },
+    {
+      "id": "228-2500-2020",
+      "name": "1x3 Bottom Shuttle Nose Panel",
+      "partNumber": "228-2500-2020",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3 Bottom Shuttle Nose Panel (228-2500-2020).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-bottom-shuttle-nose-panel-228-2500-2020.png"
+    },
+    {
+      "id": "228-2500-1141",
+      "name": "1x3 Center Lock Beam",
+      "partNumber": "228-2500-1141",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3 Center Lock Beam (228-2500-1141).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-center-lock-beam-228-2500-1141.png"
+    },
+    {
+      "id": "228-2500-141",
+      "name": "1x3 Center Lock Beam",
+      "partNumber": "228-2500-141",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3 Center Lock Beam (228-2500-141).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-center-lock-beam-228-2500-141.png"
+    },
+    {
+      "id": "228-2500-1658",
+      "name": "1x3 Large Crane Hook",
+      "partNumber": "228-2500-1658",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3 Large Crane Hook (228-2500-1658).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-large-crane-hook-228-2500-1658.png"
+    },
+    {
+      "id": "228-2500-1727",
+      "name": "1x3, Extended 0.5 x 1x Pitch, Diagonal Left Corner Sloped Panel",
+      "partNumber": "228-2500-1727",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3, Extended 0.5 x 1x Pitch, Diagonal Left Corner Sloped Panel (228-2500-1727).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-extended-0-5-x-1x-pitch-diagonal-left-corner-sloped-panel-228-2500-1727.png"
+    },
+    {
+      "id": "228-2500-1728",
+      "name": "1x3, Extended 0.5 x 1x Pitch, Diagonal Right Corner Sloped Panel",
+      "partNumber": "228-2500-1728",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x3, Extended 0.5 x 1x Pitch, Diagonal Right Corner Sloped Panel (228-2500-1728).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x3-extended-0-5-x-1x-pitch-diagonal-right-corner-sloped-panel-228-2500-1728.png"
+    },
+    {
+      "id": "228-2500-1665",
+      "name": "1x4 Ball Socket Linkage",
+      "partNumber": "228-2500-1665",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x4 Ball Socket Linkage (228-2500-1665).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x4-ball-socket-linkage-228-2500-1665.png"
+    },
+    {
+      "id": "228-2500-003",
+      "name": "1x4 Beam",
+      "partNumber": "228-2500-003",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x4 Beam (228-2500-003).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x4-beam-228-2500-003.png"
+    },
+    {
+      "id": "228-2500-314",
+      "name": "1x4 Bearing Surface Block",
+      "partNumber": "228-2500-314",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x4 Bearing Surface Block (228-2500-314).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x4-bearing-surface-block-228-2500-314.png"
+    },
+    {
+      "id": "228-2500-246",
+      "name": "1x4 Crank Arm with 23 Tooth Gear",
+      "partNumber": "228-2500-246",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x4 Crank Arm with 23 Tooth Gear (228-2500-246).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x4-crank-arm-with-23-tooth-gear-228-2500-246.png"
+    },
+    {
+      "id": "228-2500-1548",
+      "name": "1x4 Low Profile End Lock Beam",
+      "partNumber": "228-2500-1548",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x4 Low Profile End Lock Beam (228-2500-1548).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x4-low-profile-end-lock-beam-228-2500-1548.png"
+    },
+    {
+      "id": "228-2500-1689",
+      "name": "1x4 Single-Ended Ball Socket Beam",
+      "partNumber": "228-2500-1689",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x4 Single-Ended Ball Socket Beam (228-2500-1689).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x4-single-ended-ball-socket-beam-228-2500-1689.png"
+    },
+    {
+      "id": "228-2500-513",
+      "name": "1x4 Smooth Panel",
+      "partNumber": "228-2500-513",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x4 Smooth Panel (228-2500-513).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x4-smooth-panel-228-2500-513.png"
+    },
+    {
+      "id": "228-2500-004",
+      "name": "1x5 Beam",
+      "partNumber": "228-2500-004",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x5 Beam (228-2500-004).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x5-beam-228-2500-004.png"
+    },
+    {
+      "id": "228-2500-1456",
+      "name": "1x5 Linear Motion Beam",
+      "partNumber": "228-2500-1456",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x5 Linear Motion Beam (228-2500-1456).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x5-linear-motion-beam-228-2500-1456.png"
+    },
+    {
+      "id": "228-2500-1110",
+      "name": "1x6 (3-4-5 Triangle) Diagonal Offset Truss Beam",
+      "partNumber": "228-2500-1110",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x6 (3-4-5 Triangle) Diagonal Offset Truss Beam (228-2500-1110).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x6-3-4-5-triangle-diagonal-offset-truss-beam-228-2500-1110.png"
+    },
+    {
+      "id": "228-2500-005",
+      "name": "1x6 Beam",
+      "partNumber": "228-2500-005",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x6 Beam (228-2500-005).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x6-beam-228-2500-005.png"
+    },
+    {
+      "id": "228-2500-1473",
+      "name": "1x6 Continuous Linear Motion Rack Gear",
+      "partNumber": "228-2500-1473",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x6 Continuous Linear Motion Rack Gear (228-2500-1473).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/1x6-continuous-linear-motion-rack-gear-228-2500-1473.png"
+    },
+    {
+      "id": "228-2500-1472",
+      "name": "1x6 Linear Motion Rack Gear",
+      "partNumber": "228-2500-1472",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x6 Linear Motion Rack Gear (228-2500-1472).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x6-linear-motion-rack-gear-228-2500-1472.png"
+    },
+    {
+      "id": "228-2500-323",
+      "name": "1x6 Smooth Beam",
+      "partNumber": "228-2500-323",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x6 Smooth Beam (228-2500-323).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x6-smooth-beam-228-2500-323.png"
+    },
+    {
+      "id": "228-2500-006",
+      "name": "1x7 Beam",
+      "partNumber": "228-2500-006",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x7 Beam (228-2500-006).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x7-beam-228-2500-006.png"
+    },
+    {
+      "id": "228-2500-153",
+      "name": "1x7 Spider Fork Beam",
+      "partNumber": "228-2500-153",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x7 Spider Fork Beam (228-2500-153).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x7-spider-fork-beam-228-2500-153.png"
+    },
+    {
+      "id": "228-2500-293",
+      "name": "1x8 Ballista Arm",
+      "partNumber": "228-2500-293",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x8 Ballista Arm (228-2500-293).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x8-ballista-arm-228-2500-293.png"
+    },
+    {
+      "id": "228-2500-007",
+      "name": "1x8 Beam",
+      "partNumber": "228-2500-007",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x8 Beam (228-2500-007).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x8-beam-228-2500-007.png"
+    },
+    {
+      "id": "228-2500-008",
+      "name": "1x9 Beam",
+      "partNumber": "228-2500-008",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/1x9 Beam (228-2500-008).step",
+      "thumbnailUrl": "/part-library/thumbnails/1x9-beam-228-2500-008.png"
+    },
+    {
+      "id": "228-2500-2220",
+      "name": "2.5x Pitch Capped Shaft",
+      "partNumber": "228-2500-2220",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2.5x Pitch Capped Shaft (228-2500-2220).step",
+      "thumbnailUrl": "/part-library/thumbnails/2-5x-pitch-capped-shaft-228-2500-2220.png"
+    },
+    {
+      "id": "228-2500-1905",
+      "name": "2.5x1.4 Widescreen Monitor",
+      "partNumber": "228-2500-1905",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2.5x1.4 Widescreen Monitor (228-2500-1905).step",
+      "thumbnailUrl": "/part-library/thumbnails/2-5x1-4-widescreen-monitor-228-2500-1905.png"
+    },
+    {
+      "id": "228-2500-2017",
+      "name": "2.5x5 Asymmetric End Flat Panel",
+      "partNumber": "228-2500-2017",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2.5x5 Asymmetric End Flat Panel (228-2500-2017).step",
+      "thumbnailUrl": "/part-library/thumbnails/2-5x5-asymmetric-end-flat-panel-228-2500-2017.png"
+    },
+    {
+      "id": "228-2536",
+      "name": "200mm Travel Omni-Directional Wheel",
+      "partNumber": "228-2536",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/200mm Travel Omni-Directional Wheel (228-2536).step",
+      "thumbnailUrl": "/part-library/thumbnails/200mm-travel-omni-directional-wheel-228-2536.png"
+    },
+    {
+      "id": "228-2500-164",
+      "name": "20mm Pulley",
+      "partNumber": "228-2500-164",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/20mm Pulley (228-2500-164).step",
+      "thumbnailUrl": "/part-library/thumbnails/20mm-pulley-228-2500-164.png"
+    },
+    {
+      "id": "228-2500-436",
+      "name": "20x Pitch Rope",
+      "partNumber": "228-2500-436",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/20x Pitch Rope (228-2500-436).step",
+      "thumbnailUrl": "/part-library/thumbnails/20x-pitch-rope-228-2500-436.png"
+    },
+    {
+      "id": "228-2500-267",
+      "name": "20x Pitch Shaft",
+      "partNumber": "228-2500-267",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/20x Pitch Shaft (228-2500-267).step",
+      "thumbnailUrl": "/part-library/thumbnails/20x-pitch-shaft-228-2500-267.png"
+    },
+    {
+      "id": "1950-hub",
+      "name": "228-2500-1960",
+      "partNumber": "1950 Hub",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/228-2500-1960 (1950 Hub).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/228-2500-1960-1950-hub.png"
+    },
+    {
+      "id": "1953-hub",
+      "name": "228-2500-1960",
+      "partNumber": "1953 Hub",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/228-2500-1960 (1953 Hub).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/228-2500-1960-1953-hub.png"
+    },
+    {
+      "id": "1950-hub-2",
+      "name": "228-2500-1961",
+      "partNumber": "1950 Hub",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/228-2500-1961 (1950 Hub).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/228-2500-1961-1950-hub.png"
+    },
+    {
+      "id": "1953-hub-2",
+      "name": "228-2500-1961",
+      "partNumber": "1953 Hub",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/228-2500-1961 (1953 Hub).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/228-2500-1961-1953-hub.png"
+    },
+    {
+      "id": "228-2500-268",
+      "name": "22x Pitch Shaft",
+      "partNumber": "228-2500-268",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/22x Pitch Shaft (228-2500-268).step",
+      "thumbnailUrl": "/part-library/thumbnails/22x-pitch-shaft-228-2500-268.png"
+    },
+    {
+      "id": "228-2500-227",
+      "name": "24 Tooth Gear",
+      "partNumber": "228-2500-227",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/24 Tooth Gear (228-2500-227).step",
+      "thumbnailUrl": "/part-library/thumbnails/24-tooth-gear-228-2500-227.png"
+    },
+    {
+      "id": "228-2500-2191",
+      "name": "24 Tooth High Strength Dog Gear",
+      "partNumber": "228-2500-2191",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/24 Tooth High Strength Dog Gear (228-2500-2191).step",
+      "thumbnailUrl": "/part-library/thumbnails/24-tooth-high-strength-dog-gear-228-2500-2191.png"
+    },
+    {
+      "id": "228-2500-2182",
+      "name": "24 Tooth High Strength Hybrid Gear",
+      "partNumber": "228-2500-2182",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/24 Tooth High Strength Hybrid Gear (228-2500-2182).step",
+      "thumbnailUrl": "/part-library/thumbnails/24-tooth-high-strength-hybrid-gear-228-2500-2182.png"
+    },
+    {
+      "id": "228-2500-251",
+      "name": "24 Tooth Hybrid Gear",
+      "partNumber": "228-2500-251",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/24 Tooth Hybrid Gear (228-2500-251).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/24-tooth-hybrid-gear-228-2500-251.png"
+    },
+    {
+      "id": "228-2500-235",
+      "name": "24 Tooth Sprocket",
+      "partNumber": "228-2500-235",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/24 Tooth Sprocket (228-2500-235).step",
+      "thumbnailUrl": "/part-library/thumbnails/24-tooth-sprocket-228-2500-235.png"
+    },
+    {
+      "id": "228-2500-438",
+      "name": "24x Pitch Rope",
+      "partNumber": "228-2500-438",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/24x Pitch Rope (228-2500-438).step",
+      "thumbnailUrl": "/part-library/thumbnails/24x-pitch-rope-228-2500-438.png"
+    },
+    {
+      "id": "228-2500-269",
+      "name": "24x Pitch Shaft",
+      "partNumber": "228-2500-269",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/24x Pitch Shaft (228-2500-269).step",
+      "thumbnailUrl": "/part-library/thumbnails/24x-pitch-shaft-228-2500-269.png"
+    },
+    {
+      "id": "228-2500-1302",
+      "name": "25mm Half Tube 3x Pitch Barrel End",
+      "partNumber": "228-2500-1302",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/25mm Half Tube 3x Pitch Barrel End (228-2500-1302).step",
+      "thumbnailUrl": "/part-library/thumbnails/25mm-half-tube-3x-pitch-barrel-end-228-2500-1302.png"
+    },
+    {
+      "id": "228-2500-1287",
+      "name": "25mm Half Tube 60 Degree Turn Small",
+      "partNumber": "228-2500-1287",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/25mm Half Tube 60 Degree Turn Small (228-2500-1287).step",
+      "thumbnailUrl": "/part-library/thumbnails/25mm-half-tube-60-degree-turn-small-228-2500-1287.png"
+    },
+    {
+      "id": "228-2500-1277",
+      "name": "25mm Half Tube 6x Pitch Straight",
+      "partNumber": "228-2500-1277",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/25mm Half Tube 6x Pitch Straight (228-2500-1277).step",
+      "thumbnailUrl": "/part-library/thumbnails/25mm-half-tube-6x-pitch-straight-228-2500-1277.png"
+    },
+    {
+      "id": "228-2500-080",
+      "name": "2x Pitch Capped Plastic Shaft",
+      "partNumber": "228-2500-080",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Capped Plastic Shaft (228-2500-080).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-capped-plastic-shaft-228-2500-080.png"
+    },
+    {
+      "id": "228-2500-2219",
+      "name": "2x Pitch Capped Shaft",
+      "partNumber": "228-2500-2219",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Capped Shaft (228-2500-2219).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-capped-shaft-228-2500-2219.png"
+    },
+    {
+      "id": "228-2500-1469",
+      "name": "2x Pitch Linear Motion Bracket (Side Mount)",
+      "partNumber": "228-2500-1469",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Linear Motion Bracket (Side Mount) (228-2500-1469).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-linear-motion-bracket-side-mount-228-2500-1469.png"
+    },
+    {
+      "id": "228-2500-2234",
+      "name": "2x Pitch Motor Shaft",
+      "partNumber": "228-2500-2234",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Motor Shaft (228-2500-2234).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-motor-shaft-228-2500-2234.png"
+    },
+    {
+      "id": "228-2500-078",
+      "name": "2x Pitch Plastic Motor Shaft",
+      "partNumber": "228-2500-078",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Plastic Motor Shaft (228-2500-078).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-plastic-motor-shaft-228-2500-078.png"
+    },
+    {
+      "id": "228-2500-092",
+      "name": "2x Pitch Plastic Motor Snap Shaft v1",
+      "partNumber": "228-2500-092",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Plastic Motor Snap Shaft v1 (228-2500-092).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-plastic-motor-snap-shaft-v1-228-2500-092.png"
+    },
+    {
+      "id": "228-2500-074",
+      "name": "2x Pitch Plastic Shaft",
+      "partNumber": "228-2500-074",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Plastic Shaft (228-2500-074).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-plastic-shaft-228-2500-074.png"
+    },
+    {
+      "id": "228-2500-117",
+      "name": "2x Pitch Shaft",
+      "partNumber": "228-2500-117",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Shaft (228-2500-117).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-shaft-228-2500-117.png"
+    },
+    {
+      "id": "228-2500-1560",
+      "name": "2x Pitch Shock Absorber (Weak)",
+      "partNumber": "228-2500-1560",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Shock Absorber (Weak) (228-2500-1560).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-shock-absorber-weak-228-2500-1560.png"
+    },
+    {
+      "id": "228-2500-067",
+      "name": "2x Pitch Standoff",
+      "partNumber": "228-2500-067",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Standoff (228-2500-067).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-standoff-228-2500-067.png"
+    },
+    {
+      "id": "228-2500-2271",
+      "name": "2x Pitch Standoff (Weak)",
+      "partNumber": "228-2500-2271",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Pitch Standoff (Weak) (228-2500-2271).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-pitch-standoff-weak-228-2500-2271.png"
+    },
+    {
+      "id": "228-2500-421",
+      "name": "2x Wide Spool",
+      "partNumber": "228-2500-421",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide Spool (228-2500-421).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-spool-228-2500-421.png"
+    },
+    {
+      "id": "228-2500-133",
+      "name": "2x Wide, 1x1 Offset Corner Connector",
+      "partNumber": "228-2500-133",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 1x1 Offset Corner Connector (228-2500-133).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-1x1-offset-corner-connector-228-2500-133.png"
+    },
+    {
+      "id": "228-2500-128",
+      "name": "2x Wide, 1x2 Corner Connector",
+      "partNumber": "228-2500-128",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 1x2 Corner Connector (228-2500-128).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-1x2-corner-connector-228-2500-128.png"
+    },
+    {
+      "id": "228-2500-135",
+      "name": "2x Wide, 1x2 Offset Corner Connector",
+      "partNumber": "228-2500-135",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 1x2 Offset Corner Connector (228-2500-135).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-1x2-offset-corner-connector-228-2500-135.png"
+    },
+    {
+      "id": "228-2500-283",
+      "name": "2x Wide, 1x3 Offset Corner Connector",
+      "partNumber": "228-2500-283",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 1x3 Offset Corner Connector (228-2500-283).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-1x3-offset-corner-connector-228-2500-283.png"
+    },
+    {
+      "id": "228-2500-1926",
+      "name": "2x Wide, 2x Pitch Diameter Rover Wheel",
+      "partNumber": "228-2500-1926",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x Pitch Diameter Rover Wheel (228-2500-1926).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x-pitch-diameter-rover-wheel-228-2500-1926.png"
+    },
+    {
+      "id": "228-2500-132",
+      "name": "2x Wide, 2x1 Corner Connector",
+      "partNumber": "228-2500-132",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x1 Corner Connector (228-2500-132).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x1-corner-connector-228-2500-132.png"
+    },
+    {
+      "id": "228-2500-131",
+      "name": "2x Wide, 2x1 Offset Corner Connector",
+      "partNumber": "228-2500-131",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x1 Offset Corner Connector (228-2500-131).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x1-offset-corner-connector-228-2500-131.png"
+    },
+    {
+      "id": "228-2500-134",
+      "name": "2x Wide, 2x2 Corner Connector",
+      "partNumber": "228-2500-134",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x2 Corner Connector (228-2500-134).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x2-corner-connector-228-2500-134.png"
+    },
+    {
+      "id": "228-2500-2295",
+      "name": "2x Wide, 2x2 Corner Connector (Weak)",
+      "partNumber": "228-2500-2295",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x2 Corner Connector (Weak) (228-2500-2295).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x2-corner-connector-weak-228-2500-2295.png"
+    },
+    {
+      "id": "228-2500-136",
+      "name": "2x Wide, 2x2 Offset Corner Connector",
+      "partNumber": "228-2500-136",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x2 Offset Corner Connector (228-2500-136).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x2-offset-corner-connector-228-2500-136.png"
+    },
+    {
+      "id": "228-2500-2296",
+      "name": "2x Wide, 2x2 Offset Corner Connector (Weak)",
+      "partNumber": "228-2500-2296",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x2 Offset Corner Connector (Weak) (228-2500-2296).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x2-offset-corner-connector-weak-228-2500-2296.png"
+    },
+    {
+      "id": "228-2500-137",
+      "name": "2x Wide, 2x3 Corner Connector",
+      "partNumber": "228-2500-137",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 2x3 Corner Connector (228-2500-137).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-2x3-corner-connector-228-2500-137.png"
+    },
+    {
+      "id": "228-2500-1952",
+      "name": "2x Wide, 3.5x Pitch Diameter Balloon Tire (Chevron Offroad Tread)",
+      "partNumber": "228-2500-1952",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 3.5x Pitch Diameter Balloon Tire (Chevron Offroad Tread) (228-2500-1952).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-3-5x-pitch-diameter-balloon-tire-chevron-offroad-tread-228-2500-1952.png"
+    },
+    {
+      "id": "228-2500-1957",
+      "name": "2x Wide, 3.5x Pitch Diameter Balloon Tire (Trapezoid Offroad Tread)",
+      "partNumber": "228-2500-1957",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 3.5x Pitch Diameter Balloon Tire (Trapezoid Offroad Tread) (228-2500-1957).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-3-5x-pitch-diameter-balloon-tire-trapezoid-offroad-tread-228-2500-1957.png"
+    },
+    {
+      "id": "228-2500-372",
+      "name": "2x Wide, 30 Degree Left 1x2 Corner Connector",
+      "partNumber": "228-2500-372",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 30 Degree Left 1x2 Corner Connector (228-2500-372).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-30-degree-left-1x2-corner-connector-228-2500-372.png"
+    },
+    {
+      "id": "228-2500-371",
+      "name": "2x Wide, 30 Degree Right 1x2 Corner Connector",
+      "partNumber": "228-2500-371",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 30 Degree Right 1x2 Corner Connector (228-2500-371).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-30-degree-right-1x2-corner-connector-228-2500-371.png"
+    },
+    {
+      "id": "228-2500-1950",
+      "name": "2x Wide, 32.2mm Diameter Hub",
+      "partNumber": "228-2500-1950",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 32.2mm Diameter Hub (228-2500-1950).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-32-2mm-diameter-hub-228-2500-1950.png"
+    },
+    {
+      "id": "228-2500-1951",
+      "name": "2x Wide, 3x Pitch Diameter Tire (Straight Offroad Tread)",
+      "partNumber": "228-2500-1951",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 3x Pitch Diameter Tire (Straight Offroad Tread) (228-2500-1951).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-3x-pitch-diameter-tire-straight-offroad-tread-228-2500-1951.png"
+    },
+    {
+      "id": "228-2500-1268",
+      "name": "2x Wide, 3x3 60 Degree Angle Beam",
+      "partNumber": "228-2500-1268",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 3x3 60 Degree Angle Beam (228-2500-1268).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-3x3-60-degree-angle-beam-228-2500-1268.png"
+    },
+    {
+      "id": "228-2500-1953",
+      "name": "2x Wide, 48.5mm Diameter Hub",
+      "partNumber": "228-2500-1953",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 48.5mm Diameter Hub (228-2500-1953).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-48-5mm-diameter-hub-228-2500-1953.png"
+    },
+    {
+      "id": "228-2500-2024",
+      "name": "2x Wide, 4x Pitch Diameter Half Puck",
+      "partNumber": "228-2500-2024",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 4x Pitch Diameter Half Puck (228-2500-2024).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-4x-pitch-diameter-half-puck-228-2500-2024.png"
+    },
+    {
+      "id": "228-2500-1956",
+      "name": "2x Wide, 5.5x Pitch Diameter Balloon Tire (Trapezoid Offroad Tread)",
+      "partNumber": "228-2500-1956",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 5.5x Pitch Diameter Balloon Tire (Trapezoid Offroad Tread) (228-2500-1956).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-5-5x-pitch-diameter-balloon-tire-trapezoid-offroad-tread-228-2500-1956.png"
+    },
+    {
+      "id": "228-2500-1958",
+      "name": "2x Wide, 5x Pitch Diameter Balloon Tire (Racing Slick Tread)",
+      "partNumber": "228-2500-1958",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 5x Pitch Diameter Balloon Tire (Racing Slick Tread) (228-2500-1958).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-5x-pitch-diameter-balloon-tire-racing-slick-tread-228-2500-1958.png"
+    },
+    {
+      "id": "228-2500-368",
+      "name": "2x Wide, 60 Degree Omni 1x2 Corner Connector",
+      "partNumber": "228-2500-368",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 60 Degree Omni 1x2 Corner Connector (228-2500-368).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-60-degree-omni-1x2-corner-connector-228-2500-368.png"
+    },
+    {
+      "id": "228-2500-1955",
+      "name": "2x Wide, 7x Pitch Diameter Balloon Tire (Offroad Hex Tread)",
+      "partNumber": "228-2500-1955",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 7x Pitch Diameter Balloon Tire (Offroad Hex Tread) (228-2500-1955).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-7x-pitch-diameter-balloon-tire-offroad-hex-tread-228-2500-1955.png"
+    },
+    {
+      "id": "228-2500-1954",
+      "name": "2x Wide, 7x Pitch Diameter Balloon Tire (Racing Slick Tread)",
+      "partNumber": "228-2500-1954",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x Wide, 7x Pitch Diameter Balloon Tire (Racing Slick Tread) (228-2500-1954).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x-wide-7x-pitch-diameter-balloon-tire-racing-slick-tread-228-2500-1954.png"
+    },
+    {
+      "id": "228-2500-408",
+      "name": "2x1 Extended Left Corner Beam",
+      "partNumber": "228-2500-408",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x1 Extended Left Corner Beam (228-2500-408).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/2x1-extended-left-corner-beam-228-2500-408.png"
+    },
+    {
+      "id": "228-2500-409",
+      "name": "2x1 Extended Right Corner Beam",
+      "partNumber": "228-2500-409",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x1 Extended Right Corner Beam (228-2500-409).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/2x1-extended-right-corner-beam-228-2500-409.png"
+    },
+    {
+      "id": "228-2500-400",
+      "name": "2x1 Left Corner Beam",
+      "partNumber": "228-2500-400",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x1 Left Corner Beam (228-2500-400).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x1-left-corner-beam-228-2500-400.png"
+    },
+    {
+      "id": "228-2500-401",
+      "name": "2x1 Right Corner Beam",
+      "partNumber": "228-2500-401",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x1 Right Corner Beam (228-2500-401).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x1-right-corner-beam-228-2500-401.png"
+    },
+    {
+      "id": "228-2500-025",
+      "name": "2x10 Beam",
+      "partNumber": "228-2500-025",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x10 Beam (228-2500-025).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x10-beam-228-2500-025.png"
+    },
+    {
+      "id": "228-2500-206",
+      "name": "2x11 Beam",
+      "partNumber": "228-2500-206",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x11 Beam (228-2500-206).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x11-beam-228-2500-206.png"
+    },
+    {
+      "id": "228-2500-026",
+      "name": "2x12 Beam",
+      "partNumber": "228-2500-026",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x12 Beam (228-2500-026).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x12-beam-228-2500-026.png"
+    },
+    {
+      "id": "228-2500-2710",
+      "name": "2x12 Plastic Sheet",
+      "partNumber": "228-2500-2710",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x12 Plastic Sheet (228-2500-2710).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/2x12-plastic-sheet-228-2500-2710.png"
+    },
+    {
+      "id": "228-2500-027",
+      "name": "2x14 Beam",
+      "partNumber": "228-2500-027",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x14 Beam (228-2500-027).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x14-beam-228-2500-027.png"
+    },
+    {
+      "id": "228-2500-028",
+      "name": "2x16 Beam",
+      "partNumber": "228-2500-028",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x16 Beam (228-2500-028).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x16-beam-228-2500-028.png"
+    },
+    {
+      "id": "228-2500-029",
+      "name": "2x18 Beam",
+      "partNumber": "228-2500-029",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x18 Beam (228-2500-029).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x18-beam-228-2500-029.png"
+    },
+    {
+      "id": "228-2500-1924",
+      "name": "2x1x1 Landing Gear Beam",
+      "partNumber": "228-2500-1924",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x1x1 Landing Gear Beam (228-2500-1924).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x1x1-landing-gear-beam-228-2500-1924.png"
+    },
+    {
+      "id": "228-2500-2011",
+      "name": "2x1x1.5 Offset Wing Connector",
+      "partNumber": "228-2500-2011",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x1x1.5 Offset Wing Connector (228-2500-2011).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x1x1-5-offset-wing-connector-228-2500-2011.png"
+    },
+    {
+      "id": "228-2500-1485",
+      "name": "2x2 30 Degree Beam",
+      "partNumber": "228-2500-1485",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 30 Degree Beam (228-2500-1485).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-30-degree-beam-228-2500-1485.png"
+    },
+    {
+      "id": "228-2500-1486",
+      "name": "2x2 45 Degree Beam",
+      "partNumber": "228-2500-1486",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 45 Degree Beam (228-2500-1486).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-45-degree-beam-228-2500-1486.png"
+    },
+    {
+      "id": "228-2500-017",
+      "name": "2x2 Beam",
+      "partNumber": "228-2500-017",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Beam (228-2500-017).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-beam-228-2500-017.png"
+    },
+    {
+      "id": "228-2500-1140",
+      "name": "2x2 Center Lock Beam",
+      "partNumber": "228-2500-1140",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Center Lock Beam (228-2500-1140).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-center-lock-beam-228-2500-1140.png"
+    },
+    {
+      "id": "228-2500-140",
+      "name": "2x2 Center Lock Beam",
+      "partNumber": "228-2500-140",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Center Lock Beam (228-2500-140).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-center-lock-beam-228-2500-140.png"
+    },
+    {
+      "id": "228-2500-1925",
+      "name": "2x2 Center Offset Round Lock Beam",
+      "partNumber": "228-2500-1925",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Center Offset Round Lock Beam (228-2500-1925).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-center-offset-round-lock-beam-228-2500-1925.png"
+    },
+    {
+      "id": "228-2500-062",
+      "name": "2x2 Connector Pin",
+      "partNumber": "228-2500-062",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Connector Pin (228-2500-062).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-connector-pin-228-2500-062.png"
+    },
+    {
+      "id": "228-2500-412",
+      "name": "2x2 Extended Left Corner Beam",
+      "partNumber": "228-2500-412",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Extended Left Corner Beam (228-2500-412).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-extended-left-corner-beam-228-2500-412.png"
+    },
+    {
+      "id": "228-2500-413",
+      "name": "2x2 Extended Right Corner Beam",
+      "partNumber": "228-2500-413",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Extended Right Corner Beam (228-2500-413).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-extended-right-corner-beam-228-2500-413.png"
+    },
+    {
+      "id": "228-2500-406",
+      "name": "2x2 Left Corner Beam",
+      "partNumber": "228-2500-406",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Left Corner Beam (228-2500-406).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-left-corner-beam-228-2500-406.png"
+    },
+    {
+      "id": "228-2500-407",
+      "name": "2x2 Right Corner Beam",
+      "partNumber": "228-2500-407",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2 Right Corner Beam (228-2500-407).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-right-corner-beam-228-2500-407.png"
+    },
+    {
+      "id": "228-2500-1702",
+      "name": "2x2, Extended 0.5 x 1x Pitch Sloped Panel",
+      "partNumber": "228-2500-1702",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x2, Extended 0.5 x 1x Pitch Sloped Panel (228-2500-1702).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x2-extended-0-5-x-1x-pitch-sloped-panel-228-2500-1702.png"
+    },
+    {
+      "id": "228-2500-030",
+      "name": "2x20 Beam",
+      "partNumber": "228-2500-030",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x20 Beam (228-2500-030).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x20-beam-228-2500-030.png"
+    },
+    {
+      "id": "228-2500-018",
+      "name": "2x3 Beam",
+      "partNumber": "228-2500-018",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x3 Beam (228-2500-018).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x3-beam-228-2500-018.png"
+    },
+    {
+      "id": "228-2500-1189",
+      "name": "2x3 Delta Tee Beam",
+      "partNumber": "228-2500-1189",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x3 Delta Tee Beam (228-2500-1189).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x3-delta-tee-beam-228-2500-1189.png"
+    },
+    {
+      "id": "228-2500-2014",
+      "name": "2x3 Irregular Hexagon Flat Panel",
+      "partNumber": "228-2500-2014",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x3 Irregular Hexagon Flat Panel (228-2500-2014).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x3-irregular-hexagon-flat-panel-228-2500-2014.png"
+    },
+    {
+      "id": "228-2500-145",
+      "name": "2x3 Right Angle Beam",
+      "partNumber": "228-2500-145",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x3 Right Angle Beam (228-2500-145).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x3-right-angle-beam-228-2500-145.png"
+    },
+    {
+      "id": "228-2500-093",
+      "name": "2x3 Smooth Idler Pin",
+      "partNumber": "228-2500-093",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x3 Smooth Idler Pin (228-2500-093).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x3-smooth-idler-pin-228-2500-093.png"
+    },
+    {
+      "id": "228-2500-1225",
+      "name": "2x30 mm Square Silicone Belt",
+      "partNumber": "228-2500-1225",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x30 mm Square Silicone Belt (228-2500-1225).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x30-mm-square-silicone-belt-228-2500-1225.png"
+    },
+    {
+      "id": "228-2500-221",
+      "name": "2x30mm Rubber Belt",
+      "partNumber": "228-2500-221",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x30mm Rubber Belt (228-2500-221).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x30mm-rubber-belt-228-2500-221.png"
+    },
+    {
+      "id": "228-2500-2019",
+      "name": "2x3x2.5 Roll Cage",
+      "partNumber": "228-2500-2019",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x3x2.5 Roll Cage (228-2500-2019).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x3x2-5-roll-cage-228-2500-2019.png"
+    },
+    {
+      "id": "228-2500-509",
+      "name": "2x4 25mm Ball Shooter Plate (Strong)",
+      "partNumber": "228-2500-509",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4 25mm Ball Shooter Plate (Strong) (228-2500-509).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4-25mm-ball-shooter-plate-strong-228-2500-509.png"
+    },
+    {
+      "id": "228-2500-507",
+      "name": "2x4 25mm Ball Shooter Plate (Weak)",
+      "partNumber": "228-2500-507",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4 25mm Ball Shooter Plate (Weak) (228-2500-507).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4-25mm-ball-shooter-plate-weak-228-2500-507.png"
+    },
+    {
+      "id": "228-2500-019",
+      "name": "2x4 Beam",
+      "partNumber": "228-2500-019",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4 Beam (228-2500-019).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4-beam-228-2500-019.png"
+    },
+    {
+      "id": "228-2500-520",
+      "name": "2x4 Smooth Panel",
+      "partNumber": "228-2500-520",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4 Smooth Panel (228-2500-520).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4-smooth-panel-228-2500-520.png"
+    },
+    {
+      "id": "228-2500-1240",
+      "name": "2x4 Wedge Beam",
+      "partNumber": "228-2500-1240",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4 Wedge Beam (228-2500-1240).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4-wedge-beam-228-2500-1240.png"
+    },
+    {
+      "id": "228-2500-1704",
+      "name": "2x4, Extended 0.5 x 1x Pitch Sloped Panel",
+      "partNumber": "228-2500-1704",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4, Extended 0.5 x 1x Pitch Sloped Panel (228-2500-1704).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4-extended-0-5-x-1x-pitch-sloped-panel-228-2500-1704.png"
+    },
+    {
+      "id": "228-2500-2007",
+      "name": "2x4.75 Curved Fade Panel",
+      "partNumber": "228-2500-2007",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4.75 Curved Fade Panel (228-2500-2007).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4-75-curved-fade-panel-228-2500-2007.png"
+    },
+    {
+      "id": "228-2500-222",
+      "name": "2x40mm Rubber Belt",
+      "partNumber": "228-2500-222",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x40mm Rubber Belt (228-2500-222).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x40mm-rubber-belt-228-2500-222.png"
+    },
+    {
+      "id": "228-2500-1199",
+      "name": "2x4x2 Double 60 Degree Beam",
+      "partNumber": "228-2500-1199",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x4x2 Double 60 Degree Beam (228-2500-1199).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x4x2-double-60-degree-beam-228-2500-1199.png"
+    },
+    {
+      "id": "228-2500-020",
+      "name": "2x5 Beam",
+      "partNumber": "228-2500-020",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x5 Beam (228-2500-020).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x5-beam-228-2500-020.png"
+    },
+    {
+      "id": "228-2500-2006",
+      "name": "2x5 Eagle Head Panel",
+      "partNumber": "228-2500-2006",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x5 Eagle Head Panel (228-2500-2006).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x5-eagle-head-panel-228-2500-2006.png"
+    },
+    {
+      "id": "228-2500-1705",
+      "name": "2x5, Extended 0.5 x 1x Pitch Sloped Panel",
+      "partNumber": "228-2500-1705",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x5, Extended 0.5 x 1x Pitch Sloped Panel (228-2500-1705).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x5-extended-0-5-x-1x-pitch-sloped-panel-228-2500-1705.png"
+    },
+    {
+      "id": "228-2500-223",
+      "name": "2x50mm Rubber Belt",
+      "partNumber": "228-2500-223",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x50mm Rubber Belt (228-2500-223).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x50mm-rubber-belt-228-2500-223.png"
+    },
+    {
+      "id": "228-2500-021",
+      "name": "2x6 Beam",
+      "partNumber": "228-2500-021",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x6 Beam (228-2500-021).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x6-beam-228-2500-021.png"
+    },
+    {
+      "id": "228-2500-322",
+      "name": "2x6 Beam with Chamferred Ends",
+      "partNumber": "228-2500-322",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x6 Beam with Chamferred Ends (228-2500-322).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x6-beam-with-chamferred-ends-228-2500-322.png"
+    },
+    {
+      "id": "228-2500-1436",
+      "name": "2x6 Handle Plate",
+      "partNumber": "228-2500-1436",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x6 Handle Plate (228-2500-1436).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x6-handle-plate-228-2500-1436.png"
+    },
+    {
+      "id": "228-2500-224",
+      "name": "2x60mm Rubber Belt",
+      "partNumber": "228-2500-224",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x60mm Rubber Belt (228-2500-224).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x60mm-rubber-belt-228-2500-224.png"
+    },
+    {
+      "id": "228-2500-1556",
+      "name": "2x6x2 30 Degree Jogged Beam",
+      "partNumber": "228-2500-1556",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x6x2 30 Degree Jogged Beam (228-2500-1556).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x6x2-30-degree-jogged-beam-228-2500-1556.png"
+    },
+    {
+      "id": "228-2500-022",
+      "name": "2x7 Beam",
+      "partNumber": "228-2500-022",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x7 Beam (228-2500-022).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x7-beam-228-2500-022.png"
+    },
+    {
+      "id": "228-2500-2004",
+      "name": "2x7 Landing Gear Panel",
+      "partNumber": "228-2500-2004",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x7 Landing Gear Panel (228-2500-2004).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x7-landing-gear-panel-228-2500-2004.png"
+    },
+    {
+      "id": "228-2500-023",
+      "name": "2x8 Beam",
+      "partNumber": "228-2500-023",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x8 Beam (228-2500-023).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x8-beam-228-2500-023.png"
+    },
+    {
+      "id": "228-2500-1445",
+      "name": "2x8 Medium Convex Plate",
+      "partNumber": "228-2500-1445",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x8 Medium Convex Plate (228-2500-1445).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x8-medium-convex-plate-228-2500-1445.png"
+    },
+    {
+      "id": "228-2500-524",
+      "name": "2x8 Smooth Panel",
+      "partNumber": "228-2500-524",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x8 Smooth Panel (228-2500-524).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x8-smooth-panel-228-2500-524.png"
+    },
+    {
+      "id": "228-2500-024",
+      "name": "2x9 Beam",
+      "partNumber": "228-2500-024",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/2x9 Beam (228-2500-024).step",
+      "thumbnailUrl": "/part-library/thumbnails/2x9-beam-228-2500-024.png"
+    },
+    {
+      "id": "228-2500-304",
+      "name": "3-Way 2x3 Plate",
+      "partNumber": "228-2500-304",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3-Way 2x3 Plate (228-2500-304).step",
+      "thumbnailUrl": "/part-library/thumbnails/3-way-2x3-plate-228-2500-304.png"
+    },
+    {
+      "id": "228-2500-305",
+      "name": "3-Way Perpendicular 1x2 Plate",
+      "partNumber": "228-2500-305",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3-Way Perpendicular 1x2 Plate (228-2500-305).step",
+      "thumbnailUrl": "/part-library/thumbnails/3-way-perpendicular-1x2-plate-228-2500-305.png"
+    },
+    {
+      "id": "228-2500-165",
+      "name": "30mm Pulley",
+      "partNumber": "228-2500-165",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/30mm Pulley (228-2500-165).step",
+      "thumbnailUrl": "/part-library/thumbnails/30mm-pulley-228-2500-165.png"
+    },
+    {
+      "id": "228-2500-236",
+      "name": "32 Tooth Sprocket",
+      "partNumber": "228-2500-236",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/32 Tooth Sprocket (228-2500-236).step",
+      "thumbnailUrl": "/part-library/thumbnails/32-tooth-sprocket-228-2500-236.png"
+    },
+    {
+      "id": "228-2500-218",
+      "name": "36 Tooth Crown Gear",
+      "partNumber": "228-2500-218",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/36 Tooth Crown Gear (228-2500-218).step",
+      "thumbnailUrl": "/part-library/thumbnails/36-tooth-crown-gear-228-2500-218.png"
+    },
+    {
+      "id": "228-2500-214",
+      "name": "36 Tooth Gear",
+      "partNumber": "228-2500-214",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/36 Tooth Gear (228-2500-214).step",
+      "thumbnailUrl": "/part-library/thumbnails/36-tooth-gear-228-2500-214.png"
+    },
+    {
+      "id": "228-2500-462",
+      "name": "36 Tooth Gear (34DP)",
+      "partNumber": "228-2500-462",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/36 Tooth Gear (34DP) (228-2500-462).step",
+      "thumbnailUrl": "/part-library/thumbnails/36-tooth-gear-34dp-228-2500-462.png"
+    },
+    {
+      "id": "228-2500-252",
+      "name": "36 Tooth Hybrid Gear",
+      "partNumber": "228-2500-252",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/36 Tooth Hybrid Gear (228-2500-252).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/36-tooth-hybrid-gear-228-2500-252.png"
+    },
+    {
+      "id": "228-2500-451",
+      "name": "36 Tooth Idler Gear",
+      "partNumber": "228-2500-451",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/36 Tooth Idler Gear (228-2500-451).step",
+      "thumbnailUrl": "/part-library/thumbnails/36-tooth-idler-gear-228-2500-451.png"
+    },
+    {
+      "id": "228-2500-1919",
+      "name": "3x Pitch 6-Blade Fan (CCW)",
+      "partNumber": "228-2500-1919",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch 6-Blade Fan (CCW) (228-2500-1919).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-6-blade-fan-ccw-228-2500-1919.png"
+    },
+    {
+      "id": "228-2500-081",
+      "name": "3x Pitch Capped Plastic Shaft",
+      "partNumber": "228-2500-081",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Capped Plastic Shaft (228-2500-081).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-capped-plastic-shaft-228-2500-081.png"
+    },
+    {
+      "id": "228-2500-2221",
+      "name": "3x Pitch Capped Shaft",
+      "partNumber": "228-2500-2221",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Capped Shaft (228-2500-2221).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-capped-shaft-228-2500-2221.png"
+    },
+    {
+      "id": "228-2500-1918",
+      "name": "3x Pitch Ducted Fan Housing",
+      "partNumber": "228-2500-1918",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Ducted Fan Housing (228-2500-1918).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-ducted-fan-housing-228-2500-1918.png"
+    },
+    {
+      "id": "228-2500-2236",
+      "name": "3x Pitch Motor Shaft",
+      "partNumber": "228-2500-2236",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Motor Shaft (228-2500-2236).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-motor-shaft-228-2500-2236.png"
+    },
+    {
+      "id": "228-2500-094",
+      "name": "3x Pitch Plastic Motor Shaft",
+      "partNumber": "228-2500-094",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Plastic Motor Shaft (228-2500-094).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-plastic-motor-shaft-228-2500-094.png"
+    },
+    {
+      "id": "228-2500-075",
+      "name": "3x Pitch Plastic Shaft",
+      "partNumber": "228-2500-075",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Plastic Shaft (228-2500-075).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-plastic-shaft-228-2500-075.png"
+    },
+    {
+      "id": "228-2500-119",
+      "name": "3x Pitch Shaft",
+      "partNumber": "228-2500-119",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Shaft (228-2500-119).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-shaft-228-2500-119.png"
+    },
+    {
+      "id": "228-2500-069",
+      "name": "3x Pitch Standoff",
+      "partNumber": "228-2500-069",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x Pitch Standoff (228-2500-069).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x-pitch-standoff-228-2500-069.png"
+    },
+    {
+      "id": "228-2500-2100",
+      "name": "3x1, R5 x Flat Curve Panel",
+      "partNumber": "228-2500-2100",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x1, R5 x Flat Curve Panel (228-2500-2100).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x1-r5-x-flat-curve-panel-228-2500-2100.png"
+    },
+    {
+      "id": "228-2500-036",
+      "name": "3x10 Plate",
+      "partNumber": "228-2500-036",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x10 Plate (228-2500-036).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x10-plate-228-2500-036.png"
+    },
+    {
+      "id": "228-2500-1600",
+      "name": "3x12 Girder Plate; 2x8 2x Offset Trapezoid",
+      "partNumber": "228-2500-1600",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x12 Girder Plate; 2x8 2x Offset Trapezoid (228-2500-1600).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x12-girder-plate-2x8-2x-offset-trapezoid-228-2500-1600.png"
+    },
+    {
+      "id": "228-2500-037",
+      "name": "3x12 Plate",
+      "partNumber": "228-2500-037",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x12 Plate (228-2500-037).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x12-plate-228-2500-037.png"
+    },
+    {
+      "id": "228-2500-038",
+      "name": "3x16 Plate",
+      "partNumber": "228-2500-038",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x16 Plate (228-2500-038).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x16-plate-228-2500-038.png"
+    },
+    {
+      "id": "228-2500-2101",
+      "name": "3x2, R5 x Flat Curve Panel",
+      "partNumber": "228-2500-2101",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x2, R5 x Flat Curve Panel (228-2500-2101).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x2-r5-x-flat-curve-panel-228-2500-2101.png"
+    },
+    {
+      "id": "228-2500-147",
+      "name": "3x3 30 Degree Angle Beam",
+      "partNumber": "228-2500-147",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 30 Degree Angle Beam (228-2500-147).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-30-degree-angle-beam-228-2500-147.png"
+    },
+    {
+      "id": "228-2500-148",
+      "name": "3x3 45 Degree Angle Beam",
+      "partNumber": "228-2500-148",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 45 Degree Angle Beam (228-2500-148).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-45-degree-angle-beam-228-2500-148.png"
+    },
+    {
+      "id": "228-2500-149",
+      "name": "3x3 60 Degreee Angle Beam",
+      "partNumber": "228-2500-149",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 60 Degreee Angle Beam (228-2500-149).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-60-degreee-angle-beam-228-2500-149.png"
+    },
+    {
+      "id": "228-2500-089",
+      "name": "3x3 Connector Pin",
+      "partNumber": "228-2500-089",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 Connector Pin (228-2500-089).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-connector-pin-228-2500-089.png"
+    },
+    {
+      "id": "228-2500-031",
+      "name": "3x3 Plate",
+      "partNumber": "228-2500-031",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 Plate (228-2500-031).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-plate-228-2500-031.png"
+    },
+    {
+      "id": "228-2500-156",
+      "name": "3x3 Plus Gusset Beam",
+      "partNumber": "228-2500-156",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 Plus Gusset Beam (228-2500-156).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-plus-gusset-beam-228-2500-156.png"
+    },
+    {
+      "id": "228-2500-146",
+      "name": "3x3 Right Angle Beam",
+      "partNumber": "228-2500-146",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 Right Angle Beam (228-2500-146).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-right-angle-beam-228-2500-146.png"
+    },
+    {
+      "id": "228-2500-1159",
+      "name": "3x3 Wye Lock Beam",
+      "partNumber": "228-2500-1159",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 Wye Lock Beam (228-2500-1159).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-wye-lock-beam-228-2500-1159.png"
+    },
+    {
+      "id": "228-2500-161",
+      "name": "3x3 Wye Lock Beam",
+      "partNumber": "228-2500-161",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3 Wye Lock Beam (228-2500-161).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-wye-lock-beam-228-2500-161.png"
+    },
+    {
+      "id": "228-2500-2116",
+      "name": "3x3, R5 x R5 Curve Panel",
+      "partNumber": "228-2500-2116",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3, R5 x R5 Curve Panel (228-2500-2116).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-r5-x-r5-curve-panel-228-2500-2116.png"
+    },
+    {
+      "id": "228-2500-2015",
+      "name": "3x3.5 Irregular Hexagon Flat Panel",
+      "partNumber": "228-2500-2015",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x3.5 Irregular Hexagon Flat Panel (228-2500-2015).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x3-5-irregular-hexagon-flat-panel-228-2500-2015.png"
+    },
+    {
+      "id": "228-2500-1357",
+      "name": "3x4 1x Offset Trapezoid Plate",
+      "partNumber": "228-2500-1357",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4 1x Offset Trapezoid Plate (228-2500-1357).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4-1x-offset-trapezoid-plate-228-2500-1357.png"
+    },
+    {
+      "id": "228-2500-2016",
+      "name": "3x4 End Flat Panel",
+      "partNumber": "228-2500-2016",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4 End Flat Panel (228-2500-2016).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4-end-flat-panel-228-2500-2016.png"
+    },
+    {
+      "id": "228-2500-032",
+      "name": "3x4 Plate",
+      "partNumber": "228-2500-032",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4 Plate (228-2500-032).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4-plate-228-2500-032.png"
+    },
+    {
+      "id": "228-2500-144",
+      "name": "3x4 Tee Beam",
+      "partNumber": "228-2500-144",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4 Tee Beam (228-2500-144).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4-tee-beam-228-2500-144.png"
+    },
+    {
+      "id": "228-2500-2124",
+      "name": "3x4, R5 x Flat Left Concave Curve Panel",
+      "partNumber": "228-2500-2124",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4, R5 x Flat Left Concave Curve Panel (228-2500-2124).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4-r5-x-flat-left-concave-curve-panel-228-2500-2124.png"
+    },
+    {
+      "id": "228-2500-2125",
+      "name": "3x4, R5 x Flat Right Concave Curve Panel",
+      "partNumber": "228-2500-2125",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4, R5 x Flat Right Concave Curve Panel (228-2500-2125).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4-r5-x-flat-right-concave-curve-panel-228-2500-2125.png"
+    },
+    {
+      "id": "228-2500-2134",
+      "name": "3x4x3, R5 x R6 x Flat R5 Left Curve Panel",
+      "partNumber": "228-2500-2134",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4x3, R5 x R6 x Flat R5 Left Curve Panel (228-2500-2134).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4x3-r5-x-r6-x-flat-r5-left-curve-panel-228-2500-2134.png"
+    },
+    {
+      "id": "228-2500-2135",
+      "name": "3x4x3, R5 x R6 x Flat R5 Right Curve Panel",
+      "partNumber": "228-2500-2135",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x4x3, R5 x R6 x Flat R5 Right Curve Panel (228-2500-2135).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x4x3-r5-x-r6-x-flat-r5-right-curve-panel-228-2500-2135.png"
+    },
+    {
+      "id": "228-2500-2009",
+      "name": "3x5 Dual Curved Fade Panel",
+      "partNumber": "228-2500-2009",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x5 Dual Curved Fade Panel (228-2500-2009).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x5-dual-curved-fade-panel-228-2500-2009.png"
+    },
+    {
+      "id": "228-2500-150",
+      "name": "3x5 Right Angle Beam",
+      "partNumber": "228-2500-150",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x5 Right Angle Beam (228-2500-150).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x5-right-angle-beam-228-2500-150.png"
+    },
+    {
+      "id": "228-2500-1245",
+      "name": "3x5 Wedge Plate",
+      "partNumber": "228-2500-1245",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x5 Wedge Plate (228-2500-1245).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x5-wedge-plate-228-2500-1245.png"
+    },
+    {
+      "id": "228-2500-2008",
+      "name": "3x5.5 Front Shuttle Panel",
+      "partNumber": "228-2500-2008",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x5.5 Front Shuttle Panel (228-2500-2008).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x5-5-front-shuttle-panel-228-2500-2008.png"
+    },
+    {
+      "id": "228-2500-2002",
+      "name": "3x5x3.5 Vehicle Cab",
+      "partNumber": "228-2500-2002",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x5x3.5 Vehicle Cab (228-2500-2002).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x5x3-5-vehicle-cab-228-2500-2002.png"
+    },
+    {
+      "id": "228-2500-034",
+      "name": "3x6 Plate",
+      "partNumber": "228-2500-034",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x6 Plate (228-2500-034).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x6-plate-228-2500-034.png"
+    },
+    {
+      "id": "228-2500-035",
+      "name": "3x8 Plate",
+      "partNumber": "228-2500-035",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/3x8 Plate (228-2500-035).step",
+      "thumbnailUrl": "/part-library/thumbnails/3x8-plate-228-2500-035.png"
+    },
+    {
+      "id": "228-2500-2224",
+      "name": "4.5x Pitch Capped Shaft",
+      "partNumber": "228-2500-2224",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4.5x Pitch Capped Shaft (228-2500-2224).step",
+      "thumbnailUrl": "/part-library/thumbnails/4-5x-pitch-capped-shaft-228-2500-2224.png"
+    },
+    {
+      "id": "228-2500-2003",
+      "name": "4.5x4.5 Diagonal Corner Panel",
+      "partNumber": "228-2500-2003",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4.5x4.5 Diagonal Corner Panel (228-2500-2003).step",
+      "thumbnailUrl": "/part-library/thumbnails/4-5x4-5-diagonal-corner-panel-228-2500-2003.png"
+    },
+    {
+      "id": "228-2500-1410",
+      "name": "40 Tooth Ratchet",
+      "partNumber": "228-2500-1410",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/40 Tooth Ratchet (228-2500-1410).step",
+      "thumbnailUrl": "/part-library/thumbnails/40-tooth-ratchet-228-2500-1410.png"
+    },
+    {
+      "id": "228-2500-237",
+      "name": "40 Tooth Sprocket",
+      "partNumber": "228-2500-237",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/40 Tooth Sprocket (228-2500-237).step",
+      "thumbnailUrl": "/part-library/thumbnails/40-tooth-sprocket-228-2500-237.png"
+    },
+    {
+      "id": "228-2500-166",
+      "name": "40mm Pulley",
+      "partNumber": "228-2500-166",
+      "category": "Pulleys",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/40mm Pulley (228-2500-166).step",
+      "thumbnailUrl": "/part-library/thumbnails/40mm-pulley-228-2500-166.png"
+    },
+    {
+      "id": "228-2500-175",
+      "name": "45 Degree Standoff Connector",
+      "partNumber": "228-2500-175",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/45 Degree Standoff Connector (228-2500-175).step",
+      "thumbnailUrl": "/part-library/thumbnails/45-degree-standoff-connector-228-2500-175.png"
+    },
+    {
+      "id": "228-2500-228",
+      "name": "48 Tooth Gear",
+      "partNumber": "228-2500-228",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/48 Tooth Gear (228-2500-228).step",
+      "thumbnailUrl": "/part-library/thumbnails/48-tooth-gear-228-2500-228.png"
+    },
+    {
+      "id": "228-2500-253",
+      "name": "48 Tooth Hybrid Gear",
+      "partNumber": "228-2500-253",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/48 Tooth Hybrid Gear (228-2500-253).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/48-tooth-hybrid-gear-228-2500-253.png"
+    },
+    {
+      "id": "228-2500-442",
+      "name": "48x Pitch Rope",
+      "partNumber": "228-2500-442",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/48x Pitch Rope (228-2500-442).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/48x-pitch-rope-228-2500-442.png"
+    },
+    {
+      "id": "228-2500-1922",
+      "name": "4x Pitch 6-Blade Fan (CCW)",
+      "partNumber": "228-2500-1922",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch 6-Blade Fan (CCW) (228-2500-1922).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-6-blade-fan-ccw-228-2500-1922.png"
+    },
+    {
+      "id": "228-2500-1906",
+      "name": "4x Pitch Antenna",
+      "partNumber": "228-2500-1906",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Antenna (228-2500-1906).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-antenna-228-2500-1906.png"
+    },
+    {
+      "id": "228-2500-082",
+      "name": "4x Pitch Capped Plastic Shaft",
+      "partNumber": "228-2500-082",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Capped Plastic Shaft (228-2500-082).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-capped-plastic-shaft-228-2500-082.png"
+    },
+    {
+      "id": "228-2500-2223",
+      "name": "4x Pitch Capped Shaft",
+      "partNumber": "228-2500-2223",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Capped Shaft (228-2500-2223).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-capped-shaft-228-2500-2223.png"
+    },
+    {
+      "id": "228-2500-1384",
+      "name": "4x Pitch Diameter (160 mm Travel) Low-Friction Wheel",
+      "partNumber": "228-2500-1384",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Diameter (160 mm Travel) Low-Friction Wheel (228-2500-1384).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-diameter-160-mm-travel-low-friction-wheel-228-2500-1384.png"
+    },
+    {
+      "id": "228-2500-1383",
+      "name": "4x Pitch Diameter (160mm Travel) Smooth Wheel",
+      "partNumber": "228-2500-1383",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Diameter (160mm Travel) Smooth Wheel (228-2500-1383).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-diameter-160mm-travel-smooth-wheel-228-2500-1383.png"
+    },
+    {
+      "id": "228-2500-1921",
+      "name": "4x Pitch Ducted Fan Housing",
+      "partNumber": "228-2500-1921",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Ducted Fan Housing (228-2500-1921).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-ducted-fan-housing-228-2500-1921.png"
+    },
+    {
+      "id": "228-2500-2238",
+      "name": "4x Pitch Motor Shaft",
+      "partNumber": "228-2500-2238",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Motor Shaft (228-2500-2238).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-motor-shaft-228-2500-2238.png"
+    },
+    {
+      "id": "228-2500-079",
+      "name": "4x Pitch Plastic Motor Shaft",
+      "partNumber": "228-2500-079",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Plastic Motor Shaft (228-2500-079).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-plastic-motor-shaft-228-2500-079.png"
+    },
+    {
+      "id": "228-2500-076",
+      "name": "4x Pitch Plastic Shaft",
+      "partNumber": "228-2500-076",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Plastic Shaft (228-2500-076).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-plastic-shaft-228-2500-076.png"
+    },
+    {
+      "id": "228-2500-120",
+      "name": "4x Pitch Shaft",
+      "partNumber": "228-2500-120",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Shaft (228-2500-120).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-shaft-228-2500-120.png"
+    },
+    {
+      "id": "228-2500-070",
+      "name": "4x Pitch Standoff",
+      "partNumber": "228-2500-070",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Standoff (228-2500-070).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-standoff-228-2500-070.png"
+    },
+    {
+      "id": "228-2500-2029",
+      "name": "4x Pitch Wide Excavator Bucket",
+      "partNumber": "228-2500-2029",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x Pitch Wide Excavator Bucket (228-2500-2029).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x-pitch-wide-excavator-bucket-228-2500-2029.png"
+    },
+    {
+      "id": "228-2500-2108",
+      "name": "4x1, R6 x Flat Curve Panel",
+      "partNumber": "228-2500-2108",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x1, R6 x Flat Curve Panel (228-2500-2108).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x1-r6-x-flat-curve-panel-228-2500-2108.png"
+    },
+    {
+      "id": "228-2500-044",
+      "name": "4x10 Plate",
+      "partNumber": "228-2500-044",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x10 Plate (228-2500-044).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x10-plate-228-2500-044.png"
+    },
+    {
+      "id": "228-2500-045",
+      "name": "4x12 Plate",
+      "partNumber": "228-2500-045",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x12 Plate (228-2500-045).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x12-plate-228-2500-045.png"
+    },
+    {
+      "id": "228-2500-046",
+      "name": "4x16 Plate",
+      "partNumber": "228-2500-046",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x16 Plate (228-2500-046).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x16-plate-228-2500-046.png"
+    },
+    {
+      "id": "228-2500-1848",
+      "name": "4x2, Dual 0.5 x 2x Pitch Fade Double Sloped Panel",
+      "partNumber": "228-2500-1848",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x2, Dual 0.5 x 2x Pitch Fade Double Sloped Panel (228-2500-1848).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x2-dual-0-5-x-2x-pitch-fade-double-sloped-panel-228-2500-1848.png"
+    },
+    {
+      "id": "228-2500-2109",
+      "name": "4x2, R6 x Flat Curve Panel",
+      "partNumber": "228-2500-2109",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x2, R6 x Flat Curve Panel (228-2500-2109).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x2-r6-x-flat-curve-panel-228-2500-2109.png"
+    },
+    {
+      "id": "228-2500-1270",
+      "name": "4x4 25mm Tube Plus Plate",
+      "partNumber": "228-2500-1270",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x4 25mm Tube Plus Plate (228-2500-1270).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x4-25mm-tube-plus-plate-228-2500-1270.png"
+    },
+    {
+      "id": "228-2500-151",
+      "name": "4x4 Offset Right Angle Beam",
+      "partNumber": "228-2500-151",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x4 Offset Right Angle Beam (228-2500-151).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x4-offset-right-angle-beam-228-2500-151.png"
+    },
+    {
+      "id": "228-2500-040",
+      "name": "4x4 Plate",
+      "partNumber": "228-2500-040",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x4 Plate (228-2500-040).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x4-plate-228-2500-040.png"
+    },
+    {
+      "id": "228-2500-2161",
+      "name": "4x4, Dual R6 Quarter Round Panel",
+      "partNumber": "228-2500-2161",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x4, Dual R6 Quarter Round Panel (228-2500-2161).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x4-dual-r6-quarter-round-panel-228-2500-2161.png"
+    },
+    {
+      "id": "228-2500-1849",
+      "name": "4x5, Dual 0.5 x 2x Pitch Extended Fade Sloped Panel",
+      "partNumber": "228-2500-1849",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x5, Dual 0.5 x 2x Pitch Extended Fade Sloped Panel (228-2500-1849).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x5-dual-0-5-x-2x-pitch-extended-fade-sloped-panel-228-2500-1849.png"
+    },
+    {
+      "id": "228-2500-042",
+      "name": "4x6 Plate",
+      "partNumber": "228-2500-042",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x6 Plate (228-2500-042).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x6-plate-228-2500-042.png"
+    },
+    {
+      "id": "228-2500-1828",
+      "name": "4x6, Dual 0.5 x 2x Pitch Double Sloped Panel",
+      "partNumber": "228-2500-1828",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x6, Dual 0.5 x 2x Pitch Double Sloped Panel (228-2500-1828).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x6-dual-0-5-x-2x-pitch-double-sloped-panel-228-2500-1828.png"
+    },
+    {
+      "id": "228-2500-2018",
+      "name": "4x7 Landing Skid Plate",
+      "partNumber": "228-2500-2018",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x7 Landing Skid Plate (228-2500-2018).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x7-landing-skid-plate-228-2500-2018.png"
+    },
+    {
+      "id": "228-2500-2001",
+      "name": "4x7x4 Offset Channel Beam",
+      "partNumber": "228-2500-2001",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x7x4 Offset Channel Beam (228-2500-2001).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x7x4-offset-channel-beam-228-2500-2001.png"
+    },
+    {
+      "id": "228-2500-043",
+      "name": "4x8 Plate",
+      "partNumber": "228-2500-043",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/4x8 Plate (228-2500-043).step",
+      "thumbnailUrl": "/part-library/thumbnails/4x8-plate-228-2500-043.png"
+    },
+    {
+      "id": "228-2500-083",
+      "name": "5x Pitch Capped Plastic Shaft",
+      "partNumber": "228-2500-083",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x Pitch Capped Plastic Shaft (228-2500-083).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x-pitch-capped-plastic-shaft-228-2500-083.png"
+    },
+    {
+      "id": "228-2500-2225",
+      "name": "5x Pitch Capped Shaft",
+      "partNumber": "228-2500-2225",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x Pitch Capped Shaft (228-2500-2225).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x-pitch-capped-shaft-228-2500-2225.png"
+    },
+    {
+      "id": "228-2500-1698",
+      "name": "5x Pitch Diameter, 10x Pitch Long Half Round Panel",
+      "partNumber": "228-2500-1698",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x Pitch Diameter, 10x Pitch Long Half Round Panel (228-2500-1698).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x-pitch-diameter-10x-pitch-long-half-round-panel-228-2500-1698.png"
+    },
+    {
+      "id": "228-2500-077",
+      "name": "5x Pitch Plastic Shaft",
+      "partNumber": "228-2500-077",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x Pitch Plastic Shaft (228-2500-077).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x-pitch-plastic-shaft-228-2500-077.png"
+    },
+    {
+      "id": "228-2500-121",
+      "name": "5x Pitch Shaft",
+      "partNumber": "228-2500-121",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x Pitch Shaft (228-2500-121).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x-pitch-shaft-228-2500-121.png"
+    },
+    {
+      "id": "228-2500-2248",
+      "name": "5x Pitch Weighted Disk Housing",
+      "partNumber": "228-2500-2248",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x Pitch Weighted Disk Housing (228-2500-2248).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x-pitch-weighted-disk-housing-228-2500-2248.png"
+    },
+    {
+      "id": "228-2500-1601",
+      "name": "5x2x2 Tee Beam",
+      "partNumber": "228-2500-1601",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x2x2 Tee Beam (228-2500-1601).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x2x2-tee-beam-228-2500-1601.png"
+    },
+    {
+      "id": "228-2500-152",
+      "name": "5x6.5 Tee Beam",
+      "partNumber": "228-2500-152",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/5x6.5 Tee Beam (228-2500-152).step",
+      "thumbnailUrl": "/part-library/thumbnails/5x6-5-tee-beam-228-2500-152.png"
+    },
+    {
+      "id": "228-2500-215",
+      "name": "60 Tooth Gear",
+      "partNumber": "228-2500-215",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/60 Tooth Gear (228-2500-215).step",
+      "thumbnailUrl": "/part-library/thumbnails/60-tooth-gear-228-2500-215.png"
+    },
+    {
+      "id": "228-2500-254",
+      "name": "60 Tooth Hybrid Gear",
+      "partNumber": "228-2500-254",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/60 Tooth Hybrid Gear (228-2500-254).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/60-tooth-hybrid-gear-228-2500-254.png"
+    },
+    {
+      "id": "228-2500-247",
+      "name": "60 Tooth Internal Ring Gear",
+      "partNumber": "228-2500-247",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/60 Tooth Internal Ring Gear (228-2500-247).step",
+      "thumbnailUrl": "/part-library/thumbnails/60-tooth-internal-ring-gear-228-2500-247.png"
+    },
+    {
+      "id": "228-2500-2226",
+      "name": "6x Pitch Capped Shaft",
+      "partNumber": "228-2500-2226",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x Pitch Capped Shaft (228-2500-2226).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x-pitch-capped-shaft-228-2500-2226.png"
+    },
+    {
+      "id": "228-2500-204",
+      "name": "6x Pitch Cube Face",
+      "partNumber": "228-2500-204",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x Pitch Cube Face (228-2500-204).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x-pitch-cube-face-228-2500-204.png"
+    },
+    {
+      "id": "228-2500-1934",
+      "name": "6x Pitch Flexible Standoff",
+      "partNumber": "228-2500-1934",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x Pitch Flexible Standoff (228-2500-1934).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x-pitch-flexible-standoff-228-2500-1934.png"
+    },
+    {
+      "id": "228-2500-1402",
+      "name": "6x Pitch Flywheel (75 g)",
+      "partNumber": "228-2500-1402",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x Pitch Flywheel (75 g) (228-2500-1402).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x-pitch-flywheel-75-g-228-2500-1402.png"
+    },
+    {
+      "id": "228-2500-122",
+      "name": "6x Pitch Shaft",
+      "partNumber": "228-2500-122",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x Pitch Shaft (228-2500-122).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x-pitch-shaft-228-2500-122.png"
+    },
+    {
+      "id": "228-2500-072",
+      "name": "6x Pitch Standoff",
+      "partNumber": "228-2500-072",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x Pitch Standoff (228-2500-072).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x-pitch-standoff-228-2500-072.png"
+    },
+    {
+      "id": "228-2500-203",
+      "name": "6x10 Bone Plate",
+      "partNumber": "228-2500-203",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x10 Bone Plate (228-2500-203).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x10-bone-plate-228-2500-203.png"
+    },
+    {
+      "id": "228-2500-2712",
+      "name": "6x12 Plastic Sheet",
+      "partNumber": "228-2500-2712",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x12 Plastic Sheet (228-2500-2712).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/6x12-plastic-sheet-228-2500-2712.png"
+    },
+    {
+      "id": "228-2500-051",
+      "name": "6x12 Plate",
+      "partNumber": "228-2500-051",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x12 Plate (228-2500-051).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x12-plate-228-2500-051.png"
+    },
+    {
+      "id": "228-2500-478",
+      "name": "6x2x2 Tee Beam",
+      "partNumber": "228-2500-478",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x2x2 Tee Beam (228-2500-478).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x2x2-tee-beam-228-2500-478.png"
+    },
+    {
+      "id": "228-2500-2000",
+      "name": "6x6 Hexagon Plate",
+      "partNumber": "228-2500-2000",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x6 Hexagon Plate (228-2500-2000).step",
+      "thumbnailUrl": "/part-library/thumbnails/6x6-hexagon-plate-228-2500-2000.png"
+    },
+    {
+      "id": "228-2500-2711",
+      "name": "6x6 Plastic Sheet",
+      "partNumber": "228-2500-2711",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/6x6 Plastic Sheet (228-2500-2711).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/6x6-plastic-sheet-228-2500-2711.png"
+    },
+    {
+      "id": "228-2500-2227",
+      "name": "7x Pitch Capped Shaft",
+      "partNumber": "228-2500-2227",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/7x Pitch Capped Shaft (228-2500-2227).step",
+      "thumbnailUrl": "/part-library/thumbnails/7x-pitch-capped-shaft-228-2500-2227.png"
+    },
+    {
+      "id": "228-2500-123",
+      "name": "7x Pitch Shaft",
+      "partNumber": "228-2500-123",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/7x Pitch Shaft (228-2500-123).step",
+      "thumbnailUrl": "/part-library/thumbnails/7x-pitch-shaft-228-2500-123.png"
+    },
+    {
+      "id": "228-2500-1117",
+      "name": "7x9x11 (6-8-10 Triangle) Truss Plate",
+      "partNumber": "228-2500-1117",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/7x9x11 (6-8-10 Triangle) Truss Plate (228-2500-1117).step",
+      "thumbnailUrl": "/part-library/thumbnails/7x9x11-6-8-10-triangle-truss-plate-228-2500-1117.png"
+    },
+    {
+      "id": "228-2500-2180",
+      "name": "8 Tooth High Strength Hybrid Gear",
+      "partNumber": "228-2500-2180",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/8 Tooth High Strength Hybrid Gear (228-2500-2180).step",
+      "thumbnailUrl": "/part-library/thumbnails/8-tooth-high-strength-hybrid-gear-228-2500-2180.png"
+    },
+    {
+      "id": "228-2500-232",
+      "name": "8 Tooth Sprocket",
+      "partNumber": "228-2500-232",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/8 Tooth Sprocket (228-2500-232).step",
+      "thumbnailUrl": "/part-library/thumbnails/8-tooth-sprocket-228-2500-232.png"
+    },
+    {
+      "id": "228-2500-2228",
+      "name": "8x Pitch Capped Shaft",
+      "partNumber": "228-2500-2228",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/8x Pitch Capped Shaft (228-2500-2228).step",
+      "thumbnailUrl": "/part-library/thumbnails/8x-pitch-capped-shaft-228-2500-2228.png"
+    },
+    {
+      "id": "228-2500-124",
+      "name": "8x Pitch Shaft",
+      "partNumber": "228-2500-124",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/8x Pitch Shaft (228-2500-124).step",
+      "thumbnailUrl": "/part-library/thumbnails/8x-pitch-shaft-228-2500-124.png"
+    },
+    {
+      "id": "228-2500-1061",
+      "name": "8x Pitch Standoff",
+      "partNumber": "228-2500-1061",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/8x Pitch Standoff (228-2500-1061).step",
+      "thumbnailUrl": "/part-library/thumbnails/8x-pitch-standoff-228-2500-1061.png"
+    },
+    {
+      "id": "228-2500-178",
+      "name": "90 Degree Standoff Connector",
+      "partNumber": "228-2500-178",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/90 Degree Standoff Connector (228-2500-178).step",
+      "thumbnailUrl": "/part-library/thumbnails/90-degree-standoff-connector-228-2500-178.png"
+    },
+    {
+      "id": "228-2500-2229",
+      "name": "9x Pitch Capped Shaft",
+      "partNumber": "228-2500-2229",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/9x Pitch Capped Shaft (228-2500-2229).step",
+      "thumbnailUrl": "/part-library/thumbnails/9x-pitch-capped-shaft-228-2500-2229.png"
+    },
+    {
+      "id": "228-2500-260",
+      "name": "9x Pitch Shaft",
+      "partNumber": "228-2500-260",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/9x Pitch Shaft (228-2500-260).step",
+      "thumbnailUrl": "/part-library/thumbnails/9x-pitch-shaft-228-2500-260.png"
+    },
+    {
+      "id": "228-2500-2010",
+      "name": "9x4.5 Solar Flat Panel",
+      "partNumber": "228-2500-2010",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/9x4.5 Solar Flat Panel (228-2500-2010).step",
+      "thumbnailUrl": "/part-library/thumbnails/9x4-5-solar-flat-panel-228-2500-2010.png"
+    },
+    {
+      "id": "228-2500-1700",
+      "name": "Airplane Nose Hook",
+      "partNumber": "228-2500-1700",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Airplane Nose Hook (228-2500-1700).step",
+      "thumbnailUrl": "/part-library/thumbnails/airplane-nose-hook-228-2500-1700.png"
+    },
+    {
+      "id": "228-2500-316",
+      "name": "Ant Center Plate",
+      "partNumber": "228-2500-316",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ant Center Plate (228-2500-316).step",
+      "thumbnailUrl": "/part-library/thumbnails/ant-center-plate-228-2500-316.png"
+    },
+    {
+      "id": "228-2500-320",
+      "name": "Ant Front Antenna",
+      "partNumber": "228-2500-320",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ant Front Antenna (228-2500-320).step",
+      "thumbnailUrl": "/part-library/thumbnails/ant-front-antenna-228-2500-320.png"
+    },
+    {
+      "id": "228-2500-315",
+      "name": "Ant Front Plate",
+      "partNumber": "228-2500-315",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ant Front Plate (228-2500-315).step",
+      "thumbnailUrl": "/part-library/thumbnails/ant-front-plate-228-2500-315.png"
+    },
+    {
+      "id": "228-2500-321",
+      "name": "Ant Rear Antenna",
+      "partNumber": "228-2500-321",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ant Rear Antenna (228-2500-321).step",
+      "thumbnailUrl": "/part-library/thumbnails/ant-rear-antenna-228-2500-321.png"
+    },
+    {
+      "id": "228-2500-317",
+      "name": "Ant Rear Plate",
+      "partNumber": "228-2500-317",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ant Rear Plate (228-2500-317).step",
+      "thumbnailUrl": "/part-library/thumbnails/ant-rear-plate-228-2500-317.png"
+    },
+    {
+      "id": "228-2500-319",
+      "name": "Ant Wheel - 86mm",
+      "partNumber": "228-2500-319",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ant Wheel - 86mm (228-2500-319).step",
+      "thumbnailUrl": "/part-library/thumbnails/ant-wheel-86mm-228-2500-319.png"
+    },
+    {
+      "id": "228-2500-318",
+      "name": "Ant Wheel - 96mm",
+      "partNumber": "228-2500-318",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ant Wheel - 96mm (228-2500-318).step",
+      "thumbnailUrl": "/part-library/thumbnails/ant-wheel-96mm-228-2500-318.png"
+    },
+    {
+      "id": "228-2500-294",
+      "name": "Ball Machine Claw",
+      "partNumber": "228-2500-294",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ball Machine Claw (228-2500-294).step",
+      "thumbnailUrl": "/part-library/thumbnails/ball-machine-claw-228-2500-294.png"
+    },
+    {
+      "id": "228-2500-1660",
+      "name": "Ball Pin Bushing",
+      "partNumber": "228-2500-1660",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Ball Pin Bushing (228-2500-1660).step",
+      "thumbnailUrl": "/part-library/thumbnails/ball-pin-bushing-228-2500-1660.png"
+    },
+    {
+      "id": "228-2500-291",
+      "name": "Blank Award, VIQC Team Number Plate",
+      "partNumber": "228-2500-291",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Blank Award, VIQC Team Number Plate (228-2500-291).step",
+      "thumbnailUrl": "/part-library/thumbnails/blank-award-viqc-team-number-plate-228-2500-291.png"
+    },
+    {
+      "id": "228-2500-292",
+      "name": "Blank VRC, VEXU Team Number Plate",
+      "partNumber": "228-2500-292",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Blank VRC, VEXU Team Number Plate (228-2500-292).step",
+      "thumbnailUrl": "/part-library/thumbnails/blank-vrc-vexu-team-number-plate-228-2500-292.png"
+    },
+    {
+      "id": "228-2500-290",
+      "name": "Blank Year Plate",
+      "partNumber": "228-2500-290",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Blank Year Plate (228-2500-290).step",
+      "thumbnailUrl": "/part-library/thumbnails/blank-year-plate-228-2500-290.png"
+    },
+    {
+      "id": "228-2500-158",
+      "name": "Cable Anchor",
+      "partNumber": "228-2500-158",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Cable Anchor (228-2500-158).step",
+      "thumbnailUrl": "/part-library/thumbnails/cable-anchor-228-2500-158.png"
+    },
+    {
+      "id": "228-2500-1303",
+      "name": "Cam Follower",
+      "partNumber": "228-2500-1303",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Cam Follower (228-2500-1303).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/cam-follower-228-2500-1303.png"
+    },
+    {
+      "id": "228-2500-230",
+      "name": "Chain Link",
+      "partNumber": "228-2500-230",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Chain Link (228-2500-230).step",
+      "thumbnailUrl": "/part-library/thumbnails/chain-link-228-2500-230.png"
+    },
+    {
+      "id": "228-2500-355",
+      "name": "Dial Knob",
+      "partNumber": "228-2500-355",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Dial Knob (228-2500-355).step",
+      "thumbnailUrl": "/part-library/thumbnails/dial-knob-228-2500-355.png"
+    },
+    {
+      "id": "228-2500-245",
+      "name": "Differential Gear",
+      "partNumber": "228-2500-245",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Differential Gear (228-2500-245).step",
+      "thumbnailUrl": "/part-library/thumbnails/differential-gear-228-2500-245.png"
+    },
+    {
+      "id": "228-2500-347",
+      "name": "Differential Gear (High Strength)",
+      "partNumber": "228-2500-347",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Differential Gear (High Strength) (228-2500-347).step",
+      "thumbnailUrl": "/part-library/thumbnails/differential-gear-high-strength-228-2500-347.png"
+    },
+    {
+      "id": "228-2500-270",
+      "name": "Double 1x Wide, 1x1 Corner Connector",
+      "partNumber": "228-2500-270",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Double 1x Wide, 1x1 Corner Connector (228-2500-270).step",
+      "thumbnailUrl": "/part-library/thumbnails/double-1x-wide-1x1-corner-connector-228-2500-270.png"
+    },
+    {
+      "id": "228-2500-272",
+      "name": "Double 1x Wide, 2x1 Corner Connector",
+      "partNumber": "228-2500-272",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Double 1x Wide, 2x1 Corner Connector (228-2500-272).step",
+      "thumbnailUrl": "/part-library/thumbnails/double-1x-wide-2x1-corner-connector-228-2500-272.png"
+    },
+    {
+      "id": "228-2500-259",
+      "name": "Double 2x Wide, 0.5in Pipe Connector",
+      "partNumber": "228-2500-259",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Double 2x Wide, 0.5in Pipe Connector (228-2500-259).step",
+      "thumbnailUrl": "/part-library/thumbnails/double-2x-wide-0-5in-pipe-connector-228-2500-259.png"
+    },
+    {
+      "id": "228-2500-271",
+      "name": "Double 2x Wide, 1x2 Corner Connector",
+      "partNumber": "228-2500-271",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Double 2x Wide, 1x2 Corner Connector (228-2500-271).step",
+      "thumbnailUrl": "/part-library/thumbnails/double-2x-wide-1x2-corner-connector-228-2500-271.png"
+    },
+    {
+      "id": "228-2500-274",
+      "name": "Double 2x Wide, 1x2 Offset Corner Connector",
+      "partNumber": "228-2500-274",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Double 2x Wide, 1x2 Offset Corner Connector (228-2500-274).step",
+      "thumbnailUrl": "/part-library/thumbnails/double-2x-wide-1x2-offset-corner-connector-228-2500-274.png"
+    },
+    {
+      "id": "228-2500-220",
+      "name": "Double 2x Wide, 2x2 Corner Connector",
+      "partNumber": "228-2500-220",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Double 2x Wide, 2x2 Corner Connector (228-2500-220).step",
+      "thumbnailUrl": "/part-library/thumbnails/double-2x-wide-2x2-corner-connector-228-2500-220.png"
+    },
+    {
+      "id": "228-2500-277",
+      "name": "Double 2x Wide, 2x2 Double Offset Corner Connector",
+      "partNumber": "228-2500-277",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Double 2x Wide, 2x2 Double Offset Corner Connector (228-2500-277).step",
+      "thumbnailUrl": "/part-library/thumbnails/double-2x-wide-2x2-double-offset-corner-connector-228-2500-277.png"
+    },
+    {
+      "id": "228-2500-160",
+      "name": "Dual Motor Support Cap",
+      "partNumber": "228-2500-160",
+      "category": "Electronics",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Dual Motor Support Cap (228-2500-160).step",
+      "thumbnailUrl": "/part-library/thumbnails/dual-motor-support-cap-228-2500-160.png"
+    },
+    {
+      "id": "228-2500-2120",
+      "name": "Dual R5, Left Curve Filler Panel",
+      "partNumber": "228-2500-2120",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Dual R5, Left Curve Filler Panel (228-2500-2120).step",
+      "thumbnailUrl": "/part-library/thumbnails/dual-r5-left-curve-filler-panel-228-2500-2120.png"
+    },
+    {
+      "id": "228-2500-2121",
+      "name": "Dual R5, Right Curve Filler Panel",
+      "partNumber": "228-2500-2121",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Dual R5, Right Curve Filler Panel (228-2500-2121).step",
+      "thumbnailUrl": "/part-library/thumbnails/dual-r5-right-curve-filler-panel-228-2500-2121.png"
+    },
+    {
+      "id": "228-2500-172",
+      "name": "End Standoff Connector",
+      "partNumber": "228-2500-172",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/End Standoff Connector (228-2500-172).step",
+      "thumbnailUrl": "/part-library/thumbnails/end-standoff-connector-228-2500-172.png"
+    },
+    {
+      "id": "228-2500-298",
+      "name": "Fork Lift Beam",
+      "partNumber": "228-2500-298",
+      "category": "Beams",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Fork Lift Beam (228-2500-298).step",
+      "thumbnailUrl": "/part-library/thumbnails/fork-lift-beam-228-2500-298.png"
+    },
+    {
+      "id": "228-2500-354",
+      "name": "Hand Knob",
+      "partNumber": "228-2500-354",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Hand Knob (228-2500-354).step",
+      "thumbnailUrl": "/part-library/thumbnails/hand-knob-228-2500-354.png"
+    },
+    {
+      "id": "228-2500-473",
+      "name": "Hand Knob",
+      "partNumber": "228-2500-473",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Hand Knob (228-2500-473).step",
+      "thumbnailUrl": "/part-library/thumbnails/hand-knob-228-2500-473.png"
+    },
+    {
+      "id": "228-2500-289",
+      "name": "Hex Cup Half",
+      "partNumber": "228-2500-289",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Hex Cup Half (228-2500-289).step",
+      "thumbnailUrl": "/part-library/thumbnails/hex-cup-half-228-2500-289.png"
+    },
+    {
+      "id": "228-2500-297",
+      "name": "Hexcalator Wheel",
+      "partNumber": "228-2500-297",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Hexcalator Wheel (228-2500-297).step",
+      "thumbnailUrl": "/part-library/thumbnails/hexcalator-wheel-228-2500-297.png"
+    },
+    {
+      "id": "228-2500-225",
+      "name": "Inner Twist Lock Collar",
+      "partNumber": "228-2500-225",
+      "category": "Shaft Hardware",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Inner Twist Lock Collar (228-2500-225).step",
+      "thumbnailUrl": "/part-library/thumbnails/inner-twist-lock-collar-228-2500-225.png"
+    },
+    {
+      "id": "228-2500-1306",
+      "name": "Large 1x Pitch Drop Cam",
+      "partNumber": "228-2500-1306",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large 1x Pitch Drop Cam (228-2500-1306).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-1x-pitch-drop-cam-228-2500-1306.png"
+    },
+    {
+      "id": "228-2500-126",
+      "name": "Large Chassis Corner Connector",
+      "partNumber": "228-2500-126",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Chassis Corner Connector (228-2500-126).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-chassis-corner-connector-228-2500-126.png"
+    },
+    {
+      "id": "228-2500-1394",
+      "name": "Large Spring Dart",
+      "partNumber": "228-2500-1394",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Spring Dart (228-2500-1394).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-spring-dart-228-2500-1394.png"
+    },
+    {
+      "id": "228-2500-194",
+      "name": "Large Turntable Center Bushing",
+      "partNumber": "228-2500-194",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Turntable Center Bushing (228-2500-194).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-turntable-center-bushing-228-2500-194.png"
+    },
+    {
+      "id": "228-2500-195",
+      "name": "Large Turntable Outer Housing",
+      "partNumber": "228-2500-195",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Turntable Outer Housing (228-2500-195).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-turntable-outer-housing-228-2500-195.png"
+    },
+    {
+      "id": "228-2500-2023",
+      "name": "Large Vehicle Cab 4x Wide Windshield",
+      "partNumber": "228-2500-2023",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Vehicle Cab 4x Wide Windshield (228-2500-2023).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-vehicle-cab-4x-wide-windshield-228-2500-2023.png"
+    },
+    {
+      "id": "228-2500-2021",
+      "name": "Large Vehicle Cab Left Panel",
+      "partNumber": "228-2500-2021",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Vehicle Cab Left Panel (228-2500-2021).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-vehicle-cab-left-panel-228-2500-2021.png"
+    },
+    {
+      "id": "228-2500-2022",
+      "name": "Large Vehicle Cab Right Panel",
+      "partNumber": "228-2500-2022",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Vehicle Cab Right Panel (228-2500-2022).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-vehicle-cab-right-panel-228-2500-2022.png"
+    },
+    {
+      "id": "228-2500-1211",
+      "name": "Large Wheel Hub (64 mm)",
+      "partNumber": "228-2500-1211",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Wheel Hub (64 mm) (228-2500-1211).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-wheel-hub-64-mm-228-2500-1211.png"
+    },
+    {
+      "id": "228-2500-211",
+      "name": "Large Wheel Hub (64 mm)",
+      "partNumber": "228-2500-211",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Large Wheel Hub (64 mm) (228-2500-211).step",
+      "thumbnailUrl": "/part-library/thumbnails/large-wheel-hub-64-mm-228-2500-211.png"
+    },
+    {
+      "id": "228-2500-2013",
+      "name": "Left Shuttle Panel",
+      "partNumber": "228-2500-2013",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Left Shuttle Panel (228-2500-2013).step",
+      "thumbnailUrl": "/part-library/thumbnails/left-shuttle-panel-228-2500-2013.png"
+    },
+    {
+      "id": "228-2500-217",
+      "name": "Linear Slide",
+      "partNumber": "228-2500-217",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Linear Slide (228-2500-217).step",
+      "thumbnailUrl": "/part-library/thumbnails/linear-slide-228-2500-217.png"
+    },
+    {
+      "id": "228-2500-242",
+      "name": "Long Intake Flap",
+      "partNumber": "228-2500-242",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Long Intake Flap (228-2500-242).step",
+      "thumbnailUrl": "/part-library/thumbnails/long-intake-flap-228-2500-242.png"
+    },
+    {
+      "id": "228-2500-477",
+      "name": "Medium Dial Knob",
+      "partNumber": "228-2500-477",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Medium Dial Knob (228-2500-477).step",
+      "thumbnailUrl": "/part-library/thumbnails/medium-dial-knob-228-2500-477.png"
+    },
+    {
+      "id": "228-2500-241",
+      "name": "Medium Intake Flap",
+      "partNumber": "228-2500-241",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Medium Intake Flap (228-2500-241).step",
+      "thumbnailUrl": "/part-library/thumbnails/medium-intake-flap-228-2500-241.png"
+    },
+    {
+      "id": "228-2500-1911",
+      "name": "Medium Rocket Engine Nozzle",
+      "partNumber": "228-2500-1911",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Medium Rocket Engine Nozzle (228-2500-1911).step",
+      "thumbnailUrl": "/part-library/thumbnails/medium-rocket-engine-nozzle-228-2500-1911.png"
+    },
+    {
+      "id": "228-2500-170",
+      "name": "Mini Standoff Connector",
+      "partNumber": "228-2500-170",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Mini Standoff Connector (228-2500-170).step",
+      "thumbnailUrl": "/part-library/thumbnails/mini-standoff-connector-228-2500-170.png"
+    },
+    {
+      "id": "228-2500-1859",
+      "name": "Minifigure Seat (Snap Mount)",
+      "partNumber": "228-2500-1859",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Minifigure Seat (Snap Mount) (228-2500-1859).step",
+      "thumbnailUrl": "/part-library/thumbnails/minifigure-seat-snap-mount-228-2500-1859.png"
+    },
+    {
+      "id": "228-2500-1853",
+      "name": "Minifigure Shoulder Pin",
+      "partNumber": "228-2500-1853",
+      "category": "Pins",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Minifigure Shoulder Pin (228-2500-1853).step",
+      "thumbnailUrl": "/part-library/thumbnails/minifigure-shoulder-pin-228-2500-1853.png"
+    },
+    {
+      "id": "228-2500-226",
+      "name": "Outer Twist Lock Collar",
+      "partNumber": "228-2500-226",
+      "category": "Shaft Hardware",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Outer Twist Lock Collar (228-2500-226).step",
+      "thumbnailUrl": "/part-library/thumbnails/outer-twist-lock-collar-228-2500-226.png"
+    },
+    {
+      "id": "228-2500-1446",
+      "name": "Propeller Clutch (CCW)",
+      "partNumber": "228-2500-1446",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Propeller Clutch (CCW) (228-2500-1446).step",
+      "thumbnailUrl": "/part-library/thumbnails/propeller-clutch-ccw-228-2500-1446.png"
+    },
+    {
+      "id": "228-2500-1258",
+      "name": "Quad 2x Wide, 2x2 Corner Connector",
+      "partNumber": "228-2500-1258",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Quad 2x Wide, 2x2 Corner Connector (228-2500-1258).step",
+      "thumbnailUrl": "/part-library/thumbnails/quad-2x-wide-2x2-corner-connector-228-2500-1258.png"
+    },
+    {
+      "id": "228-2500-287",
+      "name": "Racer Nose Panel",
+      "partNumber": "228-2500-287",
+      "category": "Panels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Racer Nose Panel (228-2500-287).step",
+      "thumbnailUrl": "/part-library/thumbnails/racer-nose-panel-228-2500-287.png"
+    },
+    {
+      "id": "228-2500-288",
+      "name": "Racer Windscreen",
+      "partNumber": "228-2500-288",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Racer Windscreen (228-2500-288).step",
+      "thumbnailUrl": "/part-library/thumbnails/racer-windscreen-228-2500-288.png"
+    },
+    {
+      "id": "228-2500-216",
+      "name": "Rack Gear",
+      "partNumber": "228-2500-216",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Rack Gear (228-2500-216).step",
+      "thumbnailUrl": "/part-library/thumbnails/rack-gear-228-2500-216.png"
+    },
+    {
+      "id": "228-2500-2012",
+      "name": "Right Shuttle Wing",
+      "partNumber": "228-2500-2012",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Right Shuttle Wing (228-2500-2012).step",
+      "thumbnailUrl": "/part-library/thumbnails/right-shuttle-wing-228-2500-2012.png"
+    },
+    {
+      "id": "228-2500-157",
+      "name": "Rubber Band Anchor",
+      "partNumber": "228-2500-157",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Rubber Band Anchor (228-2500-157).step",
+      "thumbnailUrl": "/part-library/thumbnails/rubber-band-anchor-228-2500-157.png"
+    },
+    {
+      "id": "228-2500-143",
+      "name": "Rubber Shaft Collar",
+      "partNumber": "228-2500-143",
+      "category": "Shaft Hardware",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Rubber Shaft Collar (228-2500-143).step",
+      "thumbnailUrl": "/part-library/thumbnails/rubber-shaft-collar-228-2500-143.png"
+    },
+    {
+      "id": "228-2500-168",
+      "name": "Rubber Shaft Collar v1",
+      "partNumber": "228-2500-168",
+      "category": "Shaft Hardware",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Rubber Shaft Collar v1 (228-2500-168).step",
+      "thumbnailUrl": "/part-library/thumbnails/rubber-shaft-collar-v1-228-2500-168.png"
+    },
+    {
+      "id": "228-2500-312",
+      "name": "Scarab Front Shell",
+      "partNumber": "228-2500-312",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Scarab Front Shell (228-2500-312).step",
+      "thumbnailUrl": "/part-library/thumbnails/scarab-front-shell-228-2500-312.png"
+    },
+    {
+      "id": "228-2500-310",
+      "name": "Scarab Leg",
+      "partNumber": "228-2500-310",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Scarab Leg (228-2500-310).step",
+      "thumbnailUrl": "/part-library/thumbnails/scarab-leg-228-2500-310.png"
+    },
+    {
+      "id": "228-2500-313",
+      "name": "Scarab Rear Shell",
+      "partNumber": "228-2500-313",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Scarab Rear Shell (228-2500-313).step",
+      "thumbnailUrl": "/part-library/thumbnails/scarab-rear-shell-228-2500-313.png"
+    },
+    {
+      "id": "228-2500-243",
+      "name": "Scarab Thrust Washer for 60 Tooth Gear",
+      "partNumber": "228-2500-243",
+      "category": "Shaft Hardware",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Scarab Thrust Washer for 60 Tooth Gear (228-2500-243).step",
+      "thumbnailUrl": "/part-library/thumbnails/scarab-thrust-washer-for-60-tooth-gear-228-2500-243.png"
+    },
+    {
+      "id": "228-2500-311",
+      "name": "Scarab Top Shell",
+      "partNumber": "228-2500-311",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Scarab Top Shell (228-2500-311).step",
+      "thumbnailUrl": "/part-library/thumbnails/scarab-top-shell-228-2500-311.png"
+    },
+    {
+      "id": "228-2500-125",
+      "name": "Shaft Bushing",
+      "partNumber": "228-2500-125",
+      "category": "Shafts",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Shaft Bushing (228-2500-125).step",
+      "thumbnailUrl": "/part-library/thumbnails/shaft-bushing-228-2500-125.png"
+    },
+    {
+      "id": "228-2500-240",
+      "name": "Short Intake Flap",
+      "partNumber": "228-2500-240",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Short Intake Flap (228-2500-240).step",
+      "thumbnailUrl": "/part-library/thumbnails/short-intake-flap-228-2500-240.png"
+    },
+    {
+      "id": "228-2500-1411",
+      "name": "Short Low-Profile Pawl",
+      "partNumber": "228-2500-1411",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Short Low-Profile Pawl (228-2500-1411).step",
+      "thumbnailUrl": "/part-library/thumbnails/short-low-profile-pawl-228-2500-1411.png"
+    },
+    {
+      "id": "228-2500-470",
+      "name": "Silicone Rubber Band #117B",
+      "partNumber": "228-2500-470",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Silicone Rubber Band #117B (228-2500-470).step",
+      "thumbnailUrl": "/part-library/thumbnails/silicone-rubber-band-117b-228-2500-470.png"
+    },
+    {
+      "id": "228-2500-468",
+      "name": "Silicone Rubber Band #32",
+      "partNumber": "228-2500-468",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Silicone Rubber Band #32 (228-2500-468).step",
+      "thumbnailUrl": "/part-library/thumbnails/silicone-rubber-band-32-228-2500-468.png"
+    },
+    {
+      "id": "228-2500-475",
+      "name": "Silicone Rubber Band #64",
+      "partNumber": "228-2500-475",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Silicone Rubber Band #64 (228-2500-475).step",
+      "thumbnailUrl": "/part-library/thumbnails/silicone-rubber-band-64-228-2500-475.png"
+    },
+    {
+      "id": "228-2500-474",
+      "name": "Silicone Rubber Band Thin #64 (Use 468)",
+      "partNumber": "228-2500-474",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Silicone Rubber Band Thin #64 (Use 468) (228-2500-474).step",
+      "thumbnailUrl": "/part-library/thumbnails/silicone-rubber-band-thin-64-use-468-228-2500-474.png"
+    },
+    {
+      "id": "228-2500-159",
+      "name": "Single Motor Support Cap",
+      "partNumber": "228-2500-159",
+      "category": "Electronics",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Single Motor Support Cap (228-2500-159).step",
+      "thumbnailUrl": "/part-library/thumbnails/single-motor-support-cap-228-2500-159.png"
+    },
+    {
+      "id": "228-2500-299",
+      "name": "Skyhook Hood",
+      "partNumber": "228-2500-299",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Skyhook Hood (228-2500-299).step",
+      "thumbnailUrl": "/part-library/thumbnails/skyhook-hood-228-2500-299.png"
+    },
+    {
+      "id": "228-2500-1305",
+      "name": "Small 2x Pitch Drop Cam",
+      "partNumber": "228-2500-1305",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small 2x Pitch Drop Cam (228-2500-1305).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/small-2x-pitch-drop-cam-228-2500-1305.png"
+    },
+    {
+      "id": "228-2500-1907",
+      "name": "Small Auger Drill Bit",
+      "partNumber": "228-2500-1907",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small Auger Drill Bit (228-2500-1907).step",
+      "thumbnailUrl": "/part-library/thumbnails/small-auger-drill-bit-228-2500-1907.png"
+    },
+    {
+      "id": "228-2500-127",
+      "name": "Small Chassis Corner Connector",
+      "partNumber": "228-2500-127",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small Chassis Corner Connector (228-2500-127).step",
+      "thumbnailUrl": "/part-library/thumbnails/small-chassis-corner-connector-228-2500-127.png"
+    },
+    {
+      "id": "228-2500-1908",
+      "name": "Small Gripper Actuator",
+      "partNumber": "228-2500-1908",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small Gripper Actuator (228-2500-1908).step",
+      "thumbnailUrl": "/part-library/thumbnails/small-gripper-actuator-228-2500-1908.png"
+    },
+    {
+      "id": "228-2500-191",
+      "name": "Small Turntable Center Bushing",
+      "partNumber": "228-2500-191",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small Turntable Center Bushing (228-2500-191).step",
+      "thumbnailUrl": "/part-library/thumbnails/small-turntable-center-bushing-228-2500-191.png"
+    },
+    {
+      "id": "228-2500-193",
+      "name": "Small Turntable Outer Housing",
+      "partNumber": "228-2500-193",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small Turntable Outer Housing (228-2500-193).step",
+      "thumbnailUrl": "/part-library/thumbnails/small-turntable-outer-housing-228-2500-193.png"
+    },
+    {
+      "id": "228-2500-1208",
+      "name": "Small Wheel Hub (44 mm)",
+      "partNumber": "228-2500-1208",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small Wheel Hub (44 mm) (228-2500-1208).step",
+      "thumbnailUrl": "/part-library/thumbnails/small-wheel-hub-44-mm-228-2500-1208.png"
+    },
+    {
+      "id": "228-2500-208",
+      "name": "Small Wheel Hub (44 mm)",
+      "partNumber": "228-2500-208",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Small Wheel Hub (44 mm) (228-2500-208).step",
+      "thumbnailUrl": "/part-library/thumbnails/small-wheel-hub-44-mm-228-2500-208.png"
+    },
+    {
+      "id": "228-2500-229",
+      "name": "Spider 48 Tooth Ring Gear",
+      "partNumber": "228-2500-229",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Spider 48 Tooth Ring Gear (228-2500-229).step",
+      "thumbnailUrl": "/part-library/thumbnails/spider-48-tooth-ring-gear-228-2500-229.png"
+    },
+    {
+      "id": "228-2500-307",
+      "name": "Spider Face Plate",
+      "partNumber": "228-2500-307",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Spider Face Plate (228-2500-307).step",
+      "thumbnailUrl": "/part-library/thumbnails/spider-face-plate-228-2500-307.png"
+    },
+    {
+      "id": "228-2500-306",
+      "name": "Spider Leg",
+      "partNumber": "228-2500-306",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Spider Leg (228-2500-306).step",
+      "thumbnailUrl": "/part-library/thumbnails/spider-leg-228-2500-306.png"
+    },
+    {
+      "id": "228-2500-308",
+      "name": "Spider Top Plate - Front",
+      "partNumber": "228-2500-308",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Spider Top Plate - Front (228-2500-308).step",
+      "thumbnailUrl": "/part-library/thumbnails/spider-top-plate-front-228-2500-308.png"
+    },
+    {
+      "id": "228-2500-309",
+      "name": "Spider Top Plate - Rear",
+      "partNumber": "228-2500-309",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Spider Top Plate - Rear (228-2500-309).step",
+      "thumbnailUrl": "/part-library/thumbnails/spider-top-plate-rear-228-2500-309.png"
+    },
+    {
+      "id": "228-2500-171",
+      "name": "Straight Standoff Connector",
+      "partNumber": "228-2500-171",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Straight Standoff Connector (228-2500-171).step",
+      "thumbnailUrl": "/part-library/thumbnails/straight-standoff-connector-228-2500-171.png"
+    },
+    {
+      "id": "228-2500-302",
+      "name": "Strandbeast Face Plate",
+      "partNumber": "228-2500-302",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Strandbeast Face Plate (228-2500-302).step",
+      "thumbnailUrl": "/part-library/thumbnails/strandbeast-face-plate-228-2500-302.png"
+    },
+    {
+      "id": "228-2500-301",
+      "name": "Strandbeast Leg",
+      "partNumber": "228-2500-301",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Strandbeast Leg (228-2500-301).step",
+      "thumbnailUrl": "/part-library/thumbnails/strandbeast-leg-228-2500-301.png"
+    },
+    {
+      "id": "228-2500-300",
+      "name": "Strandbeast Shoulder Blade",
+      "partNumber": "228-2500-300",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Strandbeast Shoulder Blade (228-2500-300).step",
+      "thumbnailUrl": "/part-library/thumbnails/strandbeast-shoulder-blade-228-2500-300.png"
+    },
+    {
+      "id": "228-2500-303",
+      "name": "Strandbeast Spine Arch",
+      "partNumber": "228-2500-303",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Strandbeast Spine Arch (228-2500-303).step",
+      "thumbnailUrl": "/part-library/thumbnails/strandbeast-spine-arch-228-2500-303.png"
+    },
+    {
+      "id": "228-2500-231",
+      "name": "Tank Tread, Attachment Link",
+      "partNumber": "228-2500-231",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Tank Tread, Attachment Link (228-2500-231).step",
+      "thumbnailUrl": "/part-library/thumbnails/tank-tread-attachment-link-228-2500-231.png"
+    },
+    {
+      "id": "228-2500-207",
+      "name": "Tire (100 mm Travel)",
+      "partNumber": "228-2500-207",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Tire (100 mm Travel) (228-2500-207).step",
+      "thumbnailUrl": "/part-library/thumbnails/tire-100-mm-travel-228-2500-207.png"
+    },
+    {
+      "id": "228-2500-210",
+      "name": "Tire (160 mm Travel)",
+      "partNumber": "228-2500-210",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Tire (160 mm Travel) (228-2500-210).step",
+      "thumbnailUrl": "/part-library/thumbnails/tire-160-mm-travel-228-2500-210.png"
+    },
+    {
+      "id": "228-2500-209",
+      "name": "Tire (200 mm Travel)",
+      "partNumber": "228-2500-209",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Tire (200 mm Travel) (228-2500-209).step",
+      "thumbnailUrl": "/part-library/thumbnails/tire-200-mm-travel-228-2500-209.png"
+    },
+    {
+      "id": "228-2500-212",
+      "name": "Tire (250 mm Travel)",
+      "partNumber": "228-2500-212",
+      "category": "Wheels",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Tire (250 mm Travel) (228-2500-212).step",
+      "thumbnailUrl": "/part-library/thumbnails/tire-250-mm-travel-228-2500-212.png"
+    },
+    {
+      "id": "228-2500-296",
+      "name": "Track Tiebar",
+      "partNumber": "228-2500-296",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Track Tiebar (228-2500-296).step",
+      "thumbnailUrl": "/part-library/thumbnails/track-tiebar-228-2500-296.png"
+    },
+    {
+      "id": "228-2500-295",
+      "name": "Track Tiebar with Mounting",
+      "partNumber": "228-2500-295",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Track Tiebar with Mounting (228-2500-295).step",
+      "thumbnailUrl": "/part-library/thumbnails/track-tiebar-with-mounting-228-2500-295.png"
+    },
+    {
+      "id": "228-2500-239",
+      "name": "Traction Link",
+      "partNumber": "228-2500-239",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Traction Link (228-2500-239).step",
+      "thumbnailUrl": "/part-library/thumbnails/traction-link-228-2500-239.png"
+    },
+    {
+      "id": "228-2500-1251",
+      "name": "Triple 1-2-1x Wide, 1x2 Corner Connector",
+      "partNumber": "228-2500-1251",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Triple 1-2-1x Wide, 1x2 Corner Connector (228-2500-1251).step",
+      "thumbnailUrl": "/part-library/thumbnails/triple-1-2-1x-wide-1x2-corner-connector-228-2500-1251.png"
+    },
+    {
+      "id": "228-2500-1250",
+      "name": "Triple 1x Wide, 1x1 Corner Connector",
+      "partNumber": "228-2500-1250",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Triple 1x Wide, 1x1 Corner Connector (228-2500-1250).step",
+      "thumbnailUrl": "/part-library/thumbnails/triple-1x-wide-1x1-corner-connector-228-2500-1250.png"
+    },
+    {
+      "id": "228-2500-1253",
+      "name": "Triple 2x Wide, 2x2 Corner Connector",
+      "partNumber": "228-2500-1253",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Triple 2x Wide, 2x2 Corner Connector (228-2500-1253).step",
+      "thumbnailUrl": "/part-library/thumbnails/triple-2x-wide-2x2-corner-connector-228-2500-1253.png"
+    },
+    {
+      "id": "228-2500-1109",
+      "name": "Truss Standoff Connector",
+      "partNumber": "228-2500-1109",
+      "category": "Standoffs",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Truss Standoff Connector (228-2500-1109).STEP",
+      "thumbnailUrl": "/part-library/thumbnails/truss-standoff-connector-228-2500-1109.png"
+    },
+    {
+      "id": "228-2560",
+      "name": "VEX IQ Smart Motor",
+      "partNumber": "228-2560",
+      "category": "Electronics",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/VEX IQ Smart Motor (228-2560).step",
+      "thumbnailUrl": "/part-library/thumbnails/vex-iq-smart-motor-228-2560.png"
+    },
+    {
+      "id": "228-2500-112",
+      "name": "Washer",
+      "partNumber": "228-2500-112",
+      "category": "Shaft Hardware",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Washer (228-2500-112).step",
+      "thumbnailUrl": "/part-library/thumbnails/washer-228-2500-112.png"
+    },
+    {
+      "id": "228-2500-219",
+      "name": "Worm Gear",
+      "partNumber": "228-2500-219",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Worm Gear (228-2500-219).step",
+      "thumbnailUrl": "/part-library/thumbnails/worm-gear-228-2500-219.png"
+    },
+    {
+      "id": "228-2500-202",
+      "name": "XL Turntable 36 Tooth Ring Gear Bushing",
+      "partNumber": "228-2500-202",
+      "category": "Gears",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/XL Turntable 36 Tooth Ring Gear Bushing (228-2500-202).step",
+      "thumbnailUrl": "/part-library/thumbnails/xl-turntable-36-tooth-ring-gear-bushing-228-2500-202.png"
+    },
+    {
+      "id": "228-2500-199",
+      "name": "XL Turntable Outer Housing",
+      "partNumber": "228-2500-199",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/XL Turntable Outer Housing (228-2500-199).step",
+      "thumbnailUrl": "/part-library/thumbnails/xl-turntable-outer-housing-228-2500-199.png"
+    },
+    {
+      "id": "228-2500-200",
+      "name": "XL Turntable Plain Bushing",
+      "partNumber": "228-2500-200",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/XL Turntable Plain Bushing (228-2500-200).step",
+      "thumbnailUrl": "/part-library/thumbnails/xl-turntable-plain-bushing-228-2500-200.png"
+    },
+    {
+      "id": "228-2500-197",
+      "name": "XL Turntable Spider Bushing",
+      "partNumber": "228-2500-197",
+      "category": "Connectors",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/XL Turntable Spider Bushing (228-2500-197).step",
+      "thumbnailUrl": "/part-library/thumbnails/xl-turntable-spider-bushing-228-2500-197.png"
+    },
+    {
+      "id": "228-2500-196",
+      "name": "XL Turntable Spider Housing",
+      "partNumber": "228-2500-196",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/XL Turntable Spider Housing (228-2500-196).step",
+      "thumbnailUrl": "/part-library/thumbnails/xl-turntable-spider-housing-228-2500-196.png"
+    },
+    {
+      "id": "228-2500-198",
+      "name": "XL Turntable Spider Top Plate",
+      "partNumber": "228-2500-198",
+      "category": "Plates",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/XL Turntable Spider Top Plate (228-2500-198).step",
+      "thumbnailUrl": "/part-library/thumbnails/xl-turntable-spider-top-plate-228-2500-198.png"
+    },
+    {
+      "id": "228-2500-1447",
+      "name": "Zip Flyer Propeller (CCW)",
+      "partNumber": "228-2500-1447",
+      "category": "Other",
+      "sourceFile": "VEX-IQ-All-Parts-2024-11-08/Zip Flyer Propeller (CCW) (228-2500-1447).step",
+      "thumbnailUrl": "/part-library/thumbnails/zip-flyer-propeller-ccw-228-2500-1447.png"
+    }
+  ]
+}

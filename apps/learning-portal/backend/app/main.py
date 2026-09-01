@@ -1,4 +1,7 @@
 """RoBoGo Learning Portal — FastAPI application endpoints."""
+import html
+import base64
+import mimetypes
 import re
 import shutil
 import subprocess
@@ -10,12 +13,13 @@ from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .config import Settings, get_settings
 from .models import (
     MATERIAL_DIRECTORY_MAP, MATERIAL_ALLOWED_EXTENSIONS, MATERIAL_DEFAULT_EXTENSIONS,
+    ENGINEERING_NOTEBOOK_SEASON_SPECS,
     User, StudentProfile, ClassGroup, ClassMembership, ClassSession,
     Material, MaterialStep, SessionMaterialAssignment, MaterialViewRecord, AttendanceRecord,
     LoginRequest, StudentCreateRequest, ClassCreateRequest,
@@ -23,6 +27,8 @@ from .models import (
     AssignmentCreateRequest, MaterialUpdateRequest, SessionUpdateRequest,
     PasswordChangeRequest, MaterialOpenRequest, SessionDeleteResponse,
     MaterialStepCreateRequest, MaterialStepUpdateRequest, MaterialStepReorderRequest,
+    EngineeringTeamCreateRequest, EngineeringTeamUpdateRequest, EngineeringTeamMemberRequest, EngineeringNoteWriteRequest,
+    EngineeringMergeProposalCreateRequest,
     PublicUser, SessionRecord,
 )
 from .utils import (
@@ -1743,6 +1749,1093 @@ def student_current_lesson(user: User = Depends(require_student)):
 @app.get("/api/student/review-materials")
 def student_review_materials(user: User = Depends(require_student)):
     return {"materials": build_student_learning_payload(user)["reviewMaterials"]}
+
+
+def _get_active_engineering_membership(connection, team_id: str, student_id: str):
+    return connection.execute(
+        """
+        SELECT membership.id, membership.team_id, membership.student_id,
+               membership.role, membership.status, membership.joined_at
+        FROM engineering_team_memberships membership
+        JOIN engineering_teams team ON team.id = membership.team_id
+        WHERE membership.team_id = ? AND membership.student_id = ?
+          AND membership.status = 'active' AND team.status = 'active'
+        """,
+        (team_id, student_id),
+    ).fetchone()
+
+
+def _engineering_attachments_payload(connection, note_id: str) -> list[dict]:
+    rows = connection.execute(
+        """
+        SELECT id, record_id AS note_id, file_name, file_url, media_type, file_size, created_at
+        FROM competition_engineering_record_attachments
+        WHERE record_id = ? ORDER BY created_at
+        """,
+        (note_id,),
+    ).fetchall()
+    return [
+        {
+            "id": row["id"],
+            "noteId": row["note_id"],
+            "fileName": row["file_name"],
+            "mediaType": row["media_type"],
+            "fileSize": row["file_size"],
+            "createdAt": parse_datetime_value(row["created_at"]).isoformat(),
+            "downloadUrl": f"/api/engineering-note-attachments/{row['id']}/download",
+        }
+        for row in rows
+    ]
+
+
+def _engineering_note_payload(row, attachments: Optional[list[dict]] = None) -> dict:
+    created_at = parse_datetime_value(row["created_at"])
+    return {
+        "id": row["id"],
+        "teamId": row["team_id"],
+        "teamName": row["team_name"],
+        "studentId": row["student_id"],
+        "authorName": row["author_name"],
+        "classSessionId": None,
+        "sessionDate": created_at.date().isoformat(),
+        "recordedAt": created_at.isoformat(),
+        "objective": row["objective"],
+        "workCompleted": row["work_completed"],
+        "reasoning": row["reasoning"],
+        "alternatives": row["alternatives"],
+        "testEvidence": row["test_evidence"],
+        "outcome": row["outcome"],
+        "problems": row["problems"],
+        "resolutionStatus": row["resolution_status"],
+        "resolution": row["resolution"],
+        "unresolvedReason": row["unresolved_reason"],
+        "nextSteps": row["next_steps"],
+        "status": row["status"],
+        "createdAt": created_at.isoformat(),
+        "updatedAt": parse_datetime_value(row["updated_at"]).isoformat(),
+        "submittedAt": None,
+        "attachments": attachments or [],
+    }
+
+
+@app.put("/api/teacher/engineering-teams/{team_id}")
+def update_engineering_team(
+    team_id: str,
+    request: EngineeringTeamUpdateRequest,
+    user: User = Depends(require_teacher),
+):
+    name = request.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Team name is required.")
+    with get_connection() as connection:
+        current = connection.execute(
+            "SELECT id FROM engineering_teams WHERE id = ?",
+            (team_id,),
+        ).fetchone()
+        if current is None:
+            raise HTTPException(status_code=404, detail="Engineering team not found.")
+        connection.execute(
+            "UPDATE engineering_teams SET name = ?, status = ? WHERE id = ?",
+            (name, request.status, team_id),
+        )
+        team = next(item for item in _engineering_teams_payload(connection, [team_id]) if item["id"] == team_id)
+    return {"team": team}
+
+
+def _select_engineering_note(connection, note_id: str):
+    return connection.execute(
+        """
+        SELECT n.*, t.name AS team_name, p.display_name AS author_name
+        FROM competition_engineering_records n
+        JOIN engineering_teams t ON t.id = n.team_id
+        JOIN student_profiles p ON p.id = n.student_id
+        WHERE n.id = ?
+        """,
+        (note_id,),
+    ).fetchone()
+
+
+@app.post("/api/teacher/engineering-teams")
+def create_engineering_team(
+    request: EngineeringTeamCreateRequest,
+    user: User = Depends(require_teacher),
+):
+    name = request.name.strip()
+    team_number = request.team_number.strip().upper()
+    season = request.season.strip()
+    if not name or not team_number or not re.fullmatch(r"\d{4}-\d{4}", season):
+        raise HTTPException(status_code=422, detail="Team name, number, and YYYY-YYYY season are required.")
+
+    team_id = make_id("engineering-team")
+    created_at = now_utc()
+    try:
+        with get_connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO engineering_teams (id, name, team_number, season, status, created_by, created_at)
+                VALUES (?, ?, ?, ?, 'active', ?, ?)
+                """,
+                (team_id, name, team_number, season, user.id, created_at.isoformat()),
+            )
+    except Exception as exc:
+        if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
+            raise HTTPException(status_code=409, detail="This team number already exists for the season.") from exc
+        raise
+    return {
+        "team": {
+            "id": team_id,
+            "name": name,
+            "teamNumber": team_number,
+            "season": season,
+            "status": "active",
+            "members": [],
+            "createdAt": created_at.isoformat(),
+        }
+    }
+
+
+@app.post("/api/teacher/engineering-teams/{team_id}/members")
+def add_engineering_team_member(
+    team_id: str,
+    request: EngineeringTeamMemberRequest,
+    user: User = Depends(require_teacher),
+):
+    joined_at = now_utc()
+    with get_connection() as connection:
+        team = connection.execute(
+            "SELECT id, season FROM engineering_teams WHERE id = ? AND status = 'active'",
+            (team_id,),
+        ).fetchone()
+        if team is None:
+            raise HTTPException(status_code=404, detail="Engineering team not found.")
+        student = connection.execute(
+            "SELECT id, display_name FROM student_profiles WHERE id = ?",
+            (request.student_id,),
+        ).fetchone()
+        if student is None:
+            raise HTTPException(status_code=404, detail="Student not found.")
+        existing_season_team = connection.execute(
+            """
+            SELECT t.id
+            FROM engineering_team_memberships m
+            JOIN engineering_teams t ON t.id = m.team_id
+            WHERE m.student_id = ? AND m.status = 'active' AND t.season = ? AND t.id != ?
+            """,
+            (request.student_id, team["season"], team_id),
+        ).fetchone()
+        if existing_season_team:
+            raise HTTPException(status_code=409, detail="Student already belongs to another team in this season.")
+        existing = connection.execute(
+            "SELECT id, status FROM engineering_team_memberships WHERE team_id = ? AND student_id = ?",
+            (team_id, request.student_id),
+        ).fetchone()
+        if existing and existing["status"] == "active":
+            raise HTTPException(status_code=409, detail="Student is already on this engineering team.")
+        if existing:
+            membership_id = existing["id"]
+            connection.execute(
+                "UPDATE engineering_team_memberships SET status = 'active', role = 'member', joined_at = ? WHERE id = ?",
+                (joined_at.isoformat(), membership_id),
+            )
+        else:
+            membership_id = make_id("engineering-member")
+            connection.execute(
+                """
+                INSERT INTO engineering_team_memberships (id, team_id, student_id, role, status, joined_at)
+                VALUES (?, ?, ?, 'member', 'active', ?)
+                """,
+                (membership_id, team_id, request.student_id, joined_at.isoformat()),
+            )
+    return {
+        "membership": {
+            "id": membership_id,
+            "teamId": team_id,
+            "studentId": request.student_id,
+            "studentName": student["display_name"],
+            "status": "active",
+        }
+    }
+
+
+@app.delete("/api/teacher/engineering-teams/{team_id}/members/{student_id}")
+def remove_engineering_team_member(
+    team_id: str,
+    student_id: str,
+    user: User = Depends(require_teacher),
+):
+    with get_connection() as connection:
+        membership = connection.execute(
+            """
+            SELECT id FROM engineering_team_memberships
+            WHERE team_id = ? AND student_id = ? AND status = 'active'
+            """,
+            (team_id, student_id),
+        ).fetchone()
+        if membership is None:
+            raise HTTPException(status_code=404, detail="Active team membership not found.")
+        connection.execute(
+            "UPDATE engineering_team_memberships SET status = 'inactive' WHERE id = ?",
+            (membership["id"],),
+        )
+    return {"teamId": team_id, "studentId": student_id, "status": "inactive"}
+
+
+def _validate_engineering_note_request(request: EngineeringNoteWriteRequest) -> None:
+    required_values = (request.objective, request.work_completed, request.reasoning, request.outcome)
+    if any(not value.strip() for value in required_values):
+        raise HTTPException(status_code=422, detail="Objective, work completed, reasoning, and outcome are required.")
+    if request.resolution_status == "resolved" and not request.resolution.strip():
+        raise HTTPException(status_code=422, detail="A resolved problem requires the resolution.")
+    if request.resolution_status == "unresolved" and not request.unresolved_reason.strip():
+        raise HTTPException(status_code=422, detail="An unresolved problem requires the reason it remains unresolved.")
+
+
+@app.post("/api/student/engineering-notes")
+def create_engineering_note(
+    request: EngineeringNoteWriteRequest,
+    user: User = Depends(require_student),
+):
+    _validate_engineering_note_request(request)
+    profile = get_student_profile_for_user(user.id)
+    created_at = now_utc()
+    note_id = make_id("engineering-note")
+    with get_connection() as connection:
+        if _get_active_engineering_membership(connection, request.team_id, profile.id) is None:
+            raise HTTPException(status_code=403, detail="Student is not an active member of this engineering team.")
+        connection.execute(
+            """
+            INSERT INTO competition_engineering_records (
+                id, team_id, student_id, objective, work_completed, reasoning,
+                alternatives, test_evidence, outcome, problems, resolution_status, resolution,
+                unresolved_reason, next_steps, status, created_at, updated_at, discarded_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL)
+            """,
+            (
+                note_id, request.team_id, profile.id,
+                request.objective.strip(), request.work_completed.strip(), request.reasoning.strip(),
+                request.alternatives.strip(), request.test_evidence.strip(), request.outcome.strip(),
+                request.problems.strip(), request.resolution_status, request.resolution.strip(),
+                request.unresolved_reason.strip(), request.next_steps.strip(),
+                created_at.isoformat(), created_at.isoformat(),
+            ),
+        )
+        row = _select_engineering_note(connection, note_id)
+    return {"note": _engineering_note_payload(row)}
+
+
+@app.put("/api/student/engineering-notes/{note_id}")
+def update_engineering_note(
+    note_id: str,
+    request: EngineeringNoteWriteRequest,
+    user: User = Depends(require_student),
+):
+    _validate_engineering_note_request(request)
+    profile = get_student_profile_for_user(user.id)
+    with get_connection() as connection:
+        current = connection.execute(
+            "SELECT id, student_id, status, team_id FROM competition_engineering_records WHERE id = ?",
+            (note_id,),
+        ).fetchone()
+        if current is None or current["student_id"] != profile.id:
+            raise HTTPException(status_code=404, detail="Engineering note not found.")
+        if request.team_id != current["team_id"]:
+            raise HTTPException(status_code=409, detail="A record cannot be moved to another team.")
+        if current["status"] == "discarded":
+            raise HTTPException(status_code=409, detail="Restore this record before editing it.")
+        if _get_active_engineering_membership(connection, current["team_id"], profile.id) is None:
+            raise HTTPException(status_code=403, detail="Former team members can only read historical records.")
+        updated_at = now_utc()
+        connection.execute(
+            """
+            UPDATE competition_engineering_records
+            SET objective = ?, work_completed = ?, reasoning = ?, alternatives = ?, test_evidence = ?,
+                outcome = ?, problems = ?, resolution_status = ?, resolution = ?, unresolved_reason = ?,
+                next_steps = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                request.objective.strip(), request.work_completed.strip(), request.reasoning.strip(),
+                request.alternatives.strip(), request.test_evidence.strip(), request.outcome.strip(),
+                request.problems.strip(), request.resolution_status, request.resolution.strip(),
+                request.unresolved_reason.strip(), request.next_steps.strip(), updated_at.isoformat(), note_id,
+            ),
+        )
+        row = _select_engineering_note(connection, note_id)
+    return {"note": _engineering_note_payload(row)}
+
+
+@app.post("/api/student/engineering-notes/{note_id}/attachments")
+async def upload_engineering_note_attachment(
+    note_id: str,
+    file: UploadFile = File(...),
+    user: User = Depends(require_student),
+):
+    profile = get_student_profile_for_user(user.id)
+    original_name = Path(file.filename or "").name
+    suffix = Path(original_name).suffix.lower()
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".webp", ".pdf"}
+    if not original_name or suffix not in allowed_extensions:
+        raise HTTPException(status_code=422, detail="Attach a PNG, JPG, WEBP, or PDF evidence file.")
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=422, detail="Attachment is empty.")
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Attachment must be 10 MB or smaller.")
+    attachment_id = make_id("engineering-attachment")
+    safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", original_name)
+    relative_url = f"{note_id}/{attachment_id}-{safe_name}"
+    created_at = now_utc()
+    with get_connection() as connection:
+        note = connection.execute(
+            "SELECT id, team_id, student_id, status FROM competition_engineering_records WHERE id = ?",
+            (note_id,),
+        ).fetchone()
+        if note is None or note["student_id"] != profile.id:
+            raise HTTPException(status_code=404, detail="Engineering note not found.")
+        if note["status"] == "discarded" or _get_active_engineering_membership(connection, note["team_id"], profile.id) is None:
+            raise HTTPException(status_code=403, detail="This historical record is read-only.")
+        storage_root = settings.materials_storage_dir.parent / "engineering-notebooks"
+        destination = storage_root / relative_url
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(content)
+        media_type = file.content_type or mimetypes.guess_type(original_name)[0] or "application/octet-stream"
+        connection.execute(
+            """
+            INSERT INTO competition_engineering_record_attachments (
+                id, record_id, file_name, file_url, media_type, file_size, uploaded_by, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                attachment_id, note_id, original_name, relative_url, media_type,
+                len(content), profile.id, created_at.isoformat(),
+            ),
+        )
+        attachment = _engineering_attachments_payload(connection, note_id)[-1]
+    return {"attachment": attachment}
+
+
+@app.get("/api/engineering-note-attachments/{attachment_id}/download")
+def download_engineering_note_attachment(
+    attachment_id: str,
+    user: User = Depends(get_current_user),
+):
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT a.id, a.file_name, a.file_url, a.media_type, n.id AS record_id, n.team_id
+            FROM competition_engineering_record_attachments a
+            JOIN competition_engineering_records n ON n.id = a.record_id
+            WHERE a.id = ?
+            """,
+            (attachment_id,),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Engineering note attachment not found.")
+        if user.role == "Student":
+            profile = get_student_profile_for_user(user.id)
+            own_record = connection.execute(
+                "SELECT id FROM competition_engineering_records WHERE id = ? AND student_id = ?",
+                (row["record_id"], profile.id),
+            ).fetchone()
+            membership = connection.execute(
+                "SELECT id FROM engineering_team_memberships WHERE team_id = ? AND student_id = ?",
+                (row["team_id"], profile.id),
+            ).fetchone()
+            if own_record is None and membership is None:
+                raise HTTPException(status_code=403, detail="Student cannot access another team's evidence.")
+    file_path = settings.materials_storage_dir.parent / "engineering-notebooks" / row["file_url"]
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Engineering note attachment file not found.")
+    return FileResponse(
+        file_path,
+        filename=row["file_name"],
+        media_type=row["media_type"],
+        content_disposition_type="inline",
+    )
+
+
+@app.post("/api/student/engineering-notes/{note_id}/submit")
+def submit_engineering_note(note_id: str, user: User = Depends(require_student)):
+    profile = get_student_profile_for_user(user.id)
+    submitted_at = now_utc()
+    with get_connection() as connection:
+        current = connection.execute(
+            "SELECT id, student_id, status FROM competition_engineering_records WHERE id = ?",
+            (note_id,),
+        ).fetchone()
+        if current is None or current["student_id"] != profile.id:
+            raise HTTPException(status_code=404, detail="Engineering note not found.")
+        row = _select_engineering_note(connection, note_id)
+    return {"note": _engineering_note_payload(row)}
+
+
+@app.put("/api/student/engineering-notes/{note_id}/status")
+def update_engineering_note_status(
+    note_id: str,
+    status: Literal["active", "discarded"] = Query(...),
+    user: User = Depends(require_student),
+):
+    profile = get_student_profile_for_user(user.id)
+    changed_at = now_utc()
+    with get_connection() as connection:
+        current = connection.execute(
+            "SELECT id, team_id, student_id FROM competition_engineering_records WHERE id = ?",
+            (note_id,),
+        ).fetchone()
+        if current is None or current["student_id"] != profile.id:
+            raise HTTPException(status_code=404, detail="Engineering note not found.")
+        if _get_active_engineering_membership(connection, current["team_id"], profile.id) is None:
+            raise HTTPException(status_code=403, detail="Former team members cannot change historical records.")
+        connection.execute(
+            """
+            UPDATE competition_engineering_records
+            SET status = ?, discarded_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (status, changed_at.isoformat() if status == "discarded" else None, changed_at.isoformat(), note_id),
+        )
+        row = _select_engineering_note(connection, note_id)
+    return {"note": _engineering_note_payload(row)}
+
+
+def _select_engineering_proposal(connection, proposal_id: str):
+    return connection.execute(
+        """
+        SELECT p.*, t.name AS team_name, t.team_number, t.season,
+               author.display_name AS proposer_name, s.session_date
+        FROM engineering_merge_proposals p
+        JOIN engineering_teams t ON t.id = p.team_id
+        JOIN student_profiles author ON author.id = p.proposed_by
+        JOIN class_sessions s ON s.id = p.class_session_id
+        WHERE p.id = ?
+        """,
+        (proposal_id,),
+    ).fetchone()
+
+
+def _engineering_proposal_payload(connection, row, current_student_id: Optional[str] = None) -> dict:
+    source_rows = connection.execute(
+        """
+        SELECT n.id, n.student_id, author.display_name AS author_name, n.objective, n.updated_at
+        FROM engineering_merge_sources source
+        JOIN engineering_notes n ON n.id = source.note_id
+        JOIN student_profiles author ON author.id = n.student_id
+        WHERE source.proposal_id = ?
+        ORDER BY n.updated_at, n.created_at
+        """,
+        (row["id"],),
+    ).fetchall()
+    confirmation_rows = connection.execute(
+        """
+        SELECT c.student_id, author.display_name AS student_name, c.confirmed_at
+        FROM engineering_merge_confirmations c
+        JOIN student_profiles author ON author.id = c.student_id
+        WHERE c.proposal_id = ?
+        ORDER BY c.confirmed_at
+        """,
+        (row["id"],),
+    ).fetchall()
+    required_author_ids = sorted({source["student_id"] for source in source_rows})
+    confirmed_ids = {confirmation["student_id"] for confirmation in confirmation_rows}
+    current_membership = None
+    if current_student_id:
+        current_membership = _get_active_engineering_membership(
+            connection, row["team_id"], current_student_id
+        )
+    return {
+        "id": row["id"],
+        "teamId": row["team_id"],
+        "teamName": row["team_name"],
+        "teamNumber": row["team_number"],
+        "season": row["season"],
+        "classSessionId": row["class_session_id"],
+        "sessionDate": parse_date_value(row["session_date"]).isoformat(),
+        "title": row["title"],
+        "objective": row["objective"],
+        "workCompleted": row["work_completed"],
+        "reasoning": row["reasoning"],
+        "alternatives": row["alternatives"],
+        "testEvidence": row["test_evidence"],
+        "outcome": row["outcome"],
+        "problems": row["problems"],
+        "resolutionStatus": row["resolution_status"],
+        "resolution": row["resolution"],
+        "unresolvedReason": row["unresolved_reason"],
+        "nextSteps": row["next_steps"],
+        "proposedBy": row["proposed_by"],
+        "proposerName": row["proposer_name"],
+        "status": row["status"],
+        "sequenceNumber": row["sequence_number"],
+        "createdAt": parse_datetime_value(row["created_at"]).isoformat(),
+        "publishedAt": parse_datetime_value(row["published_at"]).isoformat() if row["published_at"] else None,
+        "sources": [
+            {
+                "noteId": source["id"],
+                "studentId": source["student_id"],
+                "authorName": source["author_name"],
+                "objective": source["objective"],
+                "savedAt": parse_datetime_value(source["updated_at"]).isoformat(),
+                "attachments": _engineering_attachments_payload(connection, source["id"]),
+            }
+            for source in source_rows
+        ],
+        "requiredAuthorIds": required_author_ids,
+        "confirmations": [
+            {
+                "studentId": confirmation["student_id"],
+                "studentName": confirmation["student_name"],
+                "confirmedAt": parse_datetime_value(confirmation["confirmed_at"]).isoformat(),
+            }
+            for confirmation in confirmation_rows
+        ],
+        "allSourcesConfirmed": set(required_author_ids).issubset(confirmed_ids),
+        "canConfirm": bool(
+            current_student_id
+            and row["status"] == "pending"
+            and current_student_id in required_author_ids
+            and current_student_id not in confirmed_ids
+        ),
+        "canPublish": bool(
+            current_membership
+            and current_membership["role"] == "notebooker"
+            and row["status"] == "pending"
+            and set(required_author_ids).issubset(confirmed_ids)
+        ),
+    }
+
+
+@app.post("/api/student/engineering-merge-proposals")
+def create_engineering_merge_proposal(
+    request: EngineeringMergeProposalCreateRequest,
+    user: User = Depends(require_student),
+):
+    raise HTTPException(status_code=410, detail="Stage Merge is not available in Competition phase one.")
+    _validate_engineering_note_request(request)
+    title = request.title.strip()
+    if not title:
+        raise HTTPException(status_code=422, detail="A team entry title is required.")
+    profile = get_student_profile_for_user(user.id)
+    unique_note_ids = list(dict.fromkeys(request.source_note_ids))
+    created_at = now_utc()
+    proposal_id = make_id("engineering-merge")
+    with get_connection() as connection:
+        if _get_active_engineering_membership(connection, request.team_id, profile.id) is None:
+            raise HTTPException(status_code=403, detail="Student is not an active member of this engineering team.")
+        placeholders = scoped_placeholders(unique_note_ids)
+        source_rows = connection.execute(
+            f"""
+            SELECT id, team_id, class_session_id, student_id, status
+            FROM engineering_notes
+            WHERE id IN ({placeholders})
+            """,
+            tuple(unique_note_ids),
+        ).fetchall()
+        if len(source_rows) != len(unique_note_ids):
+            raise HTTPException(status_code=404, detail="One or more source engineering notes were not found.")
+        if any(row["team_id"] != request.team_id for row in source_rows):
+            raise HTTPException(status_code=403, detail="All source notes must belong to the same engineering team.")
+        if any(row["class_session_id"] != request.class_session_id for row in source_rows):
+            raise HTTPException(status_code=409, detail="Source notes must belong to the selected class session.")
+        already_proposed = connection.execute(
+            f"""
+            SELECT source.note_id
+            FROM engineering_merge_sources source
+            JOIN engineering_merge_proposals proposal ON proposal.id = source.proposal_id
+            WHERE source.note_id IN ({placeholders}) AND proposal.status IN ('pending', 'published')
+            """,
+            tuple(unique_note_ids),
+        ).fetchone()
+        if already_proposed:
+            raise HTTPException(status_code=409, detail="A source record is already part of another merge proposal.")
+        connection.execute(
+            """
+            INSERT INTO engineering_merge_proposals (
+                id, team_id, class_session_id, title, objective, work_completed, reasoning,
+                alternatives, test_evidence, outcome, problems, resolution_status, resolution,
+                unresolved_reason, next_steps, proposed_by, status, sequence_number, created_at, published_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, NULL)
+            """,
+            (
+                proposal_id, request.team_id, request.class_session_id, title,
+                request.objective.strip(), request.work_completed.strip(), request.reasoning.strip(),
+                request.alternatives.strip(), request.test_evidence.strip(), request.outcome.strip(),
+                request.problems.strip(), request.resolution_status, request.resolution.strip(),
+                request.unresolved_reason.strip(), request.next_steps.strip(), profile.id, created_at.isoformat(),
+            ),
+        )
+        for note_id in unique_note_ids:
+            connection.execute(
+                "INSERT INTO engineering_merge_sources (id, proposal_id, note_id) VALUES (?, ?, ?)",
+                (make_id("engineering-source"), proposal_id, note_id),
+            )
+        row = _select_engineering_proposal(connection, proposal_id)
+        payload = _engineering_proposal_payload(connection, row, profile.id)
+    return {"proposal": payload}
+
+
+@app.post("/api/student/engineering-merge-proposals/{proposal_id}/confirm")
+def confirm_engineering_merge_proposal(
+    proposal_id: str,
+    user: User = Depends(require_student),
+):
+    raise HTTPException(status_code=410, detail="Stage Merge is not available in Competition phase one.")
+    profile = get_student_profile_for_user(user.id)
+    confirmed_at = now_utc()
+    with get_connection() as connection:
+        row = _select_engineering_proposal(connection, proposal_id)
+        if row is None or _get_active_engineering_membership(connection, row["team_id"], profile.id) is None:
+            raise HTTPException(status_code=404, detail="Merge proposal not found.")
+        if row["status"] != "pending":
+            raise HTTPException(status_code=409, detail="Published entries cannot receive new confirmations.")
+        required = connection.execute(
+            """
+            SELECT source.id
+            FROM engineering_merge_sources source
+            JOIN engineering_notes note ON note.id = source.note_id
+            WHERE source.proposal_id = ? AND note.student_id = ?
+            """,
+            (proposal_id, profile.id),
+        ).fetchone()
+        if required is None:
+            raise HTTPException(status_code=403, detail="Only a source note author can confirm this proposal.")
+        existing = connection.execute(
+            "SELECT id FROM engineering_merge_confirmations WHERE proposal_id = ? AND student_id = ?",
+            (proposal_id, profile.id),
+        ).fetchone()
+        if existing is None:
+            connection.execute(
+                """
+                INSERT INTO engineering_merge_confirmations (id, proposal_id, student_id, confirmed_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (make_id("engineering-confirmation"), proposal_id, profile.id, confirmed_at.isoformat()),
+            )
+        refreshed = _select_engineering_proposal(connection, proposal_id)
+        payload = _engineering_proposal_payload(connection, refreshed, profile.id)
+    return {"proposal": payload}
+
+
+@app.post("/api/student/engineering-merge-proposals/{proposal_id}/publish")
+def publish_engineering_merge_proposal(
+    proposal_id: str,
+    user: User = Depends(require_student),
+):
+    raise HTTPException(status_code=410, detail="Stage Merge is not available in Competition phase one.")
+    profile = get_student_profile_for_user(user.id)
+    published_at = now_utc()
+    with get_connection() as connection:
+        row = _select_engineering_proposal(connection, proposal_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Merge proposal not found.")
+        membership = _get_active_engineering_membership(connection, row["team_id"], profile.id)
+        if membership is None or membership["role"] != "notebooker":
+            raise HTTPException(status_code=403, detail="Only the team's Notebooker can publish a confirmed entry.")
+        if row["status"] != "pending":
+            raise HTTPException(status_code=409, detail="This team entry has already been published.")
+        required_rows = connection.execute(
+            """
+            SELECT DISTINCT note.student_id
+            FROM engineering_merge_sources source
+            JOIN engineering_notes note ON note.id = source.note_id
+            WHERE source.proposal_id = ?
+            """,
+            (proposal_id,),
+        ).fetchall()
+        confirmed_rows = connection.execute(
+            "SELECT student_id FROM engineering_merge_confirmations WHERE proposal_id = ?",
+            (proposal_id,),
+        ).fetchall()
+        required_ids = {item["student_id"] for item in required_rows}
+        confirmed_ids = {item["student_id"] for item in confirmed_rows}
+        if not required_ids.issubset(confirmed_ids):
+            raise HTTPException(status_code=409, detail="Every source note author must confirm before publication.")
+        next_sequence = connection.execute(
+            """
+            SELECT COALESCE(MAX(sequence_number), 0) + 1 AS next_sequence
+            FROM engineering_merge_proposals
+            WHERE team_id = ? AND status = 'published'
+            """,
+            (row["team_id"],),
+        ).fetchone()["next_sequence"]
+        connection.execute(
+            """
+            UPDATE engineering_merge_proposals
+            SET status = 'published', sequence_number = ?, published_at = ?
+            WHERE id = ?
+            """,
+            (next_sequence, published_at.isoformat(), proposal_id),
+        )
+        connection.execute(
+            """
+            UPDATE engineering_notes SET status = 'merged', updated_at = ?
+            WHERE id IN (SELECT note_id FROM engineering_merge_sources WHERE proposal_id = ?)
+            """,
+            (published_at.isoformat(), proposal_id),
+        )
+        published = _select_engineering_proposal(connection, proposal_id)
+        payload = _engineering_proposal_payload(connection, published, profile.id)
+    return {"entry": payload}
+
+
+def _engineering_teams_payload(connection, team_ids: Optional[list[str]] = None) -> list[dict]:
+    parameters: tuple = ()
+    where_clause = ""
+    if team_ids is not None:
+        if not team_ids:
+            return []
+        where_clause = f"WHERE t.id IN ({scoped_placeholders(team_ids)})"
+        parameters = tuple(team_ids)
+    team_rows = connection.execute(
+        f"""
+        SELECT t.id, t.name, t.team_number, t.season, t.status, t.created_at
+        FROM engineering_teams t
+        {where_clause}
+        ORDER BY t.season DESC, t.team_number
+        """,
+        parameters,
+    ).fetchall()
+    teams = []
+    for team in team_rows:
+        members = connection.execute(
+            """
+            SELECT m.student_id, m.role, p.display_name
+            FROM engineering_team_memberships m
+            JOIN student_profiles p ON p.id = m.student_id
+            WHERE m.team_id = ? AND m.status = 'active'
+            ORDER BY CASE WHEN m.role = 'notebooker' THEN 0 ELSE 1 END, p.display_name
+            """,
+            (team["id"],),
+        ).fetchall()
+        teams.append({
+            "id": team["id"],
+            "name": team["name"],
+            "teamNumber": team["team_number"],
+            "season": team["season"],
+            "status": team["status"],
+            "createdAt": parse_datetime_value(team["created_at"]).isoformat(),
+            "exportSpec": ENGINEERING_NOTEBOOK_SEASON_SPECS.get(team["season"]),
+            "members": [
+                {"studentId": member["student_id"], "studentName": member["display_name"]}
+                for member in members
+            ],
+        })
+    return teams
+
+
+def _engineering_workspace_payload(user: User, *, teacher_view: bool) -> dict:
+    with get_connection() as connection:
+        current_student_id = None
+        active_team_ids: set[str] = set()
+        if teacher_view:
+            team_ids = [item["id"] for item in _engineering_teams_payload(connection)]
+        else:
+            profile = get_student_profile_for_user(user.id)
+            current_student_id = profile.id
+            membership_rows = connection.execute(
+                """
+                SELECT team_id, status FROM engineering_team_memberships
+                WHERE student_id = ?
+                """,
+                (profile.id,),
+            ).fetchall()
+            team_ids = [item["team_id"] for item in membership_rows]
+            active_team_ids = {item["team_id"] for item in membership_rows if item["status"] == "active"}
+        teams = _engineering_teams_payload(connection, team_ids)
+        if not team_ids:
+            return {"teams": [], "sessions": [], "notes": [], "proposals": [], "publishedEntries": [], "submissionProgress": []}
+        team_placeholders = scoped_placeholders(team_ids)
+        note_rows = connection.execute(
+            f"""
+            SELECT n.*, t.name AS team_name, author.display_name AS author_name
+            FROM competition_engineering_records n
+            JOIN engineering_teams t ON t.id = n.team_id
+            JOIN student_profiles author ON author.id = n.student_id
+            WHERE n.team_id IN ({team_placeholders})
+            ORDER BY n.created_at DESC
+            """,
+            tuple(team_ids),
+        ).fetchall()
+        notes = [
+            {
+                **_engineering_note_payload(note, _engineering_attachments_payload(connection, note["id"])),
+                "canEdit": bool(
+                    current_student_id
+                    and note["student_id"] == current_student_id
+                    and note["team_id"] in active_team_ids
+                    and note["status"] != "discarded"
+                ),
+            }
+            for note in note_rows
+        ]
+        if not teacher_view:
+            notes = [note for note in notes if note["studentId"] == current_student_id]
+        return {
+            "teams": teams,
+            "sessions": [],
+            "notes": notes,
+            "proposals": [],
+            "publishedEntries": [],
+            "submissionProgress": [],
+        }
+
+        # Legacy class-session merge workflow is intentionally dormant in Competition phase one.
+        proposal_rows = connection.execute(
+            f"""
+            SELECT p.*, t.name AS team_name, t.team_number, t.season,
+                   author.display_name AS proposer_name, s.session_date
+            FROM engineering_merge_proposals p
+            JOIN engineering_teams t ON t.id = p.team_id
+            JOIN student_profiles author ON author.id = p.proposed_by
+            JOIN class_sessions s ON s.id = p.class_session_id
+            WHERE p.team_id IN ({team_placeholders})
+            ORDER BY CASE WHEN p.status = 'pending' THEN 0 ELSE 1 END,
+                     p.sequence_number DESC, p.created_at DESC
+            """,
+            tuple(team_ids),
+        ).fetchall()
+        if teacher_view:
+            session_rows = connection.execute(
+                """
+                SELECT s.id, s.session_date, g.name AS class_name
+                FROM class_sessions s JOIN class_groups g ON g.id = s.class_group_id
+                WHERE s.status != 'cancelled' ORDER BY s.session_date DESC
+                """
+            ).fetchall()
+        else:
+            session_rows = connection.execute(
+                """
+                SELECT DISTINCT s.id, s.session_date, g.name AS class_name
+                FROM class_sessions s
+                JOIN class_groups g ON g.id = s.class_group_id
+                JOIN class_memberships m ON m.class_group_id = g.id
+                WHERE m.student_id = ? AND m.status = 'active' AND s.status != 'cancelled'
+                ORDER BY s.session_date DESC
+                """,
+                (current_student_id,),
+            ).fetchall()
+        proposals = [
+            _engineering_proposal_payload(connection, proposal, current_student_id)
+            for proposal in proposal_rows
+        ]
+        progress_rows = connection.execute(
+            f"""
+            SELECT team.id AS team_id, team.team_number, member.student_id,
+                   profile.display_name AS student_name, session.id AS class_session_id,
+                   session.session_date, session.end_datetime, class_group.name AS class_name,
+                   note.id AS note_id, note.status AS note_status, note.submitted_at
+            FROM engineering_team_memberships member
+            JOIN engineering_teams team ON team.id = member.team_id
+            JOIN student_profiles profile ON profile.id = member.student_id
+            JOIN class_memberships class_member
+              ON class_member.student_id = member.student_id AND class_member.status = 'active'
+            JOIN class_sessions session
+              ON session.class_group_id = class_member.class_group_id AND session.status != 'cancelled'
+            JOIN class_groups class_group ON class_group.id = session.class_group_id
+            LEFT JOIN engineering_notes note
+              ON note.team_id = team.id
+             AND note.student_id = member.student_id
+             AND note.class_session_id = session.id
+            WHERE member.status = 'active'
+              AND team.id IN ({team_placeholders})
+              AND session.end_datetime >= member.joined_at
+              AND EXISTS (
+                  SELECT 1 FROM engineering_notes team_note
+                  WHERE team_note.team_id = team.id AND team_note.class_session_id = session.id
+              )
+            ORDER BY session.session_date DESC, team.team_number, profile.display_name
+            """,
+            tuple(team_ids),
+        ).fetchall()
+        current_time = now_utc()
+        return {
+            "teams": teams,
+            "sessions": [
+                {"id": session["id"], "sessionDate": parse_date_value(session["session_date"]).isoformat(), "className": session["class_name"]}
+                for session in session_rows
+            ],
+            "notes": [
+                {
+                    **_engineering_note_payload(note, _engineering_attachments_payload(connection, note["id"])),
+                    "canEdit": bool(current_student_id and note["student_id"] == current_student_id),
+                }
+                for note in note_rows
+            ],
+            "proposals": [proposal for proposal in proposals if proposal["status"] == "pending"],
+            "publishedEntries": [proposal for proposal in proposals if proposal["status"] == "published"],
+            "submissionProgress": [
+                {
+                    "teamId": progress["team_id"],
+                    "teamNumber": progress["team_number"],
+                    "studentId": progress["student_id"],
+                    "studentName": progress["student_name"],
+                    "classSessionId": progress["class_session_id"],
+                    "sessionDate": parse_date_value(progress["session_date"]).isoformat(),
+                    "className": progress["class_name"],
+                    "isDue": parse_datetime_value(progress["end_datetime"]) <= current_time,
+                    "status": "merged" if progress["note_status"] == "merged" else "saved" if progress["note_id"] else (
+                        "missing" if parse_datetime_value(progress["end_datetime"]) <= current_time else "upcoming"
+                    ),
+                    "noteId": progress["note_id"],
+                    "submittedAt": parse_datetime_value(progress["submitted_at"]).isoformat() if progress["submitted_at"] else None,
+                }
+                for progress in progress_rows
+            ],
+        }
+
+
+@app.get("/api/student/engineering-notebook")
+def student_engineering_notebook(user: User = Depends(require_student)):
+    return _engineering_workspace_payload(user, teacher_view=False)
+
+
+@app.get("/api/teacher/engineering-notebooks")
+def teacher_engineering_notebooks(user: User = Depends(require_teacher)):
+    return _engineering_workspace_payload(user, teacher_view=True)
+
+
+def _pdf_text(value: str) -> str:
+    return html.escape(value or "").replace("\n", "<br>")
+
+
+@app.get("/api/engineering-teams/{team_id}/notebook.pdf")
+def export_engineering_notebook_pdf(team_id: str, user: User = Depends(get_current_user)):
+    with get_connection() as connection:
+        team = connection.execute(
+            "SELECT id, name, team_number, season FROM engineering_teams WHERE id = ?",
+            (team_id,),
+        ).fetchone()
+        if team is None:
+            raise HTTPException(status_code=404, detail="Engineering team not found.")
+        if user.role == "Student":
+            profile = get_student_profile_for_user(user.id)
+            membership = connection.execute(
+                "SELECT id FROM engineering_team_memberships WHERE team_id = ? AND student_id = ?",
+                (team_id, profile.id),
+            ).fetchone()
+            if membership is None:
+                raise HTTPException(status_code=403, detail="Student cannot export another team's notebook.")
+        entry_rows = connection.execute(
+            """
+            SELECT record.*, author.display_name AS author_name
+            FROM competition_engineering_records record
+            JOIN student_profiles author ON author.id = record.student_id
+            WHERE record.team_id = ? AND record.status = 'active'
+            ORDER BY record.created_at, record.id
+            """,
+            (team_id,),
+        ).fetchall()
+        entries = []
+        for index, row in enumerate(entry_rows, start=1):
+            entry = {
+                **_engineering_note_payload({**dict(row), "team_name": team["name"]}),
+                "sequenceNumber": index,
+                "title": row["objective"],
+                "sources": [{"authorName": row["author_name"]}],
+            }
+            attachment_rows = connection.execute(
+                """
+                SELECT a.file_name, a.file_url, a.media_type
+                FROM competition_engineering_record_attachments a
+                WHERE a.record_id = ?
+                ORDER BY a.created_at
+                """,
+                (row["id"],),
+            ).fetchall()
+            entry["_exportAttachments"] = [dict(item) for item in attachment_rows]
+            entries.append(entry)
+
+    season_spec = ENGINEERING_NOTEBOOK_SEASON_SPECS.get(team["season"])
+    game_name = (
+        f"{season_spec['competition']} {season_spec['game']}"
+        if season_spec else "VEX IQ Robotics Competition"
+    )
+    sections = []
+    field_labels = (
+        ("Objective / Problem", "objective"),
+        ("Work Completed", "workCompleted"),
+        ("Why We Chose This Approach", "reasoning"),
+        ("Alternatives Considered", "alternatives"),
+        ("Test Evidence", "testEvidence"),
+        ("Outcome", "outcome"),
+        ("Problems Found", "problems"),
+        ("Resolution", "resolution"),
+        ("Why It Remains Unresolved", "unresolvedReason"),
+        ("Next Steps", "nextSteps"),
+    )
+    for entry in entries:
+        authors = ", ".join(source["authorName"] for source in entry["sources"])
+        fields = "".join(
+            f"<section><h3>{label}</h3><p>{_pdf_text(entry[key]) or '—'}</p></section>"
+            for label, key in field_labels
+        )
+        attachment_markup = []
+        for attachment in entry["_exportAttachments"]:
+            attachment_path = settings.materials_storage_dir.parent / "engineering-notebooks" / attachment["file_url"]
+            attachment_markup.append(f"<h3>Evidence: {_pdf_text(attachment['file_name'])}</h3>")
+            if attachment["media_type"].startswith("image/") and attachment_path.is_file():
+                encoded = base64.b64encode(attachment_path.read_bytes()).decode("ascii")
+                attachment_markup.append(
+                    f'<img class="evidence" src="data:{attachment["media_type"]};base64,{encoded}">'
+                )
+        sections.append(
+            f"""
+            <article class="entry">
+              <h2>Entry {entry['sequenceNumber']}: {_pdf_text(entry['title'])}</h2>
+              <p class="meta"><b>Recorded:</b> {_pdf_text(entry['recordedAt'])} &nbsp; <b>Author:</b> {_pdf_text(authors)}</p>
+              <p class="meta"><b>Resolution status:</b> {_pdf_text(entry['resolutionStatus'].replace('_', ' ').title())}</p>
+              {fields}
+              {''.join(attachment_markup)}
+            </article>
+            """
+        )
+    notebook_html = f"""
+      <main>
+        <section class="cover">
+          <p class="eyebrow">{_pdf_text(game_name)}</p>
+          <h1>Engineering Notebook</h1>
+          <h2>{_pdf_text(team['name'])}</h2>
+          <p><b>Team:</b> {_pdf_text(team['team_number'])}</p>
+          <p><b>Season:</b> {_pdf_text(team['season'])}</p>
+          {f'<p class="meta">Official game manual {season_spec["manualVersion"]} · Published {season_spec["manualPublishedAt"]}<br>Engineering Notebook Rubric {season_spec["rubricVersion"]}</p>' if season_spec else ''}
+          <p class="integrity">All engineering content in this notebook was written by student team members. RoBoGo preserves authorship, timestamps, evidence, and renders the records without rewriting them.</p>
+        </section>
+        {''.join(sections) if sections else '<p>No active engineering records yet.</p>'}
+      </main>
+    """
+    css = """
+      @page { size: A4; margin: 14mm; }
+      body { font-family: sans-serif; color: #17233b; font-size: 10.5pt; line-height: 1.45; }
+      .cover { padding-top: 55mm; text-align: center; page-break-after: always; }
+      .cover h1 { font-size: 30pt; color: #ea5b35; margin: 8mm 0 3mm; }
+      .cover h2 { font-size: 20pt; }
+      .eyebrow { color: #5a6880; text-transform: uppercase; letter-spacing: 1px; }
+      .integrity { margin: 25mm auto 0; max-width: 140mm; color: #5a6880; font-size: 9pt; }
+      .entry { page-break-before: always; }
+      .entry h2 { color: #ea5b35; border-bottom: 1px solid #d8dee9; padding-bottom: 3mm; }
+      .entry h3 { font-size: 11pt; margin: 4mm 0 1mm; }
+      .entry p { margin: 0 0 2mm; white-space: normal; }
+      .meta { color: #5a6880; font-size: 9pt; }
+      .evidence { max-width: 160mm; max-height: 105mm; border: 1px solid #d8dee9; }
+    """
+    try:
+        import fitz
+
+        story = fitz.Story(notebook_html, user_css=css)
+
+        def page_rect(rect_number, filled):
+            page = fitz.paper_rect("a4")
+            return page, page + (40, 42, -40, -42), fitz.Matrix(1, 1)
+
+        document = story.write_with_links(page_rect)
+        pdf_bytes = document.tobytes(garbage=4, deflate=True)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Engineering notebook PDF could not be generated.") from exc
+    filename = re.sub(r"[^A-Za-z0-9._-]", "_", f"{team['team_number']}-{team['season']}-engineering-notebook.pdf")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/api/materials/{material_id}/open")

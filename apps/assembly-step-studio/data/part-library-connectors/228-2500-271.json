@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "partId": "228-2500-271",
+  "updatedAt": "2026-07-17T09:31:49.926Z",
+  "connectors": [
+    {
+      "id": "manual-hole-1-a",
+      "label": "Marked hole 1 · side A",
+      "kind": "hole",
+      "position": [
+        -6.35,
+        -5.448,
+        0
+      ],
+      "centerPosition": [
+        -6.35,
+        -3.162,
+        0
+      ],
+      "markerPosition": [
+        -6.35,
+        -5.448,
+        0
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-1-b",
+      "label": "Marked hole 1 · side B",
+      "kind": "hole",
+      "position": [
+        -6.35,
+        -0.876,
+        0
+      ],
+      "centerPosition": [
+        -6.35,
+        -3.162,
+        0
+      ],
+      "markerPosition": [
+        -6.35,
+        -0.876,
+        0
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-2-a",
+      "label": "Marked hole 2 · side A",
+      "kind": "hole",
+      "position": [
+        0,
+        -5.448,
+        0
+      ],
+      "centerPosition": [
+        0,
+        -3.162,
+        0
+      ],
+      "markerPosition": [
+        0,
+        -5.448,
+        0
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-2-b",
+      "label": "Marked hole 2 · side B",
+      "kind": "hole",
+      "position": [
+        0,
+        -0.876,
+        0
+      ],
+      "centerPosition": [
+        0,
+        -3.162,
+        0
+      ],
+      "markerPosition": [
+        0,
+        -0.876,
+        0
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-3-a",
+      "label": "Marked hole 3 · side A",
+      "kind": "hole",
+      "position": [
+        6.35,
+        -5.448,
+        0
+      ],
+      "centerPosition": [
+        6.35,
+        -3.162,
+        0
+      ],
+      "markerPosition": [
+        6.35,
+        -5.448,
+        0
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-3-b",
+      "label": "Marked hole 3 · side B",
+      "kind": "hole",
+      "position": [
+        6.35,
+        -0.876,
+        0
+      ],
+      "centerPosition": [
+        6.35,
+        -3.162,
+        0
+      ],
+      "markerPosition": [
+        6.35,
+        -0.876,
+        0
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "radius": 3.15,
+      "axis": "y"
+    }
+  ]
+}

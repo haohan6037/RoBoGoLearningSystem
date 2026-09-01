@@ -1,0 +1,1033 @@
+{
+  "version": 1,
+  "partId": "228-2500-030",
+  "updatedAt": "2026-07-20T05:26:35.050Z",
+  "connectors": [
+    {
+      "id": "manual-hole-1-a",
+      "label": "Marked hole 1 · side A",
+      "kind": "hole",
+      "position": [
+        -114.3,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -114.3,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -114.3,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-1-b",
+      "label": "Marked hole 1 · side B",
+      "kind": "hole",
+      "position": [
+        -114.3,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -114.3,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -114.3,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-2-a",
+      "label": "Marked hole 2 · side A",
+      "kind": "hole",
+      "position": [
+        -101.6,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -101.6,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -101.6,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-2-b",
+      "label": "Marked hole 2 · side B",
+      "kind": "hole",
+      "position": [
+        -101.6,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -101.6,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -101.6,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-3-a",
+      "label": "Marked hole 3 · side A",
+      "kind": "hole",
+      "position": [
+        -88.9,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -88.9,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -88.9,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-3-b",
+      "label": "Marked hole 3 · side B",
+      "kind": "hole",
+      "position": [
+        -88.9,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -88.9,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -88.9,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-4-a",
+      "label": "Marked hole 4 · side A",
+      "kind": "hole",
+      "position": [
+        -76.2,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -76.2,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -76.2,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-4-b",
+      "label": "Marked hole 4 · side B",
+      "kind": "hole",
+      "position": [
+        -76.2,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -76.2,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -76.2,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-5-a",
+      "label": "Marked hole 5 · side A",
+      "kind": "hole",
+      "position": [
+        -63.5,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -63.5,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -63.5,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-5-b",
+      "label": "Marked hole 5 · side B",
+      "kind": "hole",
+      "position": [
+        -63.5,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -63.5,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -63.5,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-6-a",
+      "label": "Marked hole 6 · side A",
+      "kind": "hole",
+      "position": [
+        -50.8,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -50.8,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -50.8,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-6-b",
+      "label": "Marked hole 6 · side B",
+      "kind": "hole",
+      "position": [
+        -50.8,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -50.8,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -50.8,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-7-a",
+      "label": "Marked hole 7 · side A",
+      "kind": "hole",
+      "position": [
+        -38.1,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -38.1,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -38.1,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-7-b",
+      "label": "Marked hole 7 · side B",
+      "kind": "hole",
+      "position": [
+        -38.1,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -38.1,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -38.1,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-8-a",
+      "label": "Marked hole 8 · side A",
+      "kind": "hole",
+      "position": [
+        -25.4,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -25.4,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -25.4,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-8-b",
+      "label": "Marked hole 8 · side B",
+      "kind": "hole",
+      "position": [
+        -25.4,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -25.4,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -25.4,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-9-a",
+      "label": "Marked hole 9 · side A",
+      "kind": "hole",
+      "position": [
+        -12.7,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        -12.7,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -12.7,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-9-b",
+      "label": "Marked hole 9 · side B",
+      "kind": "hole",
+      "position": [
+        -12.7,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        -12.7,
+        0,
+        0
+      ],
+      "markerPosition": [
+        -12.7,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-10-a",
+      "label": "Marked hole 10 · side A",
+      "kind": "hole",
+      "position": [
+        0,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        0,
+        0,
+        0
+      ],
+      "markerPosition": [
+        0,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-10-b",
+      "label": "Marked hole 10 · side B",
+      "kind": "hole",
+      "position": [
+        0,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        0,
+        0,
+        0
+      ],
+      "markerPosition": [
+        0,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-11-a",
+      "label": "Marked hole 11 · side A",
+      "kind": "hole",
+      "position": [
+        12.7,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        12.7,
+        0,
+        0
+      ],
+      "markerPosition": [
+        12.7,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-11-b",
+      "label": "Marked hole 11 · side B",
+      "kind": "hole",
+      "position": [
+        12.7,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        12.7,
+        0,
+        0
+      ],
+      "markerPosition": [
+        12.7,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-12-a",
+      "label": "Marked hole 12 · side A",
+      "kind": "hole",
+      "position": [
+        25.4,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        25.4,
+        0,
+        0
+      ],
+      "markerPosition": [
+        25.4,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-12-b",
+      "label": "Marked hole 12 · side B",
+      "kind": "hole",
+      "position": [
+        25.4,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        25.4,
+        0,
+        0
+      ],
+      "markerPosition": [
+        25.4,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-13-a",
+      "label": "Marked hole 13 · side A",
+      "kind": "hole",
+      "position": [
+        38.1,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        38.1,
+        0,
+        0
+      ],
+      "markerPosition": [
+        38.1,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-13-b",
+      "label": "Marked hole 13 · side B",
+      "kind": "hole",
+      "position": [
+        38.1,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        38.1,
+        0,
+        0
+      ],
+      "markerPosition": [
+        38.1,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-14-a",
+      "label": "Marked hole 14 · side A",
+      "kind": "hole",
+      "position": [
+        50.8,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        50.8,
+        0,
+        0
+      ],
+      "markerPosition": [
+        50.8,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-14-b",
+      "label": "Marked hole 14 · side B",
+      "kind": "hole",
+      "position": [
+        50.8,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        50.8,
+        0,
+        0
+      ],
+      "markerPosition": [
+        50.8,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-15-a",
+      "label": "Marked hole 15 · side A",
+      "kind": "hole",
+      "position": [
+        63.5,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        63.5,
+        0,
+        0
+      ],
+      "markerPosition": [
+        63.5,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-15-b",
+      "label": "Marked hole 15 · side B",
+      "kind": "hole",
+      "position": [
+        63.5,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        63.5,
+        0,
+        0
+      ],
+      "markerPosition": [
+        63.5,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-16-a",
+      "label": "Marked hole 16 · side A",
+      "kind": "hole",
+      "position": [
+        76.2,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        76.2,
+        0,
+        0
+      ],
+      "markerPosition": [
+        76.2,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-16-b",
+      "label": "Marked hole 16 · side B",
+      "kind": "hole",
+      "position": [
+        76.2,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        76.2,
+        0,
+        0
+      ],
+      "markerPosition": [
+        76.2,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-17-a",
+      "label": "Marked hole 17 · side A",
+      "kind": "hole",
+      "position": [
+        88.9,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        88.9,
+        0,
+        0
+      ],
+      "markerPosition": [
+        88.9,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-17-b",
+      "label": "Marked hole 17 · side B",
+      "kind": "hole",
+      "position": [
+        88.9,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        88.9,
+        0,
+        0
+      ],
+      "markerPosition": [
+        88.9,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-18-a",
+      "label": "Marked hole 18 · side A",
+      "kind": "hole",
+      "position": [
+        101.6,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        101.6,
+        0,
+        0
+      ],
+      "markerPosition": [
+        101.6,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-18-b",
+      "label": "Marked hole 18 · side B",
+      "kind": "hole",
+      "position": [
+        101.6,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        101.6,
+        0,
+        0
+      ],
+      "markerPosition": [
+        101.6,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-19-a",
+      "label": "Marked hole 19 · side A",
+      "kind": "hole",
+      "position": [
+        114.3,
+        0,
+        -2.286
+      ],
+      "centerPosition": [
+        114.3,
+        0,
+        0
+      ],
+      "markerPosition": [
+        114.3,
+        0,
+        -2.286
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    },
+    {
+      "id": "manual-hole-19-b",
+      "label": "Marked hole 19 · side B",
+      "kind": "hole",
+      "position": [
+        114.3,
+        0,
+        2.286
+      ],
+      "centerPosition": [
+        114.3,
+        0,
+        0
+      ],
+      "markerPosition": [
+        114.3,
+        0,
+        2.286
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "radius": 3.15,
+      "axis": "z"
+    }
+  ]
+}

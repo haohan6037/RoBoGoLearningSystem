@@ -11,6 +11,7 @@ interface Props {
   onMoveDown: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  onDescriptionChange?: (description: string) => void;
 }
 
 export default function StepItem({
@@ -22,6 +23,7 @@ export default function StepItem({
   onMoveDown,
   canMoveUp,
   canMoveDown,
+  onDescriptionChange,
 }: Props) {
   return (
     <div className={`p-2 rounded text-xs cursor-pointer transition-all ${isActive ? 'bg-blue-900 border border-blue-700' : 'bg-gray-800 hover:bg-gray-700 border border-gray-700'}`}>
@@ -47,9 +49,18 @@ export default function StepItem({
           <button onClick={onDelete} className="text-gray-500 hover:text-red-400 ml-0.5">✕</button>
         </span>
       </div>
-      {step.description && (
+      {onDescriptionChange ? (
+        <textarea
+          value={step.description ?? ''}
+          onChange={(event) => onDescriptionChange(event.target.value)}
+          onClick={(event) => event.stopPropagation()}
+          rows={2}
+          placeholder="Student hint for this step (optional)"
+          className="mt-2 w-full resize-none rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-[11px] leading-4 text-gray-200 outline-none focus:border-blue-500"
+        />
+      ) : step.description ? (
         <p className="text-gray-500 mt-0.5 truncate">{step.description}</p>
-      )}
+      ) : null}
     </div>
   );
 }

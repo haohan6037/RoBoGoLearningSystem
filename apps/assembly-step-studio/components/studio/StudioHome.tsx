@@ -3,15 +3,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProjectsDashboard from '@/components/projects/ProjectsDashboard';
+import AssemblyPrototypeExperiment from '@/components/ai-design/AssemblyPrototypeExperiment';
 import StudioWorkspace from '@/components/studio/StudioWorkspace';
+import MateLab from '@/components/mate/MateLab';
+import ModelLibraryLab from '@/components/library/ModelLibraryLab';
 import {
   createStudioProject,
   deleteStudioProject,
   duplicateStudioProject,
+  getPublishedBuildLink,
   listStudioProjects,
-  makeStudioProjectLink,
+  publishStudioProject,
+  revokeStudioPublication,
 } from '@/lib/projects/projectStorage';
-import type { StudioProjectRecord } from '@/types/assembly';
+import type { StudioProjectRecord, StudioProjectType } from '@/types/assembly';
 
 async function copyTextToClipboard(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) {
@@ -34,6 +39,10 @@ export default function StudioHome() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get('projectId');
   const isBuildPresentation = searchParams.get('view') === 'build';
+  const isMateLab = searchParams.get('view') === 'mate-lab';
+  const isAssemblyProject = searchParams.get('view') === 'assembly';
+  const isPartLibrary = searchParams.get('view') === 'part-library';
+  const isAiExperiment = searchParams.get('view') === 'ai-experiment';
   const [projects, setProjects] = useState<StudioProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
@@ -55,14 +64,19 @@ export default function StudioHome() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const handleCreateProject = async (name: string) => {
-    const record = await createStudioProject(name);
+  const handleCreateProject = async (name: string, projectType: StudioProjectType) => {
+    const record = await createStudioProject(name, projectType);
     await refreshProjects();
-    router.push(`/?projectId=${record.id}`);
+    router.push(projectType === 'assembly'
+      ? `/?projectId=${record.id}&view=assembly`
+      : `/?projectId=${record.id}`);
   };
 
   const handleOpenProject = (nextProjectId: string) => {
-    router.push(`/?projectId=${nextProjectId}`);
+    const project = projects.find((candidate) => candidate.id === nextProjectId);
+    router.push(project?.projectType === 'assembly'
+      ? `/?projectId=${nextProjectId}&view=assembly`
+      : `/?projectId=${nextProjectId}`);
   };
 
   const handleBackToProjects = async () => {
@@ -86,13 +100,36 @@ export default function StudioHome() {
   };
 
   const handleCopyProjectLink = async (nextProjectId: string) => {
-    const link = makeStudioProjectLink(nextProjectId);
+    const project = projects.find((candidate) => candidate.id === nextProjectId);
+    if (!project?.publishedBuildId) {
+      setNotice('Publish this project before copying its student link');
+      return;
+    }
+    const link = await getPublishedBuildLink(project.publishedBuildId);
     await copyTextToClipboard(link);
     setNotice('Student build link copied to clipboard');
   };
 
   const handlePreviewProject = (nextProjectId: string) => {
-    window.open(makeStudioProjectLink(nextProjectId), '_blank', 'noopener,noreferrer');
+    const url = new URL('/', window.location.origin);
+    url.searchParams.set('projectId', nextProjectId);
+    url.searchParams.set('view', 'build');
+    window.open(url.toString(), '_blank', 'noopener,noreferrer');
+  };
+
+  const handlePublishProject = async (nextProjectId: string) => {
+    const publication = await publishStudioProject(nextProjectId);
+    await refreshProjects();
+    await copyTextToClipboard(await getPublishedBuildLink(publication.id));
+    setNotice('Published — student link copied to clipboard');
+  };
+
+  const handleRevokeProject = async (nextProjectId: string) => {
+    const project = projects.find((candidate) => candidate.id === nextProjectId);
+    if (!project?.publishedBuildId) return;
+    await revokeStudioPublication(project.publishedBuildId);
+    await refreshProjects();
+    setNotice('Student link withdrawn');
   };
 
   return (
@@ -103,21 +140,53 @@ export default function StudioHome() {
         </div>
       )}
 
-      {!projectId ? (
+      {isAiExperiment ? (
+        <AssemblyPrototypeExperiment
+          onBack={() => router.push('/')}
+          onCreated={(createdProjectId) => {
+            router.push(`/?projectId=${createdProjectId}&view=assembly`);
+          }}
+        />
+      ) : isAssemblyProject && projectId ? (
+        <ModelLibraryLab
+          projectId={projectId}
+          onBack={handleBackToProjects}
+          onBuildInstructionsCreated={(instructionsProjectId) => {
+            router.push(`/?projectId=${instructionsProjectId}`);
+          }}
+        />
+      ) : isPartLibrary ? (
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
+          Open a saved Assembly Project to use the parts library.
+        </div>
+      ) : isMateLab ? (
+        <MateLab onBack={() => router.push('/')} />
+      ) : !projectId ? (
         loading ? (
           <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
             Loading projects...
           </div>
         ) : (
-          <ProjectsDashboard
-            projects={projects}
-            onCreateProject={handleCreateProject}
-            onOpenProject={handleOpenProject}
-            onDuplicateProject={handleDuplicateProject}
-            onDeleteProject={handleDeleteProject}
-            onCopyProjectLink={handleCopyProjectLink}
-            onPreviewProject={handlePreviewProject}
-          />
+          <>
+            <ProjectsDashboard
+              projects={projects}
+              onCreateProject={handleCreateProject}
+              onOpenProject={handleOpenProject}
+              onDuplicateProject={handleDuplicateProject}
+              onDeleteProject={handleDeleteProject}
+              onCopyProjectLink={handleCopyProjectLink}
+              onPreviewProject={handlePreviewProject}
+              onPublishProject={handlePublishProject}
+              onRevokeProject={handleRevokeProject}
+            />
+            <button
+              type="button"
+              onClick={() => router.push('/?view=ai-experiment')}
+              className="fixed bottom-6 right-6 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-blue-950/20 hover:bg-blue-700"
+            >
+              AI Prototype Experiment
+            </button>
+          </>
         )
       ) : (
         <StudioWorkspace

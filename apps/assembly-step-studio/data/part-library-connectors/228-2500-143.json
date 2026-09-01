@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "partId": "228-2500-143",
+  "updatedAt": "2026-08-27T10:26:00.296Z",
+  "connectors": [
+    {
+      "id": "manual-hole-1-a",
+      "label": "Marked hole 1 · side A",
+      "kind": "hole",
+      "position": [
+        0.002,
+        -2.286,
+        0
+      ],
+      "centerPosition": [
+        0.002,
+        0,
+        0
+      ],
+      "markerPosition": [
+        0.002,
+        -2.286,
+        0
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "radius": 2.363,
+      "axis": "y"
+    },
+    {
+      "id": "manual-hole-1-b",
+      "label": "Marked hole 1 · side B",
+      "kind": "hole",
+      "position": [
+        0.002,
+        2.286,
+        0
+      ],
+      "centerPosition": [
+        0.002,
+        0,
+        0
+      ],
+      "markerPosition": [
+        0.002,
+        2.286,
+        0
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "radius": 2.363,
+      "axis": "y"
+    }
+  ]
+}

@@ -28,6 +28,15 @@ export type AssemblyStep = {
   selectedObjectUuids: string[];
   camera?: CameraView;
   createdAt: string;
+  sourceStepId?: string;
+};
+
+export type BuildPartSummary = {
+  id: string;
+  name: string;
+  partNumber?: string;
+  thumbnailUrl?: string | null;
+  quantity: number;
 };
 
 export type AssemblyProject = {
@@ -38,9 +47,42 @@ export type AssemblyProject = {
   disassemblySteps: AssemblyStep[];
   assemblySteps: AssemblyStep[];
   currentStepId?: string;
+  partsList?: BuildPartSummary[];
 };
 
 export type StudioProjectStatus = 'In Progress' | 'Published';
+export type StudioProjectType = 'assembly' | 'build-instructions';
+
+export type AssemblyPartInstance = {
+  instanceId: string;
+  part: import('./partLibrary').PartLibraryItem;
+  color: string;
+  position: [number, number, number];
+  quaternion: [number, number, number, number];
+};
+
+export type AssemblyMateRecord = {
+  id: string;
+  type: 'pin' | 'multi-leg' | 'beam' | 'shaft' | 'hole-align';
+  fixedInstanceId: string;
+  movingInstanceId: string;
+  fixedConnectorIds: string[];
+  movingConnectorIds: string[];
+  createdAt: string;
+};
+
+export type AssemblyRigidGroup = {
+  id: string;
+  name: string;
+  instanceIds: string[];
+  createdAt: string;
+};
+
+export type AssemblyWorkspaceData = {
+  instances: AssemblyPartInstance[];
+  mateRecords: AssemblyMateRecord[];
+  groups: AssemblyRigidGroup[];
+};
 
 export type CameraView = {
   position: [number, number, number];
@@ -61,16 +103,29 @@ export type ProjectCoverAsset = CoverCapture & {
 export type StudioProjectRecord = {
   id: string;
   name: string;
+  projectType: StudioProjectType;
   status: StudioProjectStatus;
   createdAt: string;
   updatedAt: string;
   owner: string;
   tags: string[];
   data: AssemblyProject;
+  assemblyData?: AssemblyWorkspaceData | null;
+  sourceAssemblyProjectId?: string;
+  publishedBuildId?: string;
+  publishedAt?: string;
   modelAsset?: {
     name: string;
     type: string;
     blob: Blob;
   } | null;
   coverAsset?: ProjectCoverAsset | null;
+};
+
+export type PublishedBuildRecord = {
+  id: string;
+  projectId: string;
+  publishedAt: string;
+  revokedAt?: string;
+  project: StudioProjectRecord;
 };
